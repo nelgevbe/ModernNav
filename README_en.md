@@ -79,7 +79,7 @@ Push this code to your GitHub or GitLab repository.
 3.  Select your repository.
 
 ### Step 3: Build Settings
-*   **Framework preset:** `Vite`
+*   **Framework preset:** `None`
 *   **Build command:** `npm run build`
 *   **Build output directory:** `dist`
 
