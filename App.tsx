@@ -34,6 +34,8 @@ const App: React.FC = () => {
   const [navPillStyle, setNavPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
   const tabsRef = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const navTrackRef = useRef<HTMLDivElement>(null);
+  
+  const isFirstRender = useRef(true);
 
   // Initial Data Fetch
   useEffect(() => {
@@ -125,13 +127,19 @@ const App: React.FC = () => {
 
   // Persist Preferences
   useEffect(() => {
-    if (!loading) {
-        storageService.savePreferences({
-            cardOpacity,
-            themeColor,
-            themeMode
-        });
+    if (loading) return;
+
+    // Prevent saving on initial hydration (prevents dirty state on load)
+    if (isFirstRender.current) {
+        isFirstRender.current = false;
+        return;
     }
+
+    storageService.savePreferences({
+        cardOpacity,
+        themeColor,
+        themeMode
+    });
   }, [themeMode, cardOpacity, themeColor, loading]);
 
   // Ensure activeCategory is valid
@@ -313,7 +321,6 @@ const App: React.FC = () => {
     <div className={`min-h-screen relative overflow-x-hidden selection:bg-[var(--theme-primary)] selection:text-white font-sans flex flex-col ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
       
       <ToastContainer />
-      <SyncIndicator />
       
       <style>{`
         :root {
@@ -486,6 +493,8 @@ const App: React.FC = () => {
           )}
         </main>
       </div>
+
+      <SyncIndicator />
 
       <footer className={`relative z-10 py-5 text-center text-[11px] flex flex-col md:flex-row justify-center items-center gap-4 border-t backdrop-blur-sm transition-colors duration-500 ${
           isDark ? 'text-white/30 border-white/5 bg-black/10' : 'text-slate-500 border-black/5 bg-white/20'

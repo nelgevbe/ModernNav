@@ -286,27 +286,39 @@ export const storageService = {
 
   _saveItem: async <T>(key: string, data: T, type: string) => {
     const timestamp = Date.now();
+    
+    // KEY FIX: Determine auth status BEFORE creating the wrapper.
+    // If not authenticated, we treat this as a LOCAL save (dirty = false).
+    // This prevents the "Syncing..." spinner from appearing for guests.
+    let token = await ensureAccessToken();
+    const isAuthenticated = !!token;
+
     const wrapper: StorageWrapper<T> = {
       data,
       updatedAt: timestamp,
-      _isDirty: true
+      _isDirty: isAuthenticated // Only dirty if we plan to sync
     };
     
     // 1. Optimistic UI Update (Local Cache)
     safeLocalStorageSet(key, JSON.stringify(wrapper));
     
-    // Trigger visual indicator immediately
-    storageService.notifySyncStatus(true);
+    // If not dirty (guest mode), we are done. Ensure spinner is off.
+    if (!wrapper._isDirty) {
+        storageService.checkGlobalDirtyState();
+        return;
+    }
 
-    // 2. Cloud Sync with Retry Logic
+    // 2. Cloud Sync (Authenticated)
+    storageService.notifySyncStatus(true); // Turn on spinner
+
     const trySync = async (forceRefresh = false) => {
         try {
-            if (forceRefresh) _accessToken = null; // Invalidate cache to force refresh
-            const token = await ensureAccessToken();
-            if (!token) {
-                 // Not logged in.
-                 return;
+            if (forceRefresh) {
+                _accessToken = null; 
+                token = await ensureAccessToken();
             }
+            
+            if (!token) return; // Should not happen given logic above, but safe guard
 
             let res = await fetch('/api/update', {
                 method: 'POST',
@@ -317,10 +329,9 @@ export const storageService = {
                 body: JSON.stringify({ type, data: wrapper })
             });
 
-            // Handle Token Expiry (401)
             if (res.status === 401 && !forceRefresh) {
                 console.warn("Token expired, retrying sync...");
-                await trySync(true); // Retry once with forced refresh
+                await trySync(true); 
                 return;
             }
 
@@ -334,7 +345,6 @@ export const storageService = {
             console.warn(`Sync failed for ${type}`, e);
             storageService.notify('error', `Sync failed for ${type}. Will retry later.`);
         } finally {
-            // Re-check global status (in case other items are still dirty, or this one succeeded)
             storageService.checkGlobalDirtyState();
         }
     };
