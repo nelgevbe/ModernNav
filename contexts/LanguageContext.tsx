@@ -113,6 +113,9 @@ const translations = {
     desc_placeholder: "Optional description",
     add_link_card: "Save Link",
     update_link_card: "Update Link",
+
+    // Sync
+    syncing_msg: "Syncing changes to cloud...",
   },
   zh: {
     // App
@@ -217,6 +220,9 @@ const translations = {
     desc_placeholder: "可选描述",
     add_link_card: "保存链接",
     update_link_card: "更新链接",
+
+    // Sync
+    syncing_msg: "正在同步到云端...",
   }
 };
 

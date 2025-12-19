@@ -8,6 +8,15 @@ let _accessToken: string | null = null;
 let _isRefreshing = false;
 let _refreshSubscribers: ((token: string) => void)[] = [];
 
+// Notification System
+type NotifyType = 'success' | 'error' | 'info';
+type NotifyListener = (type: NotifyType, message: string) => void;
+let _notifyListeners: NotifyListener[] = [];
+
+// Sync Status System
+type SyncStatusListener = (isDirty: boolean) => void;
+let _syncStatusListeners: SyncStatusListener[] = [];
+
 // Local Storage Keys (Only for Data Cache, NOT Credentials)
 const LS_KEYS = {
   CATEGORIES: 'modernNav_categories',
@@ -16,6 +25,7 @@ const LS_KEYS = {
 };
 
 export const DEFAULT_BACKGROUND = 'radial-gradient(circle at 50% -20%, #334155, #0f172a, #020617)';
+const CURRENT_BACKUP_VERSION = 1;
 
 export interface UserPreferences {
   cardOpacity: number;
@@ -66,23 +76,17 @@ const safeLocalStorageSet = (key: string, value: string) => {
 
 const wrapData = <T>(rawData: any, defaultVal: T): StorageWrapper<T> => {
   // 1. If it's already a valid StorageWrapper, return it directly.
-  // This preserves the _isDirty flag and updatedAt timestamp from a previous save.
   if (rawData && typeof rawData === 'object' && 'updatedAt' in rawData && 'data' in rawData) {
     return rawData as StorageWrapper<T>;
   }
   
-  // 2. If it's NOT a wrapper (null, undefined, or legacy raw data):
-  // We treat it as a "Clean Cache" with timestamp 0.
-  // - If it was null/undefined (new device), we use defaultVal.
-  // - If it was legacy raw data, we use it as data but mark it clean so Cloud can override it.
-  // This enforces "Cloud Priority" because Cloud data (usually updatedAt > 0) will always win 
-  // against this local data (updatedAt = 0).
+  // 2. If it's NOT a wrapper, treat as Clean Cache (TS=0, Dirty=False)
   const hasData = rawData !== null && rawData !== undefined;
 
   return {
     data: hasData ? rawData : defaultVal,
     updatedAt: 0, 
-    _isDirty: false // KEY FIX: Always false. Non-wrapper data is treated as cache, not unsaved work.
+    _isDirty: false 
   };
 };
 
@@ -92,7 +96,6 @@ const getCleanData = <T>(key: string, defaultVal: T): T => {
   if (wrapper && typeof wrapper === 'object' && 'data' in wrapper) {
     return (wrapper as StorageWrapper<T>).data;
   }
-  // Handle legacy raw string for background
   if (key === LS_KEYS.BACKGROUND && typeof raw === 'string' && !raw.startsWith('{')) {
       return raw as unknown as T;
   }
@@ -162,13 +165,55 @@ export const storageService = {
 
   init: () => {
     if (typeof window !== 'undefined') {
-      // Try to silently refresh session on load
       tryRefreshToken();
-      
       window.addEventListener('online', () => {
         storageService.syncPendingChanges();
       });
+      // Initial check on load (wait for hydration)
+      setTimeout(() => storageService.checkGlobalDirtyState(), 1000);
     }
+  },
+
+  // --- Notification API ---
+  subscribeNotifications: (listener: NotifyListener) => {
+    _notifyListeners.push(listener);
+    return () => {
+      _notifyListeners = _notifyListeners.filter(l => l !== listener);
+    };
+  },
+
+  notify: (type: NotifyType, message: string) => {
+    _notifyListeners.forEach(l => l(type, message));
+  },
+
+  // --- Sync Status API ---
+  subscribeSyncStatus: (listener: SyncStatusListener) => {
+    _syncStatusListeners.push(listener);
+    return () => {
+        _syncStatusListeners = _syncStatusListeners.filter(l => l !== listener);
+    };
+  },
+
+  notifySyncStatus: (isDirty: boolean) => {
+    _syncStatusListeners.forEach(l => l(isDirty));
+  },
+
+  checkGlobalDirtyState: () => {
+      const keys = [LS_KEYS.CATEGORIES, LS_KEYS.BACKGROUND, LS_KEYS.PREFS];
+      let isDirty = false;
+      for (const key of keys) {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+              try {
+                  const parsed = JSON.parse(raw);
+                  if (parsed && typeof parsed === 'object' && parsed._isDirty === true) {
+                      isDirty = true;
+                      break;
+                  }
+              } catch {}
+          }
+      }
+      storageService.notifySyncStatus(isDirty);
   },
 
   // --- Auth Public API ---
@@ -184,6 +229,8 @@ export const storageService = {
       if (res.ok) {
         const data = await res.json();
         _accessToken = data.accessToken;
+        // Upon login, try syncing any pending data
+        setTimeout(() => storageService.syncPendingChanges(), 500);
         return true;
       }
       return false;
@@ -247,33 +294,52 @@ export const storageService = {
     
     // 1. Optimistic UI Update (Local Cache)
     safeLocalStorageSet(key, JSON.stringify(wrapper));
+    
+    // Trigger visual indicator immediately
+    storageService.notifySyncStatus(true);
 
-    // 2. Cloud Sync
-    try {
-      const token = await ensureAccessToken();
-      if (!token) {
-          // If not logged in, we stop here. The data remains "Dirty" locally.
-          // It will try to sync next time we are online/logged in via syncPendingChanges.
-          return; 
-      }
+    // 2. Cloud Sync with Retry Logic
+    const trySync = async (forceRefresh = false) => {
+        try {
+            if (forceRefresh) _accessToken = null; // Invalidate cache to force refresh
+            const token = await ensureAccessToken();
+            if (!token) {
+                 // Not logged in.
+                 return;
+            }
 
-      const res = await fetch('/api/update', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ type, data: wrapper })
-      });
+            let res = await fetch('/api/update', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ type, data: wrapper })
+            });
 
-      if (res.ok) {
-        // Ack: Server accepted. Mark clean locally.
-        wrapper._isDirty = false;
-        safeLocalStorageSet(key, JSON.stringify(wrapper));
-      }
-    } catch (e) {
-      console.warn(`Sync failed for ${type}. Queued for retry.`);
-    }
+            // Handle Token Expiry (401)
+            if (res.status === 401 && !forceRefresh) {
+                console.warn("Token expired, retrying sync...");
+                await trySync(true); // Retry once with forced refresh
+                return;
+            }
+
+            if (res.ok) {
+                wrapper._isDirty = false;
+                safeLocalStorageSet(key, JSON.stringify(wrapper));
+            } else {
+                throw new Error(`Server returned ${res.status}`);
+            }
+        } catch (e) {
+            console.warn(`Sync failed for ${type}`, e);
+            storageService.notify('error', `Sync failed for ${type}. Will retry later.`);
+        } finally {
+            // Re-check global status (in case other items are still dirty, or this one succeeded)
+            storageService.checkGlobalDirtyState();
+        }
+    };
+
+    await trySync();
   },
 
   // Read Strategy: Load Local (Cache) -> Background Sync (Cloud Priority)
@@ -284,7 +350,7 @@ export const storageService = {
     const rawBg = localStorage.getItem(LS_KEYS.BACKGROUND);
     const rawPrefs = safeJsonParse(localStorage.getItem(LS_KEYS.PREFS), null);
     
-    // Normalize Background (Handle raw string legacy case)
+    // Normalize Background
     let bgWrapper: StorageWrapper<string>;
     try {
         const parsedBg = JSON.parse(rawBg || '""');
@@ -314,34 +380,26 @@ export const storageService = {
         const processSync = <T>(key: string, defaultVal: T, cloudRaw: any): { val: T, updated: boolean } => {
           const rawCurrent = localStorage.getItem(key);
           
-          // Re-parse current local state carefully
           let currentWrapper: StorageWrapper<T>;
           if (!rawCurrent) {
              currentWrapper = { data: defaultVal, updatedAt: 0, _isDirty: false };
           } else {
              try {
                 const parsed = JSON.parse(rawCurrent);
-                // Check if it's a valid wrapper
                 if (parsed && typeof parsed === 'object' && 'updatedAt' in parsed) {
                    currentWrapper = parsed;
                 } else {
-                   // Legacy data in LS -> Treat as old cache (TS=0, Dirty=False)
                    currentWrapper = { data: parsed as T, updatedAt: 0, _isDirty: false };
                 }
              } catch {
-                // Garbage in LS -> Reset
                 currentWrapper = { data: defaultVal, updatedAt: 0, _isDirty: false };
              }
           }
 
-          // Prepare Cloud Wrapper
           let cloudWrapper: StorageWrapper<T>;
           if (cloudRaw && typeof cloudRaw === 'object' && 'updatedAt' in cloudRaw) {
-              // Valid Cloud Wrapper
               cloudWrapper = cloudRaw;
           } else {
-              // Legacy Cloud Data (Raw) or Empty
-              // If cloud data exists but is raw, give it precedence (TS=1) over clean local default (TS=0)
               cloudWrapper = { 
                   data: cloudRaw || defaultVal, 
                   updatedAt: cloudRaw ? 1 : 0, 
@@ -349,24 +407,10 @@ export const storageService = {
               };
           }
 
-          // SYNC DECISION LOGIC:
-          // We override local if:
-          // 1. Local is NOT dirty (no unsaved user changes).
-          // 2. AND Cloud data is newer or different from default.
-          
-          // Note: If local is Default (TS=0) and Cloud has data (TS>=1), Cloud wins.
-          // Note: If local is Legacy Cache (TS=0) and Cloud has data (TS>=1), Cloud wins.
-          
           if (!currentWrapper._isDirty && cloudWrapper.updatedAt > currentWrapper.updatedAt) {
              safeLocalStorageSet(key, JSON.stringify(cloudWrapper));
              return { val: cloudWrapper.data, updated: true };
           }
-          
-          // Conflict: Local is dirty (User edited offline). 
-          // We generally keep local and let the background sync (syncPendingChanges) push it later.
-          // However, if the user explicitly wants Cloud Priority, we could argue to overwrite.
-          // But "Dirty" implies explicit user intent *on this device* that hasn't saved. 
-          // Overwriting it causes data loss. We keep local dirty state.
           
           return { val: currentWrapper.data, updated: false };
         };
@@ -386,12 +430,10 @@ export const storageService = {
            }
         }
         
-        // Finally, if we have local dirty data, try to push it to cloud now
         storageService.syncPendingChanges();
         
       } catch (e) {
-        // Network error or parsing error -> Keep using local cache
-        console.warn("Bootstrap sync failed", e);
+        // silent fail for bootstrap
       }
     })();
 
@@ -416,16 +458,18 @@ export const storageService = {
   },
 
   syncPendingChanges: async () => {
+    // Check initially (might be pending changes from reload)
+    storageService.checkGlobalDirtyState();
+
     const processKey = async (key: string, type: string) => {
       const raw = localStorage.getItem(key);
       if (!raw) return;
       const wrapper = safeJsonParse<StorageWrapper<any>>(raw, null as any);
       
-      // If we have a dirty wrapper, try to push to server
       if (wrapper && wrapper._isDirty) {
         try {
            const token = await ensureAccessToken();
-           if (!token) return; // Can't sync without auth
+           if (!token) return; 
 
            const res = await fetch('/api/update', {
              method: 'POST',
@@ -439,6 +483,9 @@ export const storageService = {
            if (res.ok) {
              wrapper._isDirty = false;
              safeLocalStorageSet(key, JSON.stringify(wrapper));
+           } else if (res.status === 401) {
+              // Trigger refresh via ensureAccessToken next time or explicitly here
+              _accessToken = null; // Force refresh
            }
         } catch (e) {
            // Keep dirty, try later
@@ -451,6 +498,9 @@ export const storageService = {
       processKey(LS_KEYS.BACKGROUND, 'background'),
       processKey(LS_KEYS.PREFS, 'prefs')
     ]);
+
+    // Check again after attempt
+    storageService.checkGlobalDirtyState();
   },
 
   // --- Backup & Restore ---
@@ -460,7 +510,7 @@ export const storageService = {
     const prefs = getCleanData<UserPreferences>(LS_KEYS.PREFS, DEFAULT_PREFS);
 
     const backup: BackupData = {
-      version: 1,
+      version: CURRENT_BACKUP_VERSION,
       timestamp: Date.now(),
       categories,
       background,
@@ -485,16 +535,24 @@ export const storageService = {
           const parsed = JSON.parse(result);
           
           let importedData: Partial<BackupData> = {};
+          
           if (Array.isArray(parsed)) {
+             // Backward compatibility for raw arrays (Version 0)
              importedData.categories = parsed;
           } else if (typeof parsed === 'object' && parsed !== null) {
+             // Version Check
+             if (parsed.version && parsed.version > CURRENT_BACKUP_VERSION) {
+                 reject(new Error(`Backup file version (${parsed.version}) is newer than supported (${CURRENT_BACKUP_VERSION}). Please update the app.`));
+                 return;
+             }
              importedData = parsed as BackupData;
           } else {
-             throw new Error('Invalid format');
+             reject(new Error('Invalid backup file format'));
+             return;
           }
           resolve(importedData);
         } catch (error) {
-          reject(error);
+          reject(new Error('Failed to parse backup file'));
         }
       };
       reader.onerror = () => reject(new Error('Failed to read file'));

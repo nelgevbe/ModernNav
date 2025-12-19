@@ -127,7 +127,6 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
   // Initial Auth Check
   useEffect(() => {
     if (isOpen) {
-      // Must be async now
       storageService.isAuthenticated().then(isAuth => {
           setIsAuthenticated(isAuth);
       });
@@ -456,11 +455,12 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
          onUpdateAppearance(importedData.background || background, importedData.prefs?.cardOpacity ?? prefs.cardOpacity);
       }
       setImportStatus({ type: 'success', message: t('import_success') });
-    } catch (error) {
-      setImportStatus({ type: 'error', message: t('import_error') });
+    } catch (error: any) {
+      // Use detailed error message if available
+      setImportStatus({ type: 'error', message: error.message || t('import_error') });
     }
     e.target.value = '';
-    setTimeout(() => setImportStatus({ type: null, message: '' }), 4000);
+    setTimeout(() => setImportStatus({ type: null, message: '' }), 6000);
   };
 
   const renderIcon = (iconValue: string | undefined, size = 16) => {

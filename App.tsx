@@ -6,6 +6,8 @@ import * as Icons from 'lucide-react';
 import { SearchBar } from './components/SearchBar';
 import { GlassCard } from './components/GlassCard';
 import { LinkManagerModal } from './components/LinkManagerModal';
+import { ToastContainer } from './components/Toast';
+import { SyncIndicator } from './components/SyncIndicator';
 import { storageService, DEFAULT_BACKGROUND } from './services/storage';
 import { getDominantColor } from './utils/color';
 import { Category, ThemeMode } from './types';
@@ -39,7 +41,6 @@ const App: React.FC = () => {
       setLoading(true);
       try {
         // Fetch data with a callback for cloud updates (Race Mode)
-        // The callback receives unwrapped data suitable for the UI
         const data = await storageService.fetchAllData((cloudData) => {
            console.log("Cloud data synced, refreshing UI...");
            setCategories(cloudData.categories);
@@ -101,7 +102,6 @@ const App: React.FC = () => {
       }
     };
 
-    // Delay slightly to ensure DOM is ready during fast switches or loads
     const timer = setTimeout(updatePill, 50);
     window.addEventListener('resize', updatePill);
     
@@ -115,7 +115,6 @@ const App: React.FC = () => {
   // Extract color when background changes (UI only)
   useEffect(() => {
     const updateTheme = async () => {
-      // We only extract color if we aren't loading to avoid double work on startup
       if (!loading && (background.startsWith('http') || background.startsWith('data:'))) {
           const color = await getDominantColor(background);
           setThemeColor(color);
@@ -124,7 +123,7 @@ const App: React.FC = () => {
     updateTheme();
   }, [background, loading]);
 
-  // Persist Preferences (Debounced or explicit save is better, but for prefs simple effect is okay)
+  // Persist Preferences
   useEffect(() => {
     if (!loading) {
         storageService.savePreferences({
@@ -172,7 +171,6 @@ const App: React.FC = () => {
     setThemeMode(prev => prev === ThemeMode.Dark ? ThemeMode.Light : ThemeMode.Dark);
   };
 
-  // Selection Handlers
   const handleMainCategoryClick = (cat: Category) => {
     setActiveCategory(cat.id);
     if (cat.subCategories.length > 0) {
@@ -187,7 +185,6 @@ const App: React.FC = () => {
     setActiveSubCategoryId(subId);
   };
 
-  // Helper to render icons
   const renderIcon = (iconValue: string | undefined) => {
     const defaultIcon = <Icons.Link size={20} strokeWidth={1.5} />;
     if (!iconValue) return defaultIcon;
@@ -221,10 +218,8 @@ const App: React.FC = () => {
   const isDark = themeMode === ThemeMode.Dark;
   const isBackgroundUrl = background.startsWith('http') || background.startsWith('data:');
   
-  // Theme Styles
   const adaptiveGlassBlur = isDark ? 50 : 30;
   
-  // Dropdown Styles
   const dropdownClasses = isDark ? 'apple-glass-dark' : 'apple-glass-light';
   const navDropdownItemBase = `text-left px-3 py-1.5 rounded-md text-xs transition-all duration-200 flex items-center justify-between group/item`;
   
@@ -236,8 +231,6 @@ const App: React.FC = () => {
   };
 
   const navIconColor = isDark ? 'text-white/60' : 'text-slate-600';
-
-  // --- Dynamic Island Styles ---
   
   const glassLayerNoise = (
     <div className="absolute inset-0 z-0 glass-noise pointer-events-none opacity-50 rounded-full" />
@@ -264,7 +257,6 @@ const App: React.FC = () => {
       />
   );
 
-  // Unified Container (Glassy Dock)
   const islandContainerClass = `relative flex items-center justify-center p-1.5 rounded-full border transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
     isDark
       ? 'bg-slate-900/60 border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.6)]'
@@ -276,8 +268,6 @@ const App: React.FC = () => {
     WebkitBackdropFilter: `blur(${adaptiveGlassBlur}px) saturate(180%)`,
   };
 
-  // Sliding Pill Style (Apple-like Segmented Control)
-  // Low contrast, tone-on-tone to match Dynamic Island aesthetic
   const slidingPillClass = `absolute top-0 bottom-0 rounded-full transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] pointer-events-none ${
       isDark 
         ? 'bg-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] border border-white/5' 
@@ -307,7 +297,6 @@ const App: React.FC = () => {
     active:bg-[var(--theme-primary)]/30
   `;
 
-  // --- LOADING SCREEN ---
   if (loading) {
     return (
         <div className="min-h-screen bg-slate-900 flex items-center justify-center flex-col gap-4">
@@ -317,13 +306,14 @@ const App: React.FC = () => {
     );
   }
 
-  // --- MAIN APP ---
   const visibleCategory = categories.find(c => c.id === activeCategory);
   const visibleSubCategory = visibleCategory?.subCategories.find(s => s.id === activeSubCategoryId);
-  const isSingleDefaultSubCategory = visibleCategory?.subCategories.length === 1 && visibleCategory?.subCategories[0].title === 'Default';
 
   return (
     <div className={`min-h-screen relative overflow-x-hidden selection:bg-[var(--theme-primary)] selection:text-white font-sans flex flex-col ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+      
+      <ToastContainer />
+      <SyncIndicator />
       
       <style>{`
         :root {
@@ -362,17 +352,14 @@ const App: React.FC = () => {
 
       {/* Navigation - Dynamic Island */}
       <nav className="flex justify-center items-center py-6 px-4 relative z-[100] isolation-isolate text-sm font-medium tracking-wide">
-        
         <div className={islandContainerClass} style={islandStyle}>
           {glassLayerNoise}
           {glassLayerRim}
           {glassLayerSheen}
           
           <div className="relative z-10 flex items-center gap-1 flex-wrap justify-center max-w-full px-1">
-              
-              {/* SECTION 1: Categories (Segmented Control) */}
+              {/* SECTION 1: Categories */}
               <div className="relative flex items-center" ref={navTrackRef}>
-                  {/* The Sliding Pill Background */}
                   <div 
                       className={slidingPillClass}
                       style={{
@@ -382,11 +369,9 @@ const App: React.FC = () => {
                           height: '100%'
                       }}
                   />
-
                   {categories.map(cat => {
                     const hasSingleDefault = cat.subCategories.length === 1 && cat.subCategories[0].title === 'Default';
                     const isActive = activeCategory === cat.id;
-
                     return (
                       <div key={cat.id} className="relative group">
                           <button
@@ -404,7 +389,6 @@ const App: React.FC = () => {
                                   />
                               )}
                           </button>
-
                           {!hasSingleDefault && (
                               <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 hidden group-hover:block z-[100] w-34 animate-fade-in origin-top">
                                   <div className={`${dropdownClasses} rounded-xl p-1 flex flex-col gap-0.5 overflow-hidden ring-1 ring-white/5 shadow-2xl`}>
@@ -438,32 +422,19 @@ const App: React.FC = () => {
               <div className={`w-[1px] h-5 mx-2 rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-400/20'}`}></div>
 
               {/* SECTION 3: Actions */}
-              <button
-                  onClick={toggleLanguage}
-                  className={actionButtonClass}
-                  title="Switch Language"
-              >
+              <button onClick={toggleLanguage} className={actionButtonClass} title="Switch Language">
                   <Globe size={18} />
               </button>
-              <button
-                  onClick={toggleTheme}
-                  className={actionButtonClass}
-                  title="Toggle Theme"
-              >
+              <button onClick={toggleTheme} className={actionButtonClass} title="Toggle Theme">
                   {isDark ? <Moon size={18} /> : <Sun size={18} />}
               </button>
-              <button 
-                  onClick={() => setIsModalOpen(true)}
-                  className={actionButtonClass}
-                  title={t('settings')}
-              >
+              <button onClick={() => setIsModalOpen(true)} className={actionButtonClass} title={t('settings')}>
                   <Settings size={18} />
               </button>
           </div>
         </div>
       </nav>
 
-      {/* Main Content - Constrained to 900px for tighter layout */}
       <div className="container mx-auto px-4 flex-1 flex flex-col items-center pt-8 md:pt-12 max-w-[900px] relative z-[10]">
         <section className="w-full mb-14 animate-fade-in-down relative z-[70] isolation-isolate">
           <SearchBar themeMode={themeMode} />
@@ -471,9 +442,7 @@ const App: React.FC = () => {
 
         <main className="w-full pb-20 relative z-[10] space-y-8">
           {visibleSubCategory ? (
-             // REMOVED 'animate-fade-in' class from this div to fix backdrop-filter bug
              <div key={visibleSubCategory.id} className="">
-               {/* MODIFIED: Always show header. If 'Default', show Main Category Title */}
                <div className="flex items-center gap-4 mb-6">
                  <div className={`h-[1px] flex-1 bg-gradient-to-r from-transparent ${isDark ? 'to-white/20' : 'to-slate-400/30'}`}></div>
                  <h3 className={`text-[10px] font-bold uppercase tracking-[0.2em] px-2 ${isDark ? 'text-white/50' : 'text-slate-400'}`}>
