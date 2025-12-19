@@ -15,7 +15,8 @@ ModernNav 是一个现代、极简的卡片式导航仪表盘，采用毛玻璃�
 *   **🖼️ 高度个性化:** 支持更换背景图片、调节卡片模糊度和透明度，以及自定义主题颜色。
 *   **📂 分组管理:** 支持创建一级分类和二级子菜单（文件夹）来整理链接。
 *   **🔍 聚合搜索:** 内置搜索栏，支持 Google、必应、百度、GitHub 等多种搜索引擎切换。
-*   **🔐 企业级安全:** 采用 **双 Token 认证体系 (Access/Refresh Token)** 配合 **HttpOnly Cookie**，支持令牌自动轮转 (Rotation) 与滑动窗口会话管理，全面防止 XSS 与 CSRF 攻击。
+*   **🔐 无状态安全认证:** 采用 **HMAC 签名无状态认证**。登录与会话维持 **零数据库写入**，彻底消除 KV 存储读写消耗，同时保留 HttpOnly Cookie 和短效访问令牌的双重安全机制，全面防止 XSS 与 CSRF 攻击。
+*   **🛡️ 数据健壮性保护:** 内置严格的数据类型校验与容错机制，自动修复异常数据结构，杜绝白屏崩溃，确保系统在数据格式升级或异常时依然稳定运行。
 *   **☁️ 智能混合存储:**
     *   **读取策略 (网络优先):** 优先获取云端最新数据，网络异常时自动降级读取本地缓存，确保页面秒开且在离线状态下依然可用。
     *   **写入策略 (乐观更新):** 修改配置立即生效，无需等待服务器响应，并在后台静默同步至 Cloudflare KV，提供丝滑流畅的操作体验。
@@ -27,7 +28,7 @@ ModernNav 是一个现代、极简的卡片式导航仪表盘，采用毛玻璃�
 *   **前端:** React 19, Vite, Tailwind CSS, Lucide React
 *   **后端:** Cloudflare Pages Functions (Serverless 无服务器函数)
 *   **数据库:** Cloudflare KV (键值存储)
-*   **鉴权:** Access Token (内存存储) + Refresh Token (HttpOnly Cookie)
+*   **鉴权:** 无状态 JWT (HMAC-SHA256) + HttpOnly Cookie
 *   **语言:** TypeScript
 
 ## 🚀 快速开始
@@ -112,7 +113,7 @@ npm run dev
 ├── functions/api/     # Cloudflare Pages Functions (后端 API)
 │   ├── bootstrap.ts   # 初始化数据加载
 │   ├── update.ts      # 数据保存 (需 Bearer Token)
-│   └── auth.ts        # 鉴权逻辑 (Login/Refresh/Logout)
+│   └── auth.ts        # 鉴权逻辑 (无状态签名验证)
 ├── services/          # 数据服务层 (处理 Token 刷新、拦截器、同步逻辑)
 ├── types.ts           # TypeScript 类型定义
 ├── App.tsx            # 主应用逻辑

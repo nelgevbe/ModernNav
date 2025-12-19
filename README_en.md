@@ -15,7 +15,8 @@ Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + KV
 *   **🖼️ Customization:** Change background images, adjust blur/opacity levels, and customize theme colors.
 *   **📂 Grouping:** Organize links into Categories and Sub-categories (Folders).
 *   **🔍 Aggregated Search:** Integrated search bar supporting Google, Bing, Baidu, GitHub, and more.
-*   **🔐 Enterprise-Grade Security:** Implements **Dual Token Authentication (Access/Refresh)** with **HttpOnly Cookies**, Token Rotation, and sliding window sessions for maximum security against XSS/CSRF.
+*   **🔐 Stateless Security:** Implements **Stateless Dual Token Authentication** (HMAC-Signed). Sessions require **zero database writes**, eliminating KV storage costs for authentication while maintaining maximum security via HttpOnly Cookies and token rotation against XSS/CSRF.
+*   **🛡️ Robust Data Handling:** Built-in strict type validation and automatic error recovery prevent application crashes (White Screen of Death) caused by malformed data structure updates.
 *   **☁️ Smart Hybrid Storage:**
     *   **Read Strategy (Network First):** Prioritizes fetching the latest data from the cloud, automatically falling back to local cache if offline, ensuring instant loading and offline availability.
     *   **Write Strategy (Optimistic UI):** Changes are applied immediately to the interface without waiting for server response, while silently syncing to Cloudflare KV in the background for a smooth experience.
@@ -27,7 +28,7 @@ Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + KV
 *   **Frontend:** React 19, Vite, Tailwind CSS, Lucide React
 *   **Backend:** Cloudflare Pages Functions (Serverless)
 *   **Database:** Cloudflare KV (Key-Value Store)
-*   **Auth:** Access Token (In-Memory) + Refresh Token (HttpOnly Cookie)
+*   **Auth:** Stateless JWT (HMAC-SHA256) + HttpOnly Cookie
 *   **Language:** TypeScript
 
 ## 🚀 Getting Started
@@ -112,7 +113,7 @@ Push this code to your GitHub or GitLab repository.
 ├── functions/api/     # Cloudflare Pages Functions (Backend API)
 │   ├── bootstrap.ts   # Initial data load
 │   ├── update.ts      # Save data (Protected by Bearer Token)
-│   └── auth.ts        # Authentication logic (Login/Refresh/Logout)
+│   └── auth.ts        # Authentication logic (Stateless Signature)
 ├── services/          # Data layer (handles Token refresh, Interceptors, Sync logic)
 ├── types.ts           # TypeScript interfaces
 ├── App.tsx            # Main application logic
