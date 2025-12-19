@@ -5,20 +5,17 @@ import { storageService } from '../services/storage';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export const SyncIndicator: React.FC = () => {
-  const [isDirty, setIsDirty] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const { t } = useLanguage();
 
   useEffect(() => {
-    // Initial check
-    storageService.checkGlobalDirtyState();
-
     const unsubscribe = storageService.subscribeSyncStatus((status) => {
-      setIsDirty(status);
+      setIsSyncing(status);
     });
     return () => unsubscribe();
   }, []);
 
-  if (!isDirty) return null;
+  if (!isSyncing) return null;
 
   return (
     <div className="w-full flex justify-center pb-2 animate-fade-in z-20 relative">

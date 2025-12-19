@@ -16,9 +16,9 @@ Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + KV
 *   **📂 Grouping:** Organize links into Categories and Sub-categories (Folders).
 *   **🔍 Aggregated Search:** Integrated search bar supporting Google, Bing, Baidu, GitHub, and more.
 *   **🔐 Enterprise-Grade Security:** Implements **Dual Token Authentication (Access/Refresh)** with **HttpOnly Cookies**, Token Rotation, and sliding window sessions for maximum security against XSS/CSRF.
-*   **☁️ Hybrid Storage (Enhanced):**
-    *   **Cloud Sync:** Syncs data to Cloudflare KV when deployed for real-time multi-device access.
-    *   **Offline First:** Robust sync logic with dirty checking, conflict resolution, and automatic background retries ensuring data integrity even with unstable connections.
+*   **☁️ Smart Hybrid Storage:**
+    *   **Read Strategy (Network First):** Prioritizes fetching the latest data from the cloud, automatically falling back to local cache if offline, ensuring instant loading and offline availability.
+    *   **Write Strategy (Optimistic UI):** Changes are applied immediately to the interface without waiting for server response, while silently syncing to Cloudflare KV in the background for a smooth experience.
 *   **🌍 Internationalization:** Built-in support for English and Chinese (Simplified).
 *   **💾 Full Backup:** Export your entire configuration (links, background, settings) to JSON and restore anytime.
 

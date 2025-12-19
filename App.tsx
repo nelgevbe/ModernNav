@@ -42,22 +42,9 @@ const App: React.FC = () => {
     const initData = async () => {
       setLoading(true);
       try {
-        // Fetch data with a callback for cloud updates (Race Mode)
-        const data = await storageService.fetchAllData((cloudData) => {
-           console.log("Cloud data synced, refreshing UI...");
-           setCategories(cloudData.categories);
-           if (cloudData.background) {
-               setBackground(cloudData.background);
-           }
-           if (cloudData.prefs) {
-              setCardOpacity(cloudData.prefs.cardOpacity);
-              setThemeMode(cloudData.prefs.themeMode);
-              if (cloudData.prefs.themeColor) setThemeColor(cloudData.prefs.themeColor);
-           }
-           setIsDefaultCode(cloudData.isDefaultCode);
-        });
+        // Simplified Load: Network First, Fallback to Cache
+        const data = await storageService.fetchAllData();
 
-        // Set initial state from LocalStorage immediately
         setCategories(data.categories);
         setBackground(data.background);
         setCardOpacity(data.prefs.cardOpacity);
@@ -67,14 +54,12 @@ const App: React.FC = () => {
         if (data.prefs.themeColor) {
            setThemeColor(data.prefs.themeColor);
         } else {
-           // Fallback if not set and using an image
            if (data.background.startsWith('http') || data.background.startsWith('data:')) {
              const color = await getDominantColor(data.background);
              setThemeColor(color);
            }
         }
 
-        // Set initial active category
         if (data.categories.length > 0) {
            setActiveCategory(data.categories[0].id);
         }
@@ -128,13 +113,10 @@ const App: React.FC = () => {
   // Persist Preferences
   useEffect(() => {
     if (loading) return;
-
-    // Prevent saving on initial hydration (prevents dirty state on load)
     if (isFirstRender.current) {
         isFirstRender.current = false;
         return;
     }
-
     storageService.savePreferences({
         cardOpacity,
         themeColor,
