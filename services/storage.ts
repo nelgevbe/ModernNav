@@ -48,17 +48,27 @@ interface BackupData {
 
 // --- HELPERS ---
 
-// Safe Parse that handles both legacy wrapped data and new clean data
+// Robust JSON Parser that handles legacy wrappers automatically
 const safeJsonParse = <T>(jsonString: string | null, fallback: T): T => {
   if (!jsonString) return fallback;
   try {
     const parsed = JSON.parse(jsonString);
-    // Migration: If data is wrapped in old format { data: ..., _isDirty: ... }, extract .data
-    if (parsed && typeof parsed === 'object' && 'data' in parsed && '_isDirty' in parsed) {
-      return parsed.data as T;
+    
+    // MIGRATION LOGIC: Check if data is wrapped in old format { data: ..., _isDirty: ... }
+    if (parsed && typeof parsed === 'object' && 'data' in parsed) {
+      // If we expect an array (like categories) and .data is an array, return .data
+      if (Array.isArray(fallback) && Array.isArray(parsed.data)) {
+        return parsed.data as T;
+      }
+      // If we expect an object (like prefs) and .data is object, return .data
+      if (!Array.isArray(fallback) && typeof parsed.data === 'object') {
+        return parsed.data as T;
+      }
     }
+    
     return parsed as T;
   } catch (e) {
+    console.warn("JSON Parse Failed:", e);
     return fallback;
   }
 };
@@ -135,7 +145,6 @@ export const storageService = {
   notifySyncStatus: (isSyncing: boolean) => {
     _syncStatusListeners.forEach(l => l(isSyncing));
   },
-  // No-op for compatibility with old code calls, logic moved to save methods
   checkGlobalDirtyState: () => {}, 
 
   // --- AUTH ---
@@ -194,7 +203,6 @@ export const storageService = {
 
   // --- CORE DATA OPERATIONS ---
 
-  // Strategy: Network First -> Cache Fallback
   fetchAllData: async (): Promise<{ categories: Category[], background: string, prefs: UserPreferences, isDefaultCode: boolean }> => {
     let cloudData = null;
     
@@ -208,44 +216,72 @@ export const storageService = {
       console.warn("Network offline or failed, falling back to cache.");
     }
 
+    // 2. Determine raw data source
+    let finalCategories: any = INITIAL_CATEGORIES;
+    let finalBackground: any = DEFAULT_BACKGROUND;
+    let finalPrefs: any = DEFAULT_PREFS;
+    let isDefaultCode = false;
+
     if (cloudData) {
-      // 2a. Success: Update Cache & Return Cloud Data
-      // We normalize data to ensure defaults if some fields are missing in DB
-      const cleanData = {
-        categories: cloudData.categories || INITIAL_CATEGORIES,
-        background: cloudData.background || DEFAULT_BACKGROUND,
-        prefs: cloudData.prefs || DEFAULT_PREFS,
-        isDefaultCode: !!cloudData.isDefaultCode
-      };
-
-      safeLocalStorageSet(LS_KEYS.CATEGORIES, cleanData.categories);
-      safeLocalStorageSet(LS_KEYS.BACKGROUND, cleanData.background);
-      safeLocalStorageSet(LS_KEYS.PREFS, cleanData.prefs);
-
-      return cleanData;
+      finalCategories = cloudData.categories;
+      finalBackground = cloudData.background;
+      finalPrefs = cloudData.prefs;
+      isDefaultCode = !!cloudData.isDefaultCode;
+      
+      // Update Cache immediately with what we got
+      safeLocalStorageSet(LS_KEYS.CATEGORIES, finalCategories || INITIAL_CATEGORIES);
+      safeLocalStorageSet(LS_KEYS.BACKGROUND, finalBackground || DEFAULT_BACKGROUND);
+      safeLocalStorageSet(LS_KEYS.PREFS, finalPrefs || DEFAULT_PREFS);
 
     } else {
-      // 2b. Fail: Read from LocalStorage Cache
+      // Read from LocalStorage Cache
+      const rawCat = localStorage.getItem(LS_KEYS.CATEGORIES);
+      finalCategories = safeJsonParse(rawCat, INITIAL_CATEGORIES);
+
       const rawBg = localStorage.getItem(LS_KEYS.BACKGROUND);
-      
-      // Clean background string (handle potential JSON quotes from old saves)
-      let bg = rawBg || DEFAULT_BACKGROUND;
-      if (bg.startsWith('"') && bg.endsWith('"')) {
-        try { bg = JSON.parse(bg); } catch {}
+      finalBackground = rawBg || DEFAULT_BACKGROUND;
+      // Handle legacy string quirks from background
+      if (typeof finalBackground === 'string' && finalBackground.startsWith('"')) {
+        try { finalBackground = JSON.parse(finalBackground); } catch {}
       }
-      // Handle legacy wrapped object in background
-      if (bg.startsWith('{')) {
-         const parsed = safeJsonParse<any>(bg, null);
-         if (parsed && parsed.data) bg = parsed.data;
+      // Handle wrapped background object
+      if (typeof finalBackground === 'string' && finalBackground.startsWith('{')) {
+         const parsed = safeJsonParse<any>(finalBackground, null);
+         if (parsed && parsed.data) finalBackground = parsed.data;
       }
 
-      return {
-        categories: safeJsonParse<Category[]>(localStorage.getItem(LS_KEYS.CATEGORIES), INITIAL_CATEGORIES),
-        background: bg,
-        prefs: safeJsonParse<UserPreferences>(localStorage.getItem(LS_KEYS.PREFS), DEFAULT_PREFS),
-        isDefaultCode: false // Unknown if offline, assume safe
-      };
+      finalPrefs = safeJsonParse(localStorage.getItem(LS_KEYS.PREFS), DEFAULT_PREFS);
     }
+
+    // --- 3. FINAL DEFENSIVE VALIDATION (Prevents White Screen) ---
+    
+    // GUARANTEE: Categories must be an Array
+    if (!Array.isArray(finalCategories)) {
+        // One last attempt to unwrap if safeJsonParse didn't catch it deeply
+        if (finalCategories && typeof finalCategories === 'object' && Array.isArray((finalCategories as any).data)) {
+            finalCategories = (finalCategories as any).data;
+        } else {
+            console.warn("Categories data corrupted, resetting to default to prevent crash.");
+            finalCategories = INITIAL_CATEGORIES;
+        }
+    }
+    
+    // GUARANTEE: Background must be a String
+    if (typeof finalBackground !== 'string') {
+        finalBackground = DEFAULT_BACKGROUND;
+    }
+
+    // GUARANTEE: Prefs must be an Object
+    if (!finalPrefs || typeof finalPrefs !== 'object') {
+        finalPrefs = DEFAULT_PREFS;
+    }
+
+    return {
+      categories: finalCategories,
+      background: finalBackground,
+      prefs: finalPrefs,
+      isDefaultCode
+    };
   },
 
   // Strategy: Optimistic UI (Update Local) -> Async Cloud Sync (If Admin)
@@ -267,19 +303,18 @@ export const storageService = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ type, data }) // Sending raw data, no wrappers
+        body: JSON.stringify({ type, data })
       });
 
       if (!res.ok) {
         if (res.status === 401) {
-             // Token expired during operation
              _accessToken = null;
         }
         throw new Error(`Sync error ${res.status}`);
       }
     } catch (e) {
       console.error(`Sync failed for ${type}`, e);
-      storageService.notify('error', `Cloud sync failed for ${type}. Changes saved locally.`);
+      storageService.notify('error', `Cloud sync failed. Saved locally.`);
     } finally {
       storageService.notifySyncStatus(false);
     }
@@ -297,7 +332,6 @@ export const storageService = {
     return storageService._saveItem(LS_KEYS.PREFS, prefs, 'prefs');
   },
 
-  // Legacy compatibility (no-op)
   syncPendingChanges: async () => {},
 
   // --- BACKUP / RESTORE ---
@@ -307,16 +341,13 @@ export const storageService = {
     
     let background = localStorage.getItem(LS_KEYS.BACKGROUND) || DEFAULT_BACKGROUND;
     if (background.startsWith('"')) try { background = JSON.parse(background); } catch {}
-    // Legacy check
-    const bgParsed = safeJsonParse<any>(background, null);
-    if (bgParsed && bgParsed.data) background = bgParsed.data;
-
+    
     const prefs = safeJsonParse<UserPreferences>(localStorage.getItem(LS_KEYS.PREFS), DEFAULT_PREFS);
 
     const backup: BackupData = {
       version: CURRENT_BACKUP_VERSION,
       timestamp: Date.now(),
-      categories,
+      categories: Array.isArray(categories) ? categories : INITIAL_CATEGORIES,
       background,
       prefs
     };
@@ -335,10 +366,8 @@ export const storageService = {
         try {
           const parsed = JSON.parse(e.target?.result as string);
           if (Array.isArray(parsed)) {
-            // v0 format
             resolve({ categories: parsed });
           } else {
-            // v1 format
             resolve(parsed as BackupData);
           }
         } catch {

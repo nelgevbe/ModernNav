@@ -3,6 +3,15 @@ interface Env {
   KV_STORE: any;
 }
 
+const safeParse = (str: string | null) => {
+  if (!str) return null;
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    return null;
+  }
+};
+
 export const onRequestGet = async (context: any) => {
   const { env } = context;
   
@@ -15,9 +24,9 @@ export const onRequestGet = async (context: any) => {
   ]);
 
   const responseData = {
-    categories: categories ? JSON.parse(categories) : null, // Null will trigger default on frontend
-    background: background || null,
-    prefs: prefs ? JSON.parse(prefs) : null,
+    categories: safeParse(categories),
+    background: background || null, // background is just a string in KV, no parse needed unless legacy
+    prefs: safeParse(prefs),
     // Don't send the actual code, just a boolean if it's the default or custom
     isDefaultCode: !authCode
   };
