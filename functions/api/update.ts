@@ -3,6 +3,35 @@ interface Env {
   KV_STORE: any;
 }
 
+// --- CRYPTO HELPERS (Duplicated to avoid build complexity in simple Pages Functions) ---
+async function sign(data: string, secret: string): Promise<string> {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw", enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false, ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, enc.encode(data));
+  return btoa(String.fromCharCode(...new Uint8Array(signature)));
+}
+
+async function verify(token: string, secret: string): Promise<boolean> {
+  try {
+    const [payloadB64, signatureB64] = token.split('.');
+    if (!payloadB64 || !signatureB64) return false;
+    
+    const expectedSignature = await sign(payloadB64, secret);
+    if (signatureB64 !== expectedSignature) return false;
+
+    const payload = JSON.parse(atob(payloadB64));
+    if (Date.now() > payload.exp) return false;
+
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 export const onRequestPost = async (context: any) => {
   const { request, env } = context;
   
@@ -14,9 +43,11 @@ export const onRequestPost = async (context: any) => {
 
   const token = authHeader.split(" ")[1];
   
-  // Verify Access Token existence in KV
-  // Since we use KV TTL, if the key exists, it is valid.
-  const sessionValid = await env.KV_STORE.get(`access:${token}`);
+  // Get the Secret (Admin Code)
+  const storedCode = await env.KV_STORE.get("auth_code") || "admin";
+
+  // Verify Statelessly
+  const sessionValid = await verify(token, storedCode);
   
   if (!sessionValid) {
     return new Response(JSON.stringify({ error: "Invalid or expired token" }), { status: 401 });
@@ -27,6 +58,7 @@ export const onRequestPost = async (context: any) => {
     const body: any = await request.json();
     const { type, data } = body;
 
+    // These writes are the only KV writes that will happen now
     if (type === 'categories') {
       await env.KV_STORE.put("categories", JSON.stringify(data));
     } else if (type === 'background') {

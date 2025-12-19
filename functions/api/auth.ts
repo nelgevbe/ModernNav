@@ -4,15 +4,56 @@ interface Env {
 }
 
 // Configuration
-const ACCESS_TTL = 15 * 60; // 15 minutes
-const REFRESH_TTL = 7 * 24 * 60 * 60; // 7 days
+const ACCESS_TTL = 30 * 60 * 1000; // 30 minutes (in ms)
+const REFRESH_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days (in ms)
 
-// Helper: Generate Secure Random Token
-const generateToken = () => {
-  return crypto.randomUUID();
-};
+// --- CRYPTO HELPERS (Stateless Logic) ---
 
-// Helper: Parse Cookies
+async function sign(data: string, secret: string): Promise<string> {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw", enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false, ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, enc.encode(data));
+  // Convert ArrayBuffer to Base64
+  return btoa(String.fromCharCode(...new Uint8Array(signature)));
+}
+
+async function verify(token: string, secret: string): Promise<boolean> {
+  try {
+    const [payloadB64, signatureB64] = token.split('.');
+    if (!payloadB64 || !signatureB64) return false;
+
+    // 1. Re-calculate signature
+    const expectedSignature = await sign(payloadB64, secret);
+    
+    // 2. Check Signature (Constant time comparison not strictly needed for this scope, but good practice)
+    if (signatureB64 !== expectedSignature) return false;
+
+    // 3. Check Expiry
+    const payload = JSON.parse(atob(payloadB64));
+    if (Date.now() > payload.exp) return false;
+
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function generateToken(type: 'access' | 'refresh', secret: string): Promise<string> {
+  const ttl = type === 'access' ? ACCESS_TTL : REFRESH_TTL;
+  const payload = {
+    exp: Date.now() + ttl,
+    type
+  };
+  const payloadB64 = btoa(JSON.stringify(payload));
+  const signature = await sign(payloadB64, secret);
+  return `${payloadB64}.${signature}`;
+}
+
+// --- HELPER: COOKIES ---
 const getCookie = (request: Request, name: string) => {
   const cookieString = request.headers.get('Cookie');
   if (!cookieString) return null;
@@ -24,16 +65,10 @@ const getCookie = (request: Request, name: string) => {
   return null;
 };
 
-// Helper: Response with Cookie
 const respondWithCookie = (body: any, refreshToken: string, clear = false) => {
-  const maxAge = clear ? 0 : REFRESH_TTL;
+  const maxAge = clear ? 0 : (REFRESH_TTL / 1000); // Max-Age is in seconds
   const cookieValue = clear ? '' : refreshToken;
   
-  // Construct Set-Cookie header manually
-  // HttpOnly: Not accessible via JS
-  // Secure: HTTPS only
-  // SameSite=Strict: CSRF protection
-  // Path: Limit scope
   const cookieHeader = `refresh_token=${cookieValue}; HttpOnly; Secure; SameSite=Strict; Path=/api/auth; Max-Age=${maxAge}`;
 
   return new Response(JSON.stringify(body), {
@@ -47,16 +82,11 @@ const respondWithCookie = (body: any, refreshToken: string, clear = false) => {
 export const onRequestPost = async (context: any) => {
   const { request, env } = context;
   
-  // Handle Refresh Action (Action might be implied by lack of body for refresh, but we keep the pattern)
-  // We read body safely
   let body: any = {};
-  try {
-    body = await request.json();
-  } catch {
-    // Empty body is fine for some actions if we rely on cookies
-  }
+  try { body = await request.json(); } catch {}
 
   const { action, code, currentCode, newCode } = body;
+  // Get the Fixed Secret (The Admin Code)
   const storedCode = await env.KV_STORE.get("auth_code") || "admin";
 
   // --- 1. LOGIN ---
@@ -65,19 +95,15 @@ export const onRequestPost = async (context: any) => {
       return new Response(JSON.stringify({ error: "Invalid credentials" }), { status: 401 });
     }
 
-    const accessToken = generateToken();
-    const refreshToken = generateToken();
+    // Generate Stateless Tokens signed with the password
+    const accessToken = await generateToken('access', storedCode);
+    const refreshToken = await generateToken('refresh', storedCode);
 
-    // Store Access Token (Short lived)
-    await env.KV_STORE.put(`access:${accessToken}`, "1", { expirationTtl: ACCESS_TTL });
-    
-    // Store Refresh Token (Long lived) - Support Rotation
-    await env.KV_STORE.put(`refresh:${refreshToken}`, "1", { expirationTtl: REFRESH_TTL });
-
+    // NO KV WRITES HERE!
     return respondWithCookie({ success: true, accessToken }, refreshToken);
   }
 
-  // --- 2. REFRESH (Token Rotation) ---
+  // --- 2. REFRESH ---
   if (action === 'refresh') {
     const refreshToken = getCookie(request, 'refresh_token');
     
@@ -85,52 +111,40 @@ export const onRequestPost = async (context: any) => {
       return new Response(JSON.stringify({ error: "No refresh token" }), { status: 401 });
     }
 
-    // Verify Refresh Token in KV
-    const isValid = await env.KV_STORE.get(`refresh:${refreshToken}`);
+    // Verify the token statelessly
+    const isValid = await verify(refreshToken, storedCode);
     
-    // Security: Delete the used refresh token immediately (Rotation)
-    await env.KV_STORE.delete(`refresh:${refreshToken}`);
-
     if (!isValid) {
-      // Possible reuse attack or expired
-      return respondWithCookie({ error: "Invalid refresh token" }, "", true); // Clear cookie
+      return respondWithCookie({ error: "Invalid or expired session" }, "", true);
     }
 
     // Issue New Pair
-    const newAccessToken = generateToken();
-    const newRefreshToken = generateToken();
-
-    await env.KV_STORE.put(`access:${newAccessToken}`, "1", { expirationTtl: ACCESS_TTL });
-    await env.KV_STORE.put(`refresh:${newRefreshToken}`, "1", { expirationTtl: REFRESH_TTL });
+    const newAccessToken = await generateToken('access', storedCode);
+    const newRefreshToken = await generateToken('refresh', storedCode);
 
     return respondWithCookie({ success: true, accessToken: newAccessToken }, newRefreshToken);
   }
 
   // --- 3. LOGOUT ---
   if (action === 'logout') {
-    const refreshToken = getCookie(request, 'refresh_token');
-    if (refreshToken) {
-      await env.KV_STORE.delete(`refresh:${refreshToken}`);
-    }
+    // Just clear the cookie on client
     return respondWithCookie({ success: true }, "", true);
   }
 
   // --- 4. UPDATE PASSWORD ---
   if (action === 'update') {
-    // Authorization Check: Bearer Access Token
     const authHeader = request.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
     const token = authHeader.split(" ")[1];
     
-    // Validate Access Token via KV
-    const isValidSession = await env.KV_STORE.get(`access:${token}`);
+    // Verify Access Token Statelessly
+    const isValidSession = await verify(token, storedCode);
     if (!isValidSession) {
        return new Response(JSON.stringify({ error: "Token expired" }), { status: 401 });
     }
 
-    // Verify current code logic
     if (currentCode !== storedCode) {
        return new Response(JSON.stringify({ error: "Current code incorrect" }), { status: 403 });
     }
@@ -139,10 +153,7 @@ export const onRequestPost = async (context: any) => {
       return new Response(JSON.stringify({ error: "Invalid new code" }), { status: 400 });
     }
 
-    // Update Code
     await env.KV_STORE.put("auth_code", newCode);
-    
-    // Optional: Revoke all sessions? For now, we keep them alive until they expire or logout.
     
     return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
   }
