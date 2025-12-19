@@ -69,10 +69,16 @@ const wrapData = <T>(rawData: any, defaultVal: T): StorageWrapper<T> => {
   if (rawData && typeof rawData === 'object' && 'updatedAt' in rawData && 'data' in rawData) {
     return rawData as StorageWrapper<T>;
   }
+  
+  // FIX: Detect if we truly have local data or if we are falling back to defaults.
+  // If rawData is present (legacy data), mark as dirty to preserve/sync it up.
+  // If rawData is null/undefined (new device), mark as clean to allow cloud sync down.
+  const hasData = rawData !== null && rawData !== undefined;
+
   return {
-    data: rawData !== null && rawData !== undefined ? rawData : defaultVal,
+    data: hasData ? rawData : defaultVal,
     updatedAt: 0,
-    _isDirty: true
+    _isDirty: hasData // Only dirty if explicit local data exists
   };
 };
 
@@ -341,6 +347,7 @@ export const storageService = {
               cloudWrapper = { data: cloudRaw || defaultVal, updatedAt: 0, _isDirty: false };
           }
 
+          // FIX logic: Allow update if local is NOT dirty OR cloud is newer
           if (cloudWrapper.updatedAt > currentWrapper.updatedAt && !currentWrapper._isDirty) {
              safeLocalStorageSet(key, JSON.stringify(cloudWrapper));
              return { val: cloudWrapper.data, updated: true };
