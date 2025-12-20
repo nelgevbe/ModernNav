@@ -140,9 +140,25 @@ const ensureAccessToken = async (): Promise<string | null> => {
 
     if (storedToken && storedExpiry) {
       const expiryTime = parseInt(storedExpiry, 10);
+      const currentTime = new Date().getTime();
+      const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
+
       // Check if the token is still valid (not expired)
-      if (expiryTime > new Date().getTime()) {
+      if (expiryTime > currentTime) {
         _accessToken = storedToken;
+
+        // If token will expire in less than 5 minutes, refresh it proactively
+        if (expiryTime - currentTime < fiveMinutes) {
+          if (_isRefreshing) {
+            return new Promise((resolve) => _refreshSubscribers.push(resolve));
+          }
+          _isRefreshing = true;
+          tryRefreshToken().then((newToken) => {
+            _isRefreshing = false;
+            onRefreshed(newToken || "");
+          });
+        }
+
         return _accessToken;
       } else {
         // Token expired, clear it
@@ -396,6 +412,11 @@ export const storageService = {
       if (!res.ok) {
         if (res.status === 401) {
           _accessToken = null;
+          // Clear stored tokens on 401 error
+          if (typeof window !== "undefined") {
+            localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
+            localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
+          }
         }
         throw new Error(`Sync error ${res.status}`);
       }
