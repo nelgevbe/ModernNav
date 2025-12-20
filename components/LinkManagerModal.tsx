@@ -99,8 +99,15 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
   const [draggedCategoryIndex, setDraggedCategoryIndex] = useState<number | null>(null);
   const [dragOverCategoryIndex, setDragOverCategoryIndex] = useState<number | null>(null);
   
-  const [draggedLink, setDraggedLink] = useState<{ subId: string, index: number } | null>(null);
+  // Updated: Track source category ID to allow cross-category dragging
+  const [draggedLink, setDraggedLink] = useState<{ categoryId: string, subId: string, index: number } | null>(null);
   const [dragOverLink, setDragOverLink] = useState<{ subId: string, index: number } | null>(null);
+  
+  // Highlighting the whole submenu container when dragging a link over it (for dropping into empty folders)
+  const [dragOverSubMenuId, setDragOverSubMenuId] = useState<string | null>(null);
+
+  // Ref for handling auto-switch delay
+  const hoverSwitchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Computed State
   const isAnyEditing = editingCategoryId !== null || editingSubMenuId !== null || targetSubMenuId !== null || editingLinkId !== null || isAddingSubMenu;
@@ -235,6 +242,11 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
     setDragOverCategoryIndex(null);
     setDraggedLink(null);
     setDragOverLink(null);
+    setDragOverSubMenuId(null);
+    if (hoverSwitchTimeoutRef.current) {
+        clearTimeout(hoverSwitchTimeoutRef.current);
+        hoverSwitchTimeoutRef.current = null;
+    }
   };
 
   const handleDragStartCategory = (e: React.DragEvent, index: number) => {
@@ -243,29 +255,96 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragEnterCategory = (index: number) => {
+  const handleDragOverCategory = (e: React.DragEvent, index: number, catId: string) => {
+    e.preventDefault(); // Essential to allow drop
+    e.dataTransfer.dropEffect = 'move';
+
+    // 1. Handling Category Reordering
     if (draggedCategoryIndex !== null && draggedCategoryIndex !== index) {
       setDragOverCategoryIndex(index);
     }
+
+    // 2. Handling Link Drag (Switch View Logic)
+    if (draggedLink) {
+        // If hovering over a different category than selected, highlight it
+        if (selectedCategoryId !== catId) {
+             setDragOverCategoryIndex(index);
+             
+             // Schedule auto-switch if not already scheduled
+             if (!hoverSwitchTimeoutRef.current) {
+                 hoverSwitchTimeoutRef.current = setTimeout(() => {
+                     setSelectedCategoryId(catId);
+                     // Clear highlight after switch implies we are now "in" this category
+                     setDragOverCategoryIndex(null); 
+                     hoverSwitchTimeoutRef.current = null;
+                 }, 600); // 600ms delay to switch view
+             }
+        } else {
+            // If we moved back to current category, clear timeout
+             if (hoverSwitchTimeoutRef.current) {
+                clearTimeout(hoverSwitchTimeoutRef.current);
+                hoverSwitchTimeoutRef.current = null;
+            }
+            setDragOverCategoryIndex(null);
+        }
+    }
+  };
+  
+  const handleDragLeaveCategory = () => {
+      // If leaving the sidebar item, clear the switch timer
+      if (hoverSwitchTimeoutRef.current) {
+          clearTimeout(hoverSwitchTimeoutRef.current);
+          hoverSwitchTimeoutRef.current = null;
+      }
+      setDragOverCategoryIndex(null);
   };
 
-  const handleDropCategory = (e: React.DragEvent, targetIndex: number) => {
+  const handleDropCategory = (e: React.DragEvent, targetIndex: number, targetCatId: string) => {
     e.preventDefault();
-    if (draggedCategoryIndex === null || draggedCategoryIndex === targetIndex) {
-      resetDragState();
-      return;
+    
+    // Case A: Reordering Categories
+    if (draggedCategoryIndex !== null) {
+        if (draggedCategoryIndex === targetIndex) { resetDragState(); return; }
+        const updated = [...categories];
+        const [moved] = updated.splice(draggedCategoryIndex, 1);
+        updated.splice(targetIndex, 0, moved);
+        syncCategories(updated);
+        resetDragState();
+        return;
     }
-    const updated = [...categories];
-    const [moved] = updated.splice(draggedCategoryIndex, 1);
-    updated.splice(targetIndex, 0, moved);
-    syncCategories(updated);
-    resetDragState();
+
+    // Case B: Dropping a Link onto a Sidebar Category (Moves to first submenu of target category)
+    if (draggedLink) {
+        const sourceCatId = draggedLink.categoryId;
+        // Optimization: If dropping on same category source, ignore (user should use main view to reorder)
+        // Unless we want to allow "Move to Default" even within same category? Let's allow cross-cat only for simplicity or standard move.
+        // Actually, users might expect it to go to default folder if they drop on sidebar.
+        
+        const newCategories = JSON.parse(JSON.stringify(categories)) as Category[];
+        
+        // 1. Remove from Source
+        const sourceCat = newCategories.find(c => c.id === sourceCatId);
+        const sourceSub = sourceCat?.subCategories.find(s => s.id === draggedLink.subId);
+        if (!sourceCat || !sourceSub) { resetDragState(); return; }
+        const [movedItem] = sourceSub.items.splice(draggedLink.index, 1);
+        
+        // 2. Add to Target (First SubMenu)
+        const targetCat = newCategories.find(c => c.id === targetCatId);
+        if (targetCat && targetCat.subCategories.length > 0) {
+            targetCat.subCategories[0].items.push(movedItem);
+            syncCategories(newCategories);
+            setSelectedCategoryId(targetCatId); // Ensure we switch to it to show the result
+        }
+        
+        resetDragState();
+    }
   };
 
   const handleDragStartLink = (e: React.DragEvent, subId: string, index: number) => {
     e.stopPropagation(); 
     if (isAnyEditing) { e.preventDefault(); return; }
-    setDraggedLink({ subId, index });
+    // Store categoryId to allow cross-category movement tracking
+    setDraggedLink({ categoryId: selectedCategoryId, subId, index });
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -275,26 +354,94 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
     }
   };
 
+  // Called when dragging a link over a SubMenu container (Header or empty space)
+  const handleDragOverSubMenu = (e: React.DragEvent, subId: string) => {
+    if (!draggedLink) return; // Only allow links
+    e.preventDefault(); // Allow drop
+    if (dragOverSubMenuId !== subId && draggedLink.subId !== subId) {
+       setDragOverSubMenuId(subId);
+    }
+  };
+
+  // Handle dropping a link onto the SubMenu container (appends to end)
+  const handleDropLinkToSubMenu = (e: React.DragEvent, targetSubId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedLink) { resetDragState(); return; }
+    
+    // If dropping into same folder but not on a specific item, effectively no-op (or move to end)
+    if (draggedLink.categoryId === selectedCategoryId && draggedLink.subId === targetSubId) { 
+        // Optional: Move to end if dropped on header? For now, reset.
+        resetDragState(); 
+        return; 
+    }
+
+    const newCategories = JSON.parse(JSON.stringify(categories)) as Category[];
+    
+    // 1. Remove from Source (Source Category might be different from Selected)
+    const sourceCatIndex = newCategories.findIndex(c => c.id === draggedLink.categoryId);
+    if (sourceCatIndex === -1) { resetDragState(); return; }
+    
+    const sourceSubIndex = newCategories[sourceCatIndex].subCategories.findIndex(s => s.id === draggedLink.subId);
+    if (sourceSubIndex === -1) { resetDragState(); return; }
+    
+    const [movedItem] = newCategories[sourceCatIndex].subCategories[sourceSubIndex].items.splice(draggedLink.index, 1);
+    
+    // 2. Add to Target (Current Selected Category -> Target Sub ID)
+    const targetCatIndex = newCategories.findIndex(c => c.id === selectedCategoryId);
+    if (targetCatIndex === -1) { resetDragState(); return; } // Should not happen
+    
+    const targetSubIndex = newCategories[targetCatIndex].subCategories.findIndex(s => s.id === targetSubId);
+    if (targetSubIndex === -1) { resetDragState(); return; }
+
+    newCategories[targetCatIndex].subCategories[targetSubIndex].items.push(movedItem);
+
+    syncCategories(newCategories);
+
+    // Expand target folder if collapsed so user sees the dropped item
+    if (collapsedSubMenus.has(targetSubId)) {
+        const newCollapsed = new Set(collapsedSubMenus);
+        newCollapsed.delete(targetSubId);
+        setCollapsedSubMenus(newCollapsed);
+    }
+
+    resetDragState();
+  };
+
   const handleDropLink = (e: React.DragEvent, targetSubId: string, targetIndex: number) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!draggedLink) { resetDragState(); return; }
-    if (draggedLink.subId === targetSubId && draggedLink.index === targetIndex) { resetDragState(); return; }
+    
+    // Optimization: if dropping on exact same spot
+    if (draggedLink.categoryId === selectedCategoryId && draggedLink.subId === targetSubId && draggedLink.index === targetIndex) { 
+        resetDragState(); 
+        return; 
+    }
 
     const newCategories = JSON.parse(JSON.stringify(categories)) as Category[];
-    const catIndex = newCategories.findIndex(c => c.id === selectedCategoryId);
-    if (catIndex === -1) { resetDragState(); return; }
 
-    const sourceSubIndex = newCategories[catIndex].subCategories.findIndex(s => s.id === draggedLink.subId);
-    const targetSubIndex = newCategories[catIndex].subCategories.findIndex(s => s.id === targetSubId);
+    // 1. Remove from Source
+    const sourceCatIndex = newCategories.findIndex(c => c.id === draggedLink.categoryId);
+    if (sourceCatIndex === -1) { resetDragState(); return; }
 
-    if (sourceSubIndex === -1 || targetSubIndex === -1) { resetDragState(); return; }
+    const sourceSubIndex = newCategories[sourceCatIndex].subCategories.findIndex(s => s.id === draggedLink.subId);
+    if (sourceSubIndex === -1) { resetDragState(); return; }
 
-    const [movedItem] = newCategories[catIndex].subCategories[sourceSubIndex].items.splice(draggedLink.index, 1);
-    newCategories[catIndex].subCategories[targetSubIndex].items.splice(targetIndex, 0, movedItem);
+    const [movedItem] = newCategories[sourceCatIndex].subCategories[sourceSubIndex].items.splice(draggedLink.index, 1);
 
-    syncCategories(newCategories);
+    // 2. Add to Target (Current Selected Category)
+    const targetCatIndex = newCategories.findIndex(c => c.id === selectedCategoryId);
+    // Find target SubCategory index
+    const targetSubIndex = newCategories[targetCatIndex].subCategories.findIndex(s => s.id === targetSubId);
+    
+    if (targetSubIndex !== -1) {
+        newCategories[targetCatIndex].subCategories[targetSubIndex].items.splice(targetIndex, 0, movedItem);
+        syncCategories(newCategories);
+    }
+    
     resetDragState();
   };
 
@@ -695,11 +842,11 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
                           onClick={() => setSelectedCategoryId(cat.id)} 
                           draggable={!isAnyEditing}
                           onDragStart={(e) => handleDragStartCategory(e, index)}
-                          onDragEnter={() => handleDragEnterCategory(index)}
-                          onDragOver={(e) => e.preventDefault()}
+                          onDragOver={(e) => handleDragOverCategory(e, index, cat.id)}
+                          onDragLeave={handleDragLeaveCategory}
                           onDragEnd={resetDragState}
-                          onDrop={(e) => handleDropCategory(e, index)}
-                          className={`group flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-all border ${selectedCategoryId === cat.id ? 'bg-[var(--theme-primary)]/10 border-[var(--theme-primary)]/30 text-white' : 'text-slate-400 border-transparent hover:bg-white/[0.03] hover:text-white'} ${draggedCategoryIndex === index ? 'opacity-40 border-dashed border-white/20' : ''} ${dragOverCategoryIndex === index && draggedCategoryIndex !== index ? 'bg-[var(--theme-primary)]/20 border-[var(--theme-primary)]' : ''}`}
+                          onDrop={(e) => handleDropCategory(e, index, cat.id)}
+                          className={`group flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-all border ${selectedCategoryId === cat.id ? 'bg-[var(--theme-primary)]/10 border-[var(--theme-primary)] text-[var(--theme-primary)]' : 'text-slate-400 border-transparent hover:bg-white/[0.03] hover:[var(--theme-primary)]'} ${draggedCategoryIndex === index ? selectedCategoryId === cat.id ? 'opacity-40 border-dashed border-[var(--theme-primary)]' : "opacity-40 border-dashed border-white/20" : ''} ${dragOverCategoryIndex === index && draggedCategoryIndex !== index ? 'bg-[var(--theme-primary)]/20 border-[var(--theme-primary)]' : ''}`}
                         >
                           <div className="flex items-center gap-2 overflow-hidden flex-1">
                             <GripVertical size={14} className={`shrink-0 ${isAnyEditing ? 'text-slate-800 cursor-not-allowed' : 'text-slate-700 group-hover:text-slate-500 cursor-grab active:cursor-grabbing'}`} />
@@ -760,7 +907,16 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
                             const isCollapsed = collapsedSubMenus.has(sub.id);
                             
                             return (
-                              <div key={sub.id} className="bg-slate-800/40 border border-white/[0.08] rounded-xl overflow-hidden shadow-sm transition-all duration-300">
+                              <div 
+                                key={sub.id} 
+                                className={`
+                                  bg-slate-800/40 border rounded-xl overflow-hidden shadow-sm transition-all duration-300
+                                  ${dragOverSubMenuId === sub.id ? 'border-[var(--theme-primary)] ring-1 ring-[var(--theme-primary)] bg-[var(--theme-primary)]/5' : 'border-white/[0.08]'}
+                                `}
+                                onDragOver={(e) => handleDragOverSubMenu(e, sub.id)}
+                                onDragLeave={() => setDragOverSubMenuId(null)}
+                                onDrop={(e) => handleDropLinkToSubMenu(e, sub.id)}
+                              >
                                 <div 
                                   className="flex items-center justify-between p-4 border-b border-white/[0.08] bg-white/[0.02] cursor-pointer hover:bg-white/[0.04] transition-colors group/header"
                                   onClick={() => toggleSubMenu(sub.id)}
@@ -788,37 +944,76 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
                                 {!isCollapsed && (
                                   <div className="animate-fade-in origin-top">
                                     {targetSubMenuId === sub.id && renderLinkForm()}
-                                    <div className="p-2 space-y-1">
+                                    <div className="p-3">
                                       {filteredItems.length === 0 ? (
                                         <div className="p-6 text-center text-slate-600 text-xs italic tracking-wider">{searchQuery ? t('no_links_search') : t('no_links')}</div>
                                       ) : (
-                                        filteredItems.map((item, index) => (
-                                          <div 
-                                            key={item.id} 
-                                            draggable={!isAnyEditing}
-                                            onDragStart={(e) => handleDragStartLink(e, sub.id, index)}
-                                            onDragEnter={() => handleDragEnterLink(sub.id, index)}
-                                            onDragOver={(e) => e.preventDefault()}
-                                            onDragEnd={resetDragState}
-                                            onDrop={(e) => handleDropLink(e, sub.id, index)}
-                                            className={`group flex items-center justify-between p-2 rounded-lg hover:bg-white/[0.04] transition-all border border-transparent hover:border-white/[0.04] ${draggedLink?.subId === sub.id && draggedLink?.index === index ? 'opacity-40 border-dashed border-white/20' : ''} ${dragOverLink?.subId === sub.id && dragOverLink?.index === index && draggedLink?.index !== index ? 'ring-2 ring-[var(--theme-primary)] bg-[var(--theme-primary)]/10 scale-[1.02]' : ''}`}
-                                          >
-                                            <div className="flex items-center gap-3 overflow-hidden">
-                                              <GripVertical size={14} className={`shrink-0 ${isAnyEditing ? 'text-slate-800 cursor-not-allowed' : 'text-slate-700 group-hover:text-slate-500 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity'}`} />
-                                              <div className="w-8 h-8 rounded-lg bg-slate-900/50 flex items-center justify-center shrink-0 border border-white/[0.08] group-hover:border-[var(--theme-primary)]/30 transition-colors">
-                                                {renderIcon(item.icon)}
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                          {filteredItems.map((item, index) => (
+                                            <div 
+                                              key={item.id} 
+                                              draggable={!isAnyEditing}
+                                              onDragStart={(e) => handleDragStartLink(e, sub.id, index)}
+                                              onDragEnter={() => handleDragEnterLink(sub.id, index)}
+                                              onDragOver={(e) => e.preventDefault()}
+                                              onDragEnd={resetDragState}
+                                              onDrop={(e) => handleDropLink(e, sub.id, index)}
+                                              className={`
+                                                group relative flex flex-col items-center justify-center p-3 rounded-xl transition-all border
+                                                aspect-[4/3]
+                                                ${draggedLink?.subId === sub.id && draggedLink?.index === index 
+                                                  ? 'opacity-40 border-dashed border-white/20' 
+                                                  : 'bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.06] hover:border-white/10'
+                                                }
+                                                ${dragOverLink?.subId === sub.id && dragOverLink?.index === index && draggedLink?.index !== index 
+                                                  ? 'ring-2 ring-[var(--theme-primary)] bg-[var(--theme-primary)]/10 z-10 scale-105' 
+                                                  : ''
+                                                }
+                                              `}
+                                            >
+                                              {/* Actions Overlay (Top Right) */}
+                                              <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                                  <button 
+                                                      onClick={(e) => { e.stopPropagation(); openEditLink(sub.id, item); }} 
+                                                      className="p-1.5 text-slate-400 hover:text-white bg-black/50 hover:bg-[var(--theme-primary)] rounded-md backdrop-blur-sm transition-colors"
+                                                      title="Edit"
+                                                  >
+                                                      <Pencil size={12} />
+                                                  </button>
+                                                  <button 
+                                                      onClick={(e) => { e.stopPropagation(); handleDeleteLink(sub.id, item.id); }} 
+                                                      className="p-1.5 text-slate-400 hover:text-red-400 bg-black/50 hover:bg-red-500/20 rounded-md backdrop-blur-sm transition-colors"
+                                                      title="Delete"
+                                                  >
+                                                      <Trash2 size={12} />
+                                                  </button>
                                               </div>
-                                              <div className="min-w-0">
-                                                <div className="text-sm font-semibold text-slate-200 truncate group-hover:text-white">{item.title}</div>
-                                                <div className="text-[10px] text-slate-500 truncate font-mono opacity-60">{item.url}</div>
+
+                                              {/* Drag Handle (Top Left) */}
+                                              <div className={`absolute top-2 left-2 text-slate-600 group-hover:text-slate-400 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity ${isAnyEditing ? 'hidden' : ''}`}>
+                                                   <GripVertical size={14} />
+                                              </div>
+
+                                              {/* Icon */}
+                                              <div className="mb-2 w-8 h-8 flex items-center justify-center text-slate-300">
+                                                   {renderIcon(item.icon, 24)}
+                                              </div>
+
+                                              {/* Title */}
+                                              <div className="w-full text-center px-1">
+                                                   <div className="text-xs font-medium text-slate-200 truncate">{item.title}</div>
+                                                   {/* Simplified host display */}
+                                                   <div className="text-[10px] text-slate-500 truncate opacity-60 mt-0.5">
+                                                     {item.url ? (() => {
+                                                        try {
+                                                          return new URL(item.url.startsWith('http') ? item.url : `https://${item.url}`).hostname.replace('www.', '');
+                                                        } catch { return ''; }
+                                                      })() : ''}
+                                                   </div>
                                               </div>
                                             </div>
-                                            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity translate-x-1 group-hover:translate-x-0">
-                                              <button onClick={() => openEditLink(sub.id, item)} className="p-2 text-slate-500 hover:text-[var(--theme-light)] transition-colors"><Pencil size={13} /></button>
-                                              <button onClick={() => handleDeleteLink(sub.id, item.id)} className="p-2 text-slate-500 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
-                                            </div>
-                                          </div>
-                                        ))
+                                          ))}
+                                        </div>
                                       )}
                                     </div>
                                   </div>
