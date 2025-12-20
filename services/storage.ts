@@ -1,10 +1,16 @@
 import { Category, ThemeMode } from "../types";
 import { INITIAL_CATEGORIES } from "../constants";
 
-// --- AUTH STATE (In-Memory) ---
+// --- AUTH STATE (In-Memory + Persistent) ---
 let _accessToken: string | null = null;
 let _isRefreshing = false;
 let _refreshSubscribers: ((token: string) => void)[] = [];
+
+// Persistent storage keys
+const AUTH_KEYS = {
+  ACCESS_TOKEN: "modernNav_token",
+  TOKEN_EXPIRY: "modernNav_tokenExpiry",
+};
 
 // --- EVENT LISTENERS ---
 type NotifyType = "success" | "error" | "info";
@@ -100,9 +106,22 @@ const tryRefreshToken = async (): Promise<string | null> => {
     if (res.ok) {
       const data = await res.json();
       _accessToken = data.accessToken;
+
+      // Store token and expiry in localStorage
+      if (typeof window !== "undefined") {
+        const expiryTime = new Date().getTime() + 60 * 60 * 1000; // 1 hour from now
+        localStorage.setItem(AUTH_KEYS.ACCESS_TOKEN, data.accessToken);
+        localStorage.setItem(AUTH_KEYS.TOKEN_EXPIRY, expiryTime.toString());
+      }
+
       return data.accessToken;
     } else {
       _accessToken = null;
+      // Clear stored tokens on refresh failure
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
+        localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
+      }
       return null;
     }
   } catch (e) {
@@ -111,7 +130,29 @@ const tryRefreshToken = async (): Promise<string | null> => {
 };
 
 const ensureAccessToken = async (): Promise<string | null> => {
+  // First check if we already have a token in memory
   if (_accessToken) return _accessToken;
+
+  // If not, try to get it from localStorage
+  if (typeof window !== "undefined") {
+    const storedToken = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
+    const storedExpiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
+
+    if (storedToken && storedExpiry) {
+      const expiryTime = parseInt(storedExpiry, 10);
+      // Check if the token is still valid (not expired)
+      if (expiryTime > new Date().getTime()) {
+        _accessToken = storedToken;
+        return _accessToken;
+      } else {
+        // Token expired, clear it
+        localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
+        localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
+      }
+    }
+  }
+
+  // If we still don't have a valid token, try to refresh
   if (_isRefreshing) {
     return new Promise((resolve) => _refreshSubscribers.push(resolve));
   }
@@ -152,12 +193,6 @@ export const storageService = {
 
   // --- AUTH ---
   login: async (code: string): Promise<boolean> => {
-    // 临时修改：开发环境下直接返回true，跳过认证
-    if (import.meta.env.DEV) {
-      console.log("开发环境：跳过认证");
-      return true;
-    }
-
     try {
       const res = await fetch("/api/auth", {
         method: "POST",
@@ -167,6 +202,14 @@ export const storageService = {
       if (res.ok) {
         const data = await res.json();
         _accessToken = data.accessToken;
+
+        // Store token and expiry in localStorage
+        if (typeof window !== "undefined") {
+          const expiryTime = new Date().getTime() + 60 * 60 * 1000; // 1 hour from now
+          localStorage.setItem(AUTH_KEYS.ACCESS_TOKEN, data.accessToken);
+          localStorage.setItem(AUTH_KEYS.TOKEN_EXPIRY, expiryTime.toString());
+        }
+
         return true;
       }
       return false;
@@ -184,16 +227,15 @@ export const storageService = {
       });
     } finally {
       _accessToken = null;
+      // Clear stored tokens on logout
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
+        localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
+      }
     }
   },
 
   isAuthenticated: async (): Promise<boolean> => {
-    // 临时修改：开发环境下直接返回true，跳过认证
-    if (import.meta.env.DEV) {
-      console.log("开发环境：跳过认证");
-      return true;
-    }
-
     const token = await ensureAccessToken();
     return !!token;
   },
