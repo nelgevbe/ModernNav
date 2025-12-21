@@ -8,6 +8,7 @@ let _refreshSubscribers: ((token: string) => void)[] = [];
 const AUTH_KEYS = {
   ACCESS_TOKEN: "modernNav_token",
   TOKEN_EXPIRY: "modernNav_tokenExpiry",
+  USER_LOGGED_OUT: "modernNav_userLoggedOut",
 };
 
 // --- EVENT LISTENERS ---
@@ -106,6 +107,8 @@ const tryRefreshToken = async (): Promise<string | null> => {
       _accessToken = null;
       localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
       localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
+      // 刷新令牌失败，也清除登出标记
+      localStorage.removeItem(AUTH_KEYS.USER_LOGGED_OUT);
     }
     return null;
   } catch (e) {
@@ -127,13 +130,26 @@ const ensureAccessToken = async (): Promise<string | null> => {
       return _accessToken;
     }
   }
-  if (_isRefreshing)
-    return new Promise((resolve) => _refreshSubscribers.push(resolve));
-  _isRefreshing = true;
-  const newToken = await tryRefreshToken();
-  _isRefreshing = false;
-  onRefreshed(newToken || "");
-  return newToken;
+  // 只有在本地存储中有令牌信息时才尝试刷新令牌
+  // 这可以防止在无痕模式下自动登录
+  if (typeof window !== "undefined") {
+    const storedToken = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
+    const storedExpiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
+
+    // 只有在本地存储中有令牌信息时才尝试刷新令牌
+    if (storedToken && storedExpiry) {
+      if (_isRefreshing)
+        return new Promise((resolve) => _refreshSubscribers.push(resolve));
+      _isRefreshing = true;
+      const newToken = await tryRefreshToken();
+      _isRefreshing = false;
+      onRefreshed(newToken || "");
+      return newToken;
+    }
+  }
+
+  // 没有本地令牌信息，不尝试刷新
+  return null;
 };
 
 // --- STORAGE SERVICE ---
@@ -141,14 +157,36 @@ const ensureAccessToken = async (): Promise<string | null> => {
 export const storageService = {
   init: () => {
     if (typeof window !== "undefined") {
+      // 检查用户是否已主动登出
+      const userLoggedOut = localStorage.getItem(AUTH_KEYS.USER_LOGGED_OUT);
+      if (userLoggedOut === "true") {
+        // 用户已主动登出，不尝试自动刷新令牌
+        return;
+      }
+
       const storedToken = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
       const storedExpiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
-      if (
-        !storedToken ||
-        !storedExpiry ||
-        parseInt(storedExpiry, 10) <= new Date().getTime()
-      ) {
-        tryRefreshToken();
+
+      // 只有在本地存储中有令牌信息时才尝试刷新令牌
+      // 这可以防止在无痕模式下自动登录
+      if (storedToken && storedExpiry) {
+        if (parseInt(storedExpiry, 10) <= new Date().getTime()) {
+          tryRefreshToken();
+        }
+      }
+
+      // 设置在线状态监听
+      storageService._setupOnlineListener();
+
+      // 检查是否有待同步的数据
+      if (storageService.checkGlobalDirtyState()) {
+        storageService._pendingSync = true;
+        storageService.notify("info", "You have unsynced changes. Syncing...");
+
+        // 如果在线，立即尝试同步
+        if (storageService._isOnline) {
+          storageService.syncPendingChanges();
+        }
       }
     }
   },
@@ -171,7 +209,47 @@ export const storageService = {
   notifySyncStatus: (isSyncing: boolean) => {
     _syncStatusListeners.forEach((l) => l(isSyncing));
   },
-  checkGlobalDirtyState: () => {},
+  checkGlobalDirtyState: () => {
+    // 检查本地数据是否与云端同步
+    const localCategories = safeJsonParse(
+      localStorage.getItem(LS_KEYS.CATEGORIES),
+      null
+    );
+    const localBackground = localStorage.getItem(LS_KEYS.BACKGROUND);
+    const localPrefs = safeJsonParse(localStorage.getItem(LS_KEYS.PREFS), null);
+
+    // 如果本地有数据但未同步到云端，返回true
+    return (
+      (localCategories || localBackground || localPrefs) &&
+      !storageService._isSynced
+    );
+  },
+
+  _isSynced: false, // 标记本地数据是否已同步到云端
+  _isOnline: navigator.onLine, // 跟踪在线状态
+  _pendingSync: false, // 标记是否有待同步的数据
+
+  // 设置在线状态监听
+  _setupOnlineListener: () => {
+    if (typeof window !== "undefined") {
+      const updateOnlineStatus = () => {
+        const wasOffline = !storageService._isOnline;
+        storageService._isOnline = navigator.onLine;
+
+        // 如果从离线变为在线，尝试同步待处理的数据
+        if (
+          wasOffline &&
+          storageService._isOnline &&
+          storageService._pendingSync
+        ) {
+          storageService.syncPendingChanges();
+        }
+      };
+
+      window.addEventListener("online", updateOnlineStatus);
+      window.addEventListener("offline", updateOnlineStatus);
+    }
+  },
 
   login: async (code: string): Promise<boolean> => {
     try {
@@ -186,6 +264,8 @@ export const storageService = {
         const expiryTime = new Date().getTime() + 24 * 60 * 60 * 1000;
         localStorage.setItem(AUTH_KEYS.ACCESS_TOKEN, data.accessToken);
         localStorage.setItem(AUTH_KEYS.TOKEN_EXPIRY, expiryTime.toString());
+        // 清除登出标记
+        localStorage.removeItem(AUTH_KEYS.USER_LOGGED_OUT);
         return true;
       }
       return false;
@@ -206,6 +286,8 @@ export const storageService = {
       if (typeof window !== "undefined") {
         localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
         localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
+        // 添加一个标记，表示用户已主动登出
+        localStorage.setItem(AUTH_KEYS.USER_LOGGED_OUT, "true");
       }
     }
   },
@@ -294,13 +376,25 @@ export const storageService = {
     };
   },
 
-  _saveItem: async (key: string, data: any, type: string) => {
+  _saveItem: async (key: string, data: any, type: string, force = false) => {
     safeLocalStorageSet(key, data);
     const token = await ensureAccessToken();
-    if (!token) return;
+    if (!token) {
+      storageService._isSynced = false;
+      storageService._pendingSync = true;
+      return;
+    }
 
+    // 如果不强制同步且离线，标记为待同步
+    if (!force && !storageService._isOnline) {
+      storageService._isSynced = false;
+      storageService._pendingSync = true;
+      return;
+    }
+
+    // 防抖逻辑（除非强制同步）
     const now = Date.now();
-    if (now - storageService._lastSaveTime < 1000) return;
+    if (!force && now - storageService._lastSaveTime < 1000) return;
     storageService._lastSaveTime = now;
 
     storageService.notifySyncStatus(true);
@@ -313,13 +407,27 @@ export const storageService = {
         },
         body: JSON.stringify({ type, data }),
       });
-      if (!res.ok && res.status === 401) {
+
+      if (res.ok) {
+        storageService._isSynced = true;
+        storageService._pendingSync = false;
+      } else if (res.status === 401) {
         _accessToken = null;
         localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
         localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
+        storageService._isSynced = false;
+        storageService._pendingSync = true;
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Update failed");
       }
     } catch (e) {
-      storageService.notify("error", `Cloud sync failed. Saved locally.`);
+      storageService._isSynced = false;
+      storageService._pendingSync = true;
+      storageService.notify(
+        "error",
+        `Cloud sync failed: ${e.message || "Unknown error"}. Saved locally.`
+      );
     } finally {
       storageService.notifySyncStatus(false);
     }
@@ -331,7 +439,100 @@ export const storageService = {
     storageService._saveItem(LS_KEYS.BACKGROUND, url, "background"),
   savePreferences: async (prefs: UserPreferences) =>
     storageService._saveItem(LS_KEYS.PREFS, prefs, "prefs"),
-  syncPendingChanges: async () => {},
+  syncPendingChanges: async (force = false) => {
+    if (!storageService._isOnline && !force) {
+      storageService._pendingSync = true;
+      storageService.notify(
+        "info",
+        "You are offline. Changes will be synced when you are back online."
+      );
+      return;
+    }
+
+    const token = await ensureAccessToken();
+    if (!token) {
+      storageService.notify("error", "Authentication required to sync data");
+      return;
+    }
+
+    try {
+      storageService.notifySyncStatus(true);
+
+      // 获取云端数据
+      const res = await fetch("/api/bootstrap");
+      if (!res.ok) throw new Error("Failed to fetch cloud data");
+      const cloudData = await res.json();
+
+      // 获取本地数据
+      const localCategories = safeJsonParse(
+        localStorage.getItem(LS_KEYS.CATEGORIES),
+        null
+      );
+      const localBackground = localStorage.getItem(LS_KEYS.BACKGROUND);
+      const localPrefs = safeJsonParse(
+        localStorage.getItem(LS_KEYS.PREFS),
+        null
+      );
+
+      // 比较数据并处理冲突
+      const categoriesChanged =
+        JSON.stringify(localCategories) !==
+        JSON.stringify(cloudData.categories);
+      const backgroundChanged = localBackground !== cloudData.background;
+      const prefsChanged =
+        JSON.stringify(localPrefs) !== JSON.stringify(cloudData.prefs);
+
+      // 如果有本地更改，推送到云端
+      if (categoriesChanged && localCategories) {
+        await storageService._saveItem(
+          LS_KEYS.CATEGORIES,
+          localCategories,
+          "categories",
+          true
+        );
+      }
+
+      if (backgroundChanged && localBackground) {
+        await storageService._saveItem(
+          LS_KEYS.BACKGROUND,
+          localBackground,
+          "background",
+          true
+        );
+      }
+
+      if (prefsChanged && localPrefs) {
+        await storageService._saveItem(
+          LS_KEYS.PREFS,
+          localPrefs,
+          "prefs",
+          true
+        );
+      }
+
+      // 如果没有本地更改，从云端拉取
+      if (!categoriesChanged && !backgroundChanged && !prefsChanged) {
+        safeLocalStorageSet(LS_KEYS.CATEGORIES, cloudData.categories);
+        safeLocalStorageSet(LS_KEYS.BACKGROUND, cloudData.background);
+        safeLocalStorageSet(LS_KEYS.PREFS, cloudData.prefs);
+
+        // 通知前端数据已更新
+        storageService.notify("info", "Data synced from cloud");
+      }
+
+      storageService._isSynced = true;
+      storageService._pendingSync = false;
+    } catch (error) {
+      console.error("Sync failed:", error);
+      storageService._pendingSync = true;
+      storageService.notify(
+        "error",
+        "Sync failed. Your changes are saved locally and will be synced later."
+      );
+    } finally {
+      storageService.notifySyncStatus(false);
+    }
+  },
 
   exportData: () => {
     const backup: BackupData = {
