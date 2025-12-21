@@ -1,22 +1,33 @@
 import { Category, ThemeMode } from "../types";
 import { INITIAL_CATEGORIES } from "../constants";
 
-// --- 状态管理 ---
+// --- AUTH STATE ---
 let _accessToken: string | null = null;
 let _isRefreshing = false;
 let _refreshSubscribers: ((token: string) => void)[] = [];
-let _saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-
 const AUTH_KEYS = {
   ACCESS_TOKEN: "modernNav_token",
   TOKEN_EXPIRY: "modernNav_tokenExpiry",
 };
 
+// --- EVENT LISTENERS ---
+type NotifyType = "success" | "error" | "info";
+type NotifyListener = (type: NotifyType, message: string) => void;
+let _notifyListeners: NotifyListener[] = [];
+
+type SyncStatusListener = (isSyncing: boolean) => void;
+let _syncStatusListeners: SyncStatusListener[] = [];
+
+// --- CONSTANTS ---
 const LS_KEYS = {
   CATEGORIES: "modernNav_categories",
   BACKGROUND: "modernNav_bg",
   PREFS: "modernNav_prefs",
 };
+
+export const DEFAULT_BACKGROUND =
+  "radial-gradient(circle at 50% -20%, #334155, #0f172a, #020617)";
+const CURRENT_BACKUP_VERSION = 1;
 
 export interface UserPreferences {
   cardOpacity: number;
@@ -24,215 +35,344 @@ export interface UserPreferences {
   themeMode: ThemeMode;
 }
 
-// --- 事件系统 (用于 UI 反馈) ---
-type NotifyType = "success" | "error" | "info";
-type NotifyListener = (type: NotifyType, message: string) => void;
-type SyncStatusListener = (isSyncing: boolean) => void;
+const DEFAULT_PREFS: UserPreferences = {
+  cardOpacity: 0.1,
+  themeColor: "#6366f1",
+  themeMode: ThemeMode.Dark,
+};
 
-let _notifyListeners: NotifyListener[] = [];
-let _syncStatusListeners: SyncStatusListener[] = [];
+// Backup Data Structure
+interface BackupData {
+  version: number;
+  timestamp: number;
+  categories: Category[];
+  background?: string;
+  prefs?: UserPreferences;
+}
 
-// --- 辅助工具 ---
+// --- HELPERS ---
+
 const safeJsonParse = <T>(jsonString: string | null, fallback: T): T => {
   if (!jsonString) return fallback;
   try {
-    return JSON.parse(jsonString);
-  } catch {
+    const parsed = JSON.parse(jsonString);
+    if (parsed && typeof parsed === "object" && "data" in parsed) {
+      if (Array.isArray(fallback) && Array.isArray(parsed.data))
+        return parsed.data as T;
+      if (!Array.isArray(fallback) && typeof parsed.data === "object")
+        return parsed.data as T;
+    }
+    return parsed as T;
+  } catch (e) {
+    console.warn("JSON Parse Failed:", e);
     return fallback;
   }
 };
 
-export const storage = {
-  /**
-   * 初始化：检查 Token 是否过期，尝试静默刷新
-   */
+const safeLocalStorageSet = (key: string, value: any) => {
+  try {
+    const stringVal = typeof value === "string" ? value : JSON.stringify(value);
+    localStorage.setItem(key, stringVal);
+  } catch (e) {
+    console.warn("LS Write Failed", e);
+  }
+};
+
+// --- AUTH LOGIC ---
+
+const onRefreshed = (token: string) => {
+  _refreshSubscribers.forEach((cb) => cb(token));
+  _refreshSubscribers = [];
+};
+
+const tryRefreshToken = async (): Promise<string | null> => {
+  try {
+    const res = await fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "refresh" }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      _accessToken = data.accessToken;
+      if (typeof window !== "undefined") {
+        const expiryTime = new Date().getTime() + 24 * 60 * 60 * 1000;
+        localStorage.setItem(AUTH_KEYS.ACCESS_TOKEN, data.accessToken);
+        localStorage.setItem(AUTH_KEYS.TOKEN_EXPIRY, expiryTime.toString());
+      }
+      return data.accessToken;
+    } else if (res.status === 401 || res.status === 403) {
+      _accessToken = null;
+      localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
+      localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+};
+
+const ensureAccessToken = async (): Promise<string | null> => {
+  if (_accessToken) return _accessToken;
+  if (typeof window !== "undefined") {
+    const storedToken = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
+    const storedExpiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
+    if (
+      storedToken &&
+      storedExpiry &&
+      parseInt(storedExpiry, 10) > new Date().getTime()
+    ) {
+      _accessToken = storedToken;
+      return _accessToken;
+    }
+  }
+  if (_isRefreshing)
+    return new Promise((resolve) => _refreshSubscribers.push(resolve));
+  _isRefreshing = true;
+  const newToken = await tryRefreshToken();
+  _isRefreshing = false;
+  onRefreshed(newToken || "");
+  return newToken;
+};
+
+// --- STORAGE SERVICE ---
+
+export const storageService = {
   init: () => {
-    if (typeof window === "undefined") return;
-    const expiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
-    if (expiry && parseInt(expiry, 10) <= Date.now()) {
-      storage.tryRefreshToken();
+    if (typeof window !== "undefined") {
+      const storedToken = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
+      const storedExpiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
+      if (
+        !storedToken ||
+        !storedExpiry ||
+        parseInt(storedExpiry, 10) <= new Date().getTime()
+      ) {
+        tryRefreshToken();
+      }
     }
   },
 
-  /**
-   * 鉴权状态检查：防止管理页面白屏的关键
-   */
-  isAuthenticated: () => {
-    if (typeof window === "undefined") return false;
-    const token = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
-    const expiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
-    return !!(token && expiry && parseInt(expiry, 10) > Date.now());
+  subscribeNotifications: (listener: NotifyListener) => {
+    _notifyListeners.push(listener);
+    return () => {
+      _notifyListeners = _notifyListeners.filter((l) => l !== listener);
+    };
   },
-
-  getAccessToken: () => {
-    if (typeof window === "undefined") return _accessToken;
-    return _accessToken || localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
+  notify: (type: NotifyType, message: string) => {
+    _notifyListeners.forEach((l) => l(type, message));
   },
+  subscribeSyncStatus: (listener: SyncStatusListener) => {
+    _syncStatusListeners.push(listener);
+    return () => {
+      _syncStatusListeners = _syncStatusListeners.filter((l) => l !== listener);
+    };
+  },
+  notifySyncStatus: (isSyncing: boolean) => {
+    _syncStatusListeners.forEach((l) => l(isSyncing));
+  },
+  checkGlobalDirtyState: () => {},
 
-  /**
-   * Token 刷新机制：带请求队列，防止多次并发刷新
-   */
-  tryRefreshToken: async (): Promise<string | null> => {
-    if (_isRefreshing) {
-      return new Promise((resolve) => _refreshSubscribers.push(resolve));
-    }
-    _isRefreshing = true;
-
+  login: async (code: string): Promise<boolean> => {
     try {
       const res = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "refresh" }),
+        body: JSON.stringify({ action: "login", code }),
       });
-
       if (res.ok) {
         const data = await res.json();
         _accessToken = data.accessToken;
-        // 过期时间为 24 小时
-        const expiry = Date.now() + 24 * 60 * 60 * 1000;
+        const expiryTime = new Date().getTime() + 24 * 60 * 60 * 1000;
         localStorage.setItem(AUTH_KEYS.ACCESS_TOKEN, data.accessToken);
-        localStorage.setItem(AUTH_KEYS.TOKEN_EXPIRY, expiry.toString());
-
-        _refreshSubscribers.forEach((cb) => cb(data.accessToken));
-        return data.accessToken;
+        localStorage.setItem(AUTH_KEYS.TOKEN_EXPIRY, expiryTime.toString());
+        return true;
       }
-      storage.clearAuth();
-      return null;
-    } catch (e) {
-      return null;
+      return false;
+    } catch {
+      return false;
+    }
+  },
+
+  logout: async () => {
+    try {
+      await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "logout" }),
+      });
     } finally {
-      _isRefreshing = false;
-      _refreshSubscribers = [];
+      _accessToken = null;
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
+        localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
+      }
     }
   },
 
-  clearAuth: () => {
-    _accessToken = null;
-    localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
-    if (typeof window !== "undefined") {
-      window.location.href = "/"; // 强制清理后跳回主页
+  // 💡 保持异步接口
+  isAuthenticated: async (): Promise<boolean> => {
+    const token = await ensureAccessToken();
+    return !!token;
+  },
+
+  updateAccessCode: async (
+    currentCode: string,
+    newCode: string
+  ): Promise<boolean> => {
+    const token = await ensureAccessToken();
+    if (!token) return false;
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: "update", currentCode, newCode }),
+      });
+      return res.ok;
+    } catch {
+      return false;
     }
   },
 
-  /**
-   * 数据加载：优先 D1，失败则降级到本地缓存
-   */
+  _lastSaveTime: 0,
+
   fetchAllData: async () => {
+    let cloudData = null;
     try {
       const res = await fetch("/api/bootstrap");
-      if (!res.ok) throw new Error("Fetch failed");
-
-      const cloudData = await res.json();
-
-      // 深度补全：确保 categories 内部格式正确，防止 React map 报错
-      const categories = (cloudData.categories || []).map((cat: any) => ({
-        ...cat,
-        items: Array.isArray(cat.items) ? cat.items : [],
-      }));
-
-      localStorage.setItem(LS_KEYS.CATEGORIES, JSON.stringify(categories));
-      if (cloudData.background)
-        localStorage.setItem(LS_KEYS.BACKGROUND, cloudData.background);
-      if (cloudData.prefs)
-        localStorage.setItem(LS_KEYS.PREFS, JSON.stringify(cloudData.prefs));
-
-      return { ...cloudData, categories };
+      if (res.ok) cloudData = await res.json();
     } catch (e) {
-      console.warn("D1 Fetch Error, using local backup:", e);
-      return {
-        categories: safeJsonParse(
-          localStorage.getItem(LS_KEYS.CATEGORIES),
-          INITIAL_CATEGORIES
-        ),
-        background: localStorage.getItem(LS_KEYS.BACKGROUND),
-        prefs: safeJsonParse(localStorage.getItem(LS_KEYS.PREFS), null),
-        isDefaultCode: true,
-      };
+      console.warn("Fetch failed");
+    }
+
+    let finalCategories =
+      cloudData?.categories ||
+      safeJsonParse(
+        localStorage.getItem(LS_KEYS.CATEGORIES),
+        INITIAL_CATEGORIES
+      );
+    let finalBackground =
+      cloudData?.background ||
+      localStorage.getItem(LS_KEYS.BACKGROUND) ||
+      DEFAULT_BACKGROUND;
+    let finalPrefs =
+      cloudData?.prefs ||
+      safeJsonParse(localStorage.getItem(LS_KEYS.PREFS), DEFAULT_PREFS);
+
+    // 💡 原始代码中的背景图和 categories 防护逻辑
+    if (!Array.isArray(finalCategories)) finalCategories = INITIAL_CATEGORIES;
+    if (
+      typeof finalBackground === "string" &&
+      finalBackground.startsWith('"')
+    ) {
+      try {
+        finalBackground = JSON.parse(finalBackground);
+      } catch {}
+    }
+    if (
+      typeof finalBackground === "string" &&
+      finalBackground.startsWith("{")
+    ) {
+      const parsed = safeJsonParse<any>(finalBackground, null);
+      if (parsed && parsed.data) finalBackground = parsed.data;
+    }
+    if (typeof finalBackground !== "string")
+      finalBackground = DEFAULT_BACKGROUND;
+
+    safeLocalStorageSet(LS_KEYS.CATEGORIES, finalCategories);
+    safeLocalStorageSet(LS_KEYS.BACKGROUND, finalBackground);
+    safeLocalStorageSet(LS_KEYS.PREFS, finalPrefs);
+
+    return {
+      categories: finalCategories,
+      background: finalBackground,
+      prefs: finalPrefs,
+      isDefaultCode: !!cloudData?.isDefaultCode,
+    };
+  },
+
+  _saveItem: async (key: string, data: any, type: string) => {
+    safeLocalStorageSet(key, data);
+    const token = await ensureAccessToken();
+    if (!token) return;
+
+    const now = Date.now();
+    if (now - storageService._lastSaveTime < 1000) return;
+    storageService._lastSaveTime = now;
+
+    storageService.notifySyncStatus(true);
+    try {
+      const res = await fetch("/api/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ type, data }),
+      });
+      if (!res.ok && res.status === 401) {
+        _accessToken = null;
+        localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
+        localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
+      }
+    } catch (e) {
+      storageService.notify("error", `Cloud sync failed. Saved locally.`);
+    } finally {
+      storageService.notifySyncStatus(false);
     }
   },
 
-  /**
-   * 核心保存逻辑：带防抖、状态通知、自动刷新重试
-   */
-  _saveItem: async (key: string, data: any, type: string) => {
-    // 1. 立即更新本地，保证 UI 响应速度
-    localStorage.setItem(key, JSON.stringify(data));
+  saveCategories: async (categories: Category[]) =>
+    storageService._saveItem(LS_KEYS.CATEGORIES, categories, "categories"),
+  setBackground: async (url: string) =>
+    storageService._saveItem(LS_KEYS.BACKGROUND, url, "background"),
+  savePreferences: async (prefs: UserPreferences) =>
+    storageService._saveItem(LS_KEYS.PREFS, prefs, "prefs"),
+  syncPendingChanges: async () => {},
 
-    if (_saveDebounceTimer) clearTimeout(_saveDebounceTimer);
+  exportData: () => {
+    const backup: BackupData = {
+      version: CURRENT_BACKUP_VERSION,
+      timestamp: Date.now(),
+      categories: safeJsonParse<Category[]>(
+        localStorage.getItem(LS_KEYS.CATEGORIES),
+        INITIAL_CATEGORIES
+      ),
+      background:
+        localStorage.getItem(LS_KEYS.BACKGROUND) || DEFAULT_BACKGROUND,
+      prefs: safeJsonParse<UserPreferences>(
+        localStorage.getItem(LS_KEYS.PREFS),
+        DEFAULT_PREFS
+      ),
+    };
+    const dataUri =
+      "data:application/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(backup, null, 2));
+    const link = document.createElement("a");
+    link.href = dataUri;
+    link.download = `modern-nav-backup-${new Date()
+      .toISOString()
+      .slice(0, 10)}.json`;
+    link.click();
+  },
 
-    _saveDebounceTimer = setTimeout(async () => {
-      // 如果正在刷新 Token，将此次请求排入队列
-      if (_isRefreshing) {
-        _refreshSubscribers.push(() => storage._saveItem(key, data, type));
-        return;
-      }
-
-      const token = storage.getAccessToken();
-      if (!token) {
-        storage.notify("info", "请先登录以同步数据");
-        return;
-      }
-
-      storage.notifySyncStatus(true);
-      try {
-        const res = await fetch("/api/update", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ type, data }),
-        });
-
-        // 2. 处理 Token 过期自动重试
-        if (res.status === 401) {
-          const newToken = await storage.tryRefreshToken();
-          if (newToken) {
-            // 刷新成功，重新触发保存
-            return storage._saveItem(key, data, type);
-          } else {
-            storage.notify("error", "登录已失效，请重新登录");
-            return;
-          }
+  importData: (file: File): Promise<Partial<BackupData>> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target?.result as string);
+          resolve(Array.isArray(parsed) ? { categories: parsed } : parsed);
+        } catch {
+          reject(new Error("Invalid backup file"));
         }
-
-        if (!res.ok) throw new Error("Server sync failed");
-
-        storage.notify("success", "云端同步成功");
-      } catch (e) {
-        console.error("Sync Error:", e);
-        storage.notify("error", "同步失败，数据已暂存浏览器");
-      } finally {
-        storage.notifySyncStatus(false);
-      }
-    }, 1000); // 1秒防抖
+      };
+      reader.readAsText(file);
+    });
   },
-
-  // --- 暴露给外部的简易接口 ---
-  saveCategories: (cats: Category[]) =>
-    storage._saveItem(LS_KEYS.CATEGORIES, cats, "categories"),
-  setBackground: (url: string) =>
-    storage._saveItem(LS_KEYS.BACKGROUND, url, "background"),
-  savePreferences: (p: UserPreferences) =>
-    storage._saveItem(LS_KEYS.PREFS, p, "prefs"),
-
-  // --- UI 订阅方法 ---
-  subscribeNotifications: (l: NotifyListener) => {
-    _notifyListeners.push(l);
-    return () => {
-      _notifyListeners = _notifyListeners.filter((i) => i !== l);
-    };
-  },
-  notify: (type: NotifyType, msg: string) =>
-    _notifyListeners.forEach((l) => l(type, msg)),
-
-  subscribeSyncStatus: (l: SyncStatusListener) => {
-    _syncStatusListeners.push(l);
-    return () => {
-      _syncStatusListeners = _syncStatusListeners.filter((i) => i !== l);
-    };
-  },
-  notifySyncStatus: (status: boolean) =>
-    _syncStatusListeners.forEach((l) => l(status)),
 };
+
+storageService.init();
