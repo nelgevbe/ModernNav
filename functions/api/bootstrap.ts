@@ -1,6 +1,28 @@
 
+interface D1Result<T = unknown> {
+  results: T[];
+  success: boolean;
+  meta: any;
+  error?: string;
+}
+
+interface D1PreparedStatement {
+  bind(...values: any[]): D1PreparedStatement;
+  first<T = unknown>(colName?: string): Promise<T | null>;
+  run<T = unknown>(): Promise<D1Result<T>>;
+  all<T = unknown>(): Promise<D1Result<T>>;
+  raw<T = unknown>(): Promise<T[]>;
+}
+
+interface D1Database {
+  prepare(query: string): D1PreparedStatement;
+  dump(): Promise<ArrayBuffer>;
+  batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
+  exec(query: string): Promise<D1Result>;
+}
+
 interface Env {
-  KV_STORE: any;
+  DB: D1Database;
 }
 
 const safeParse = (str: string | null) => {
@@ -13,25 +35,46 @@ const safeParse = (str: string | null) => {
 };
 
 export const onRequestGet = async (context: any) => {
-  const { env } = context;
+  const { env } = context as { env: Env };
   
-  // Fetch all data in parallel
-  const [categories, background, prefs, authCode] = await Promise.all([
-    env.KV_STORE.get("categories"),
-    env.KV_STORE.get("background"),
-    env.KV_STORE.get("prefs"),
-    env.KV_STORE.get("auth_code")
-  ]);
+  try {
+    // Fetch all config in one query
+    const { results } = await env.DB.prepare("SELECT key, value FROM config").all();
+    
+    // Map array of rows to an object map
+    const configMap = new Map();
+    if (results) {
+      results.forEach((row: any) => {
+        configMap.set(row.key, row.value);
+      });
+    }
 
-  const responseData = {
-    categories: safeParse(categories),
-    background: background || null, // background is just a string in KV, no parse needed unless legacy
-    prefs: safeParse(prefs),
-    // Don't send the actual code, just a boolean if it's the default or custom
-    isDefaultCode: !authCode
-  };
+    const categories = configMap.get("categories");
+    const background = configMap.get("background");
+    const prefs = configMap.get("prefs");
+    const authCode = configMap.get("auth_code");
 
-  return new Response(JSON.stringify(responseData), {
-    headers: { "Content-Type": "application/json" }
-  });
+    const responseData = {
+      categories: safeParse(categories),
+      background: background || null, 
+      prefs: safeParse(prefs),
+      // Don't send the actual code, just a boolean if it's the default or custom
+      isDefaultCode: !authCode
+    };
+
+    return new Response(JSON.stringify(responseData), {
+      headers: { "Content-Type": "application/json" }
+    });
+  } catch (e) {
+    console.error("D1 Error:", e);
+    // Fallback empty response or error
+    return new Response(JSON.stringify({ 
+      categories: [], 
+      background: null, 
+      prefs: null, 
+      isDefaultCode: true 
+    }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  }
 }

@@ -1,6 +1,29 @@
 
+interface D1Result<T = unknown> {
+  results: T[];
+  success: boolean;
+  meta: any;
+  error?: string;
+}
+
+interface D1PreparedStatement {
+  bind(...values: any[]): D1PreparedStatement;
+  first<T = unknown>(colName?: string): Promise<T | null>;
+  run<T = unknown>(): Promise<D1Result<T>>;
+  all<T = unknown>(): Promise<D1Result<T>>;
+  raw<T = unknown>(): Promise<T[]>;
+}
+
+interface D1Database {
+  prepare(query: string): D1PreparedStatement;
+  dump(): Promise<ArrayBuffer>;
+  batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
+  exec(query: string): Promise<D1Result>;
+}
+
 interface Env {
-  KV_STORE: any;
+  DB: D1Database;
+  // KV_STORE binding is removed
 }
 
 // --- CRYPTO HELPERS (Duplicated to avoid build complexity in simple Pages Functions) ---
@@ -33,7 +56,7 @@ async function verify(token: string, secret: string): Promise<boolean> {
 }
 
 export const onRequestPost = async (context: any) => {
-  const { request, env } = context;
+  const { request, env } = context as { request: Request, env: Env };
   
   // --- AUTHENTICATION ---
   const authHeader = request.headers.get("Authorization");
@@ -43,8 +66,9 @@ export const onRequestPost = async (context: any) => {
 
   const token = authHeader.split(" ")[1];
   
-  // Get the Secret (Admin Code)
-  const storedCode = await env.KV_STORE.get("auth_code") || "admin";
+  // Get the Secret (Admin Code) from D1
+  const codeResult = await env.DB.prepare("SELECT value FROM config WHERE key = 'auth_code'").first();
+  const storedCode = (codeResult?.value as string) || "admin";
 
   // Verify Statelessly
   const sessionValid = await verify(token, storedCode);
@@ -58,21 +82,27 @@ export const onRequestPost = async (context: any) => {
     const body: any = await request.json();
     const { type, data } = body;
 
-    // These writes are the only KV writes that will happen now
-    if (type === 'categories') {
-      await env.KV_STORE.put("categories", JSON.stringify(data));
+    let valueToStore: string;
+
+    // Normalize data to string
+    if (type === 'categories' || type === 'prefs') {
+      valueToStore = JSON.stringify(data);
     } else if (type === 'background') {
-      await env.KV_STORE.put("background", data);
-    } else if (type === 'prefs') {
-      await env.KV_STORE.put("prefs", JSON.stringify(data));
+      valueToStore = typeof data === 'string' ? data : JSON.stringify(data);
     } else {
       return new Response("Invalid type", { status: 400 });
     }
+
+    // D1 Upsert (Insert or Replace)
+    await env.DB.prepare(
+      "INSERT INTO config (key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?2"
+    ).bind(type, valueToStore).run();
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { "Content-Type": "application/json" }
     });
   } catch (e) {
+    console.error("Update Error:", e);
     return new Response("Error processing request", { status: 500 });
   }
 }

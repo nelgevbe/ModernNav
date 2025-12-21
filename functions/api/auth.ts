@@ -1,6 +1,28 @@
 
+interface D1Result<T = unknown> {
+  results: T[];
+  success: boolean;
+  meta: any;
+  error?: string;
+}
+
+interface D1PreparedStatement {
+  bind(...values: any[]): D1PreparedStatement;
+  first<T = unknown>(colName?: string): Promise<T | null>;
+  run<T = unknown>(): Promise<D1Result<T>>;
+  all<T = unknown>(): Promise<D1Result<T>>;
+  raw<T = unknown>(): Promise<T[]>;
+}
+
+interface D1Database {
+  prepare(query: string): D1PreparedStatement;
+  dump(): Promise<ArrayBuffer>;
+  batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
+  exec(query: string): Promise<D1Result>;
+}
+
 interface Env {
-  KV_STORE: any;
+  DB: D1Database;
 }
 
 // Configuration
@@ -80,14 +102,16 @@ const respondWithCookie = (body: any, refreshToken: string, clear = false) => {
 };
 
 export const onRequestPost = async (context: any) => {
-  const { request, env } = context;
+  const { request, env } = context as { request: Request, env: Env };
   
   let body: any = {};
   try { body = await request.json(); } catch {}
 
   const { action, code, currentCode, newCode } = body;
-  // Get the Fixed Secret (The Admin Code)
-  const storedCode = await env.KV_STORE.get("auth_code") || "admin";
+  
+  // Get the Fixed Secret (The Admin Code) from D1
+  const codeResult = await env.DB.prepare("SELECT value FROM config WHERE key = 'auth_code'").first();
+  const storedCode = (codeResult?.value as string) || "admin";
 
   // --- 1. LOGIN ---
   if (action === 'login') {
@@ -99,7 +123,7 @@ export const onRequestPost = async (context: any) => {
     const accessToken = await generateToken('access', storedCode);
     const refreshToken = await generateToken('refresh', storedCode);
 
-    // NO KV WRITES HERE!
+    // NO DB WRITES HERE!
     return respondWithCookie({ success: true, accessToken }, refreshToken);
   }
 
@@ -153,7 +177,10 @@ export const onRequestPost = async (context: any) => {
       return new Response(JSON.stringify({ error: "Invalid new code" }), { status: 400 });
     }
 
-    await env.KV_STORE.put("auth_code", newCode);
+    // Update code in D1
+    await env.DB.prepare(
+      "INSERT INTO config (key, value) VALUES ('auth_code', ?1) ON CONFLICT(key) DO UPDATE SET value = ?1"
+    ).bind(newCode).run();
     
     return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
   }
