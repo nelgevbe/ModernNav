@@ -63,8 +63,8 @@ const translations = {
     select_import: "Select File to Import",
     import_success: "Configuration loaded successfully!",
     import_error: "Failed to import. Please check if the file is a valid JSON backup.",
-    data_risk_title: "Local Storage Warning",
-    data_risk_desc: "Your data is stored only in this browser's Local Storage. Clearing your browser cache will delete all your settings. Please backup regularly.",
+    data_risk_title: "Cloud Persistence",
+    data_risk_desc: "Changes are securely stored in Cloudflare D1. Use local backups for extra peace of mind.",
     last_backup: "Last Backup: {time}",
     never_backup: "Never",
     
@@ -170,8 +170,8 @@ const translations = {
     select_import: "选择导入文件",
     import_success: "配置加载成功！",
     import_error: "导入失败。请检查文件是否为有效的 JSON 备份。",
-    data_risk_title: "数据丢失风险警告",
-    data_risk_desc: "您的数据仅保存在当前浏览器的本地存储(Local Storage)中。清理浏览器缓存或更换设备将导致数据丢失。请务必定期下载备份。",
+    data_risk_title: "云端持久化",
+    data_risk_desc: "更改已安全存储在 Cloudflare D1 中。使用本地备份以获得额外保障。",
     last_backup: "上次备份: {time}",
     never_backup: "从未备份",
     

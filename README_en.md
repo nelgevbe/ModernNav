@@ -3,7 +3,7 @@
 
 ModernNav is a modern, minimalist, card-based navigation dashboard featuring a frosted glass (Glassmorphism) aesthetic. It is designed to be a beautiful, customizable browser start page or bookmark manager.
 
-Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + KV).
+Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + D1 Database).
 
 [中文文档](README.md)
 
@@ -15,11 +15,11 @@ Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + KV
 *   **🖼️ Customization:** Change background images, adjust blur/opacity levels, and customize theme colors.
 *   **📂 Grouping:** Organize links into Categories and Sub-categories (Folders).
 *   **🔍 Aggregated Search:** Integrated search bar supporting Google, Bing, Baidu, GitHub, and more.
-*   **🔐 Stateless Security:** Implements **Stateless Dual Token Authentication** (HMAC-Signed). Sessions require **zero database writes**, eliminating KV storage costs for authentication while maintaining maximum security via HttpOnly Cookies and token rotation against XSS/CSRF.
+*   **🔐 Stateless Security:** Implements **Stateless Dual Token Authentication** (HMAC-Signed). Sessions require **zero database writes**, using D1 only for storing the admin code, while maintaining maximum security via HttpOnly Cookies and token rotation against XSS/CSRF.
 *   **🛡️ Robust Data Handling:** Built-in strict type validation and automatic error recovery prevent application crashes (White Screen of Death) caused by malformed data structure updates.
 *   **☁️ Smart Hybrid Storage:**
     *   **Read Strategy (Network First):** Prioritizes fetching the latest data from the cloud, automatically falling back to local cache if offline, ensuring instant loading and offline availability.
-    *   **Write Strategy (Optimistic UI):** Changes are applied immediately to the interface without waiting for server response, while silently syncing to Cloudflare KV in the background for a smooth experience.
+    *   **Write Strategy (Optimistic UI):** Changes are applied immediately to the interface without waiting for server response, while silently syncing to Cloudflare D1 in the background for a smooth experience.
 *   **🌍 Internationalization:** Built-in support for English and Chinese (Simplified).
 *   **💾 Full Backup:** Export your entire configuration (links, background, settings) to JSON and restore anytime.
 
@@ -27,7 +27,7 @@ Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + KV
 
 *   **Frontend:** React 19, Vite, Tailwind CSS, Lucide React
 *   **Backend:** Cloudflare Pages Functions (Serverless)
-*   **Database:** Cloudflare KV (Key-Value Store)
+*   **Database:** Cloudflare D1 (Serverless SQL Database)
 *   **Auth:** Stateless JWT (HMAC-SHA256) + HttpOnly Cookie
 *   **Language:** TypeScript
 
@@ -54,18 +54,23 @@ npm run dev
 
 ### 3. Local Development (Full Stack with Cloudflare)
 
-To test the Backend API and KV storage locally, you need `wrangler`.
+To test the Backend API and D1 storage locally, you need `wrangler`.
 
 1.  Install Wrangler:
     ```bash
     npm install -D wrangler
     ```
 
-2.  Run the Cloudflare Pages simulation:
+2.  Initialize local database schema:
     ```bash
-    npx wrangler pages dev . --kv KV_STORE
+    npx wrangler d1 execute modern-nav-db --local --file=./schema.sql
     ```
-    *This simulates the Cloudflare environment locally, including Cookie and KV handling.*
+
+3.  Run the Cloudflare Pages simulation:
+    ```bash
+    npx wrangler pages dev . --d1 DB=modern-nav-db
+    ```
+    *This simulates the Cloudflare environment locally.*
 
 ## 📦 Deployment (Cloudflare Pages)
 
@@ -84,14 +89,15 @@ Push this code to your GitHub or GitLab repository.
 *   **Build command:** `npm run build`
 *   **Build output directory:** `dist`
 
-### Step 4: Configure Database (KV)
-1.  After the project is created, go to **Workers & Pages** > **KV**.
-2.  Click **Create a Namespace** (e.g., name it `modern-nav-db`).
-3.  Go back to your Pages project settings: **Settings** > **Functions** > **KV Namespace Bindings**.
-4.  Add a binding:
-    *   **Variable name:** `KV_STORE` (Must be exact)
-    *   **KV Namespace:** Select the namespace you created.
-5.  **Save** and **Redeploy** (Go to Deployments > Retry deployment).
+### Step 4: Configure Database (D1)
+1.  After the project is created, go to **Workers & Pages** > **D1**.
+2.  Click **Create** to create a database (e.g., `modern-nav-db`).
+3.  Go to the database **Console** tab, paste the content of `schema.sql`, and click **Execute**.
+4.  Go back to your Pages project settings: **Settings** > **Functions** > **D1 Database Bindings**.
+5.  Add a binding:
+    *   **Variable name:** `DB` (Must be exact)
+    *   **D1 Database:** Select the namespace you created.
+6.  **Save** and **Redeploy** (Go to Deployments > Retry deployment).
 
 ## ⚙️ Configuration & Usage
 
