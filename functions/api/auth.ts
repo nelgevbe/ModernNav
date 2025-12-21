@@ -1,189 +1,120 @@
-
-interface D1Result<T = unknown> {
-  results: T[];
-  success: boolean;
-  meta: any;
-  error?: string;
-}
-
-interface D1PreparedStatement {
-  bind(...values: any[]): D1PreparedStatement;
-  first<T = unknown>(colName?: string): Promise<T | null>;
-  run<T = unknown>(): Promise<D1Result<T>>;
-  all<T = unknown>(): Promise<D1Result<T>>;
-  raw<T = unknown>(): Promise<T[]>;
-}
-
-interface D1Database {
-  prepare(query: string): D1PreparedStatement;
-  dump(): Promise<ArrayBuffer>;
-  batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
-  exec(query: string): Promise<D1Result>;
-}
-
 interface Env {
   DB: D1Database;
 }
 
-// Configuration
-const ACCESS_TTL = 30 * 60 * 1000; // 30 minutes (in ms)
-const REFRESH_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days (in ms)
+const ACCESS_TTL = 30 * 60 * 1000; // 30分钟
+const REFRESH_TTL = 7 * 24 * 60 * 60 * 1000; // 7天
 
-// --- CRYPTO HELPERS (Stateless Logic) ---
-
+// --- 加密助手 ---
 async function sign(data: string, secret: string): Promise<string> {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
-    "raw", enc.encode(secret),
+    "raw",
+    enc.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
-    false, ["sign"]
+    false,
+    ["sign"]
   );
   const signature = await crypto.subtle.sign("HMAC", key, enc.encode(data));
-  // Convert ArrayBuffer to Base64
   return btoa(String.fromCharCode(...new Uint8Array(signature)));
 }
 
 async function verify(token: string, secret: string): Promise<boolean> {
   try {
-    const [payloadB64, signatureB64] = token.split('.');
-    if (!payloadB64 || !signatureB64) return false;
-
-    // 1. Re-calculate signature
+    const [payloadB64, signatureB64] = token.split(".");
     const expectedSignature = await sign(payloadB64, secret);
-    
-    // 2. Check Signature (Constant time comparison not strictly needed for this scope, but good practice)
     if (signatureB64 !== expectedSignature) return false;
-
-    // 3. Check Expiry
     const payload = JSON.parse(atob(payloadB64));
-    if (Date.now() > payload.exp) return false;
-
-    return true;
-  } catch (e) {
+    return Date.now() < payload.exp;
+  } catch {
     return false;
   }
 }
 
-async function generateToken(type: 'access' | 'refresh', secret: string): Promise<string> {
-  const ttl = type === 'access' ? ACCESS_TTL : REFRESH_TTL;
-  const payload = {
-    exp: Date.now() + ttl,
-    type
-  };
-  const payloadB64 = btoa(JSON.stringify(payload));
-  const signature = await sign(payloadB64, secret);
-  return `${payloadB64}.${signature}`;
+async function generateToken(
+  type: "access" | "refresh",
+  secret: string
+): Promise<string> {
+  const payload = btoa(
+    JSON.stringify({
+      exp: Date.now() + (type === "access" ? ACCESS_TTL : REFRESH_TTL),
+      type,
+    })
+  );
+  return `${payload}.${await sign(payload, secret)}`;
 }
 
-// --- HELPER: COOKIES ---
-const getCookie = (request: Request, name: string) => {
-  const cookieString = request.headers.get('Cookie');
-  if (!cookieString) return null;
-  const cookies = cookieString.split(';');
-  for (const cookie of cookies) {
-    const [k, v] = cookie.split('=').map(c => c.trim());
-    if (k === name) return v;
-  }
-  return null;
-};
-
-const respondWithCookie = (body: any, refreshToken: string, clear = false) => {
-  const maxAge = clear ? 0 : (REFRESH_TTL / 1000); // Max-Age is in seconds
-  const cookieValue = clear ? '' : refreshToken;
-  
-  const cookieHeader = `refresh_token=${cookieValue}; HttpOnly; Secure; SameSite=Strict; Path=/api/auth; Max-Age=${maxAge}`;
-
+// --- Cookie 助手 ---
+const respondWithCookie = (body: any, token: string, clear = false) => {
+  const cookie = `refresh_token=${
+    clear ? "" : token
+  }; HttpOnly; Secure; SameSite=Strict; Path=/api/auth; Max-Age=${
+    clear ? 0 : REFRESH_TTL / 1000
+  }`;
   return new Response(JSON.stringify(body), {
-    headers: {
-      "Content-Type": "application/json",
-      "Set-Cookie": cookieHeader
-    }
+    headers: { "Content-Type": "application/json", "Set-Cookie": cookie },
   });
 };
 
-export const onRequestPost = async (context: any) => {
-  const { request, env } = context as { request: Request, env: Env };
-  
-  let body: any = {};
-  try { body = await request.json(); } catch {}
-
+export const onRequestPost = async ({
+  request,
+  env,
+}: {
+  request: Request;
+  env: Env;
+}) => {
+  const body = (await request.json()) as any;
   const { action, code, currentCode, newCode } = body;
-  
-  // Get the Fixed Secret (The Admin Code) from D1
-  const codeResult = await env.DB.prepare("SELECT value FROM config WHERE key = 'auth_code'").first();
-  const storedCode = (codeResult?.value as string) || "admin";
 
-  // --- 1. LOGIN ---
-  if (action === 'login') {
-    if (code !== storedCode) {
-      return new Response(JSON.stringify({ error: "Invalid credentials" }), { status: 401 });
-    }
+  const codeRow = await env.DB.prepare(
+    "SELECT value FROM config WHERE key = 'auth_code'"
+  ).first<{ value: string }>();
+  const storedCode = codeRow?.value || "admin";
 
-    // Generate Stateless Tokens signed with the password
-    const accessToken = await generateToken('access', storedCode);
-    const refreshToken = await generateToken('refresh', storedCode);
-
-    // NO DB WRITES HERE!
-    return respondWithCookie({ success: true, accessToken }, refreshToken);
+  // 1. 登录
+  if (action === "login") {
+    if (code !== storedCode)
+      return new Response(JSON.stringify({ error: "密码错误" }), {
+        status: 401,
+      });
+    return respondWithCookie(
+      { success: true, accessToken: await generateToken("access", storedCode) },
+      await generateToken("refresh", storedCode)
+    );
   }
 
-  // --- 2. REFRESH ---
-  if (action === 'refresh') {
-    const refreshToken = getCookie(request, 'refresh_token');
-    
-    if (!refreshToken) {
-      return new Response(JSON.stringify({ error: "No refresh token" }), { status: 401 });
-    }
-
-    // Verify the token statelessly
-    const isValid = await verify(refreshToken, storedCode);
-    
-    if (!isValid) {
-      return respondWithCookie({ error: "Invalid or expired session" }, "", true);
-    }
-
-    // Issue New Pair
-    const newAccessToken = await generateToken('access', storedCode);
-    const newRefreshToken = await generateToken('refresh', storedCode);
-
-    return respondWithCookie({ success: true, accessToken: newAccessToken }, newRefreshToken);
+  // 2. 刷新 Token
+  if (action === "refresh") {
+    const rfToken = request.headers
+      .get("Cookie")
+      ?.match(/refresh_token=([^;]+)/)?.[1];
+    if (!rfToken || !(await verify(rfToken, storedCode)))
+      return respondWithCookie({ error: "会话过期" }, "", true);
+    return respondWithCookie(
+      { success: true, accessToken: await generateToken("access", storedCode) },
+      await generateToken("refresh", storedCode)
+    );
   }
 
-  // --- 3. LOGOUT ---
-  if (action === 'logout') {
-    // Just clear the cookie on client
-    return respondWithCookie({ success: true }, "", true);
-  }
-
-  // --- 4. UPDATE PASSWORD ---
-  if (action === 'update') {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  // 3. 修改密码
+  if (action === "update") {
+    const token = request.headers.get("Authorization")?.split(" ")[1];
+    if (
+      !token ||
+      !(await verify(token, storedCode)) ||
+      currentCode !== storedCode
+    ) {
+      return new Response(JSON.stringify({ error: "鉴权失败" }), {
+        status: 403,
+      });
     }
-    const token = authHeader.split(" ")[1];
-    
-    // Verify Access Token Statelessly
-    const isValidSession = await verify(token, storedCode);
-    if (!isValidSession) {
-       return new Response(JSON.stringify({ error: "Token expired" }), { status: 401 });
-    }
-
-    if (currentCode !== storedCode) {
-       return new Response(JSON.stringify({ error: "Current code incorrect" }), { status: 403 });
-    }
-
-    if (!newCode || newCode.length < 4) {
-      return new Response(JSON.stringify({ error: "Invalid new code" }), { status: 400 });
-    }
-
-    // Update code in D1
     await env.DB.prepare(
-      "INSERT INTO config (key, value) VALUES ('auth_code', ?1) ON CONFLICT(key) DO UPDATE SET value = ?1"
-    ).bind(newCode).run();
-    
-    return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+      "INSERT INTO config (key, value) VALUES ('auth_code', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+    )
+      .bind(newCode)
+      .run();
+    return new Response(JSON.stringify({ success: true }));
   }
 
-  return new Response(JSON.stringify({ error: "Invalid action" }), { status: 400 });
+  return new Response(JSON.stringify({ success: true })); // Logout 等其他操作
 };

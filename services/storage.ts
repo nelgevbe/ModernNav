@@ -5,18 +5,12 @@ import { INITIAL_CATEGORIES } from "../constants";
 let _accessToken: string | null = null;
 let _isRefreshing = false;
 let _refreshSubscribers: ((token: string) => void)[] = [];
+let _saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 const AUTH_KEYS = {
   ACCESS_TOKEN: "modernNav_token",
   TOKEN_EXPIRY: "modernNav_tokenExpiry",
 };
-
-// --- EVENT LISTENERS ---
-type NotifyType = "success" | "error" | "info";
-type NotifyListener = (type: NotifyType, message: string) => void;
-let _notifyListeners: NotifyListener[] = [];
-
-type SyncStatusListener = (isSyncing: boolean) => void;
-let _syncStatusListeners: SyncStatusListener[] = [];
 
 // --- CONSTANTS ---
 const LS_KEYS = {
@@ -27,7 +21,6 @@ const LS_KEYS = {
 
 export const DEFAULT_BACKGROUND =
   "radial-gradient(circle at 50% -20%, #334155, #0f172a, #020617)";
-const CURRENT_BACKUP_VERSION = 1;
 
 export interface UserPreferences {
   cardOpacity: number;
@@ -41,38 +34,26 @@ const DEFAULT_PREFS: UserPreferences = {
   themeMode: ThemeMode.Dark,
 };
 
-// Backup Data Structure
-interface BackupData {
-  version: number;
-  timestamp: number;
-  categories: Category[];
-  background?: string;
-  prefs?: UserPreferences;
-}
+// --- TYPES FOR EVENTS ---
+type NotifyType = "success" | "error" | "info";
+type NotifyListener = (type: NotifyType, message: string) => void;
+type SyncStatusListener = (isSyncing: boolean) => void;
+
+let _notifyListeners: NotifyListener[] = [];
+let _syncStatusListeners: SyncStatusListener[] = [];
 
 // --- HELPERS ---
 
-// Robust JSON Parser that handles legacy wrappers automatically
 const safeJsonParse = <T>(jsonString: string | null, fallback: T): T => {
   if (!jsonString) return fallback;
   try {
     const parsed = JSON.parse(jsonString);
-
-    // MIGRATION LOGIC: Check if data is wrapped in old format { data: ..., _isDirty: ... }
+    // 处理旧版本包装数据的情况
     if (parsed && typeof parsed === "object" && "data" in parsed) {
-      // If we expect an array (like categories) and .data is an array, return .data
-      if (Array.isArray(fallback) && Array.isArray(parsed.data)) {
-        return parsed.data as T;
-      }
-      // If we expect an object (like prefs) and .data is object, return .data
-      if (!Array.isArray(fallback) && typeof parsed.data === "object") {
-        return parsed.data as T;
-      }
+      return parsed.data as T;
     }
-
     return parsed as T;
-  } catch (e) {
-    console.warn("JSON Parse Failed:", e);
+  } catch {
     return fallback;
   }
 };
@@ -86,117 +67,67 @@ const safeLocalStorageSet = (key: string, value: any) => {
   }
 };
 
-// --- AUTH LOGIC ---
-
-const onRefreshed = (token: string) => {
-  _refreshSubscribers.forEach((cb) => cb(token));
-  _refreshSubscribers = [];
-};
-
-// 核心改进：完善刷新逻辑，防止误删 Token
-const tryRefreshToken = async (): Promise<string | null> => {
-  try {
-    const res = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "refresh" }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      _accessToken = data.accessToken;
-
-      if (typeof window !== "undefined") {
-        // 延长有效期到 24 小时，减少频繁刷新 KV
-        const expiryTime = new Date().getTime() + 24 * 60 * 60 * 1000;
-        localStorage.setItem(AUTH_KEYS.ACCESS_TOKEN, data.accessToken);
-        localStorage.setItem(AUTH_KEYS.TOKEN_EXPIRY, expiryTime.toString());
-      }
-
-      return data.accessToken;
-    } else if (res.status === 401 || res.status === 403) {
-      // 只有在明确未授权时才清除，防止由于 KV 延迟导致的 500/429 错误误杀登录态
-      _accessToken = null;
-      localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
-      localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
-    }
-
-    return null;
-  } catch (e) {
-    return null; // 网络失败不执行清除
-  }
-};
-
-const ensureAccessToken = async (): Promise<string | null> => {
-  if (_accessToken) return _accessToken;
-
-  if (typeof window !== "undefined") {
-    const storedToken = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
-    const storedExpiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
-
-    if (storedToken && storedExpiry) {
-      const expiryTime = parseInt(storedExpiry, 10);
-      const currentTime = new Date().getTime();
-
-      // 如果 Token 还没过期，直接使用，不再去请求后端
-      if (expiryTime > currentTime) {
-        _accessToken = storedToken;
-        return _accessToken;
-      }
-    }
-  }
-
-  if (_isRefreshing) {
-    return new Promise((resolve) => _refreshSubscribers.push(resolve));
-  }
-
-  _isRefreshing = true;
-  const newToken = await tryRefreshToken();
-  _isRefreshing = false;
-  onRefreshed(newToken || "");
-  return newToken;
-};
+// --- CORE SERVICE ---
 
 export const storageService = {
   init: () => {
-    if (typeof window !== "undefined") {
-      // 改进：初始化时先检查本地 Token 是否还有效，有效则不调用 tryRefreshToken
-      const storedToken = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
-      const storedExpiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
-      const currentTime = new Date().getTime();
+    if (typeof window === "undefined") return;
+    const storedToken = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
+    const storedExpiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
+    const currentTime = Date.now();
 
-      if (
-        !storedToken ||
-        !storedExpiry ||
-        parseInt(storedExpiry, 10) <= currentTime
-      ) {
-        tryRefreshToken();
-      }
+    // 仅在 Token 缺失或过期时尝试刷新
+    if (
+      !storedToken ||
+      !storedExpiry ||
+      parseInt(storedExpiry, 10) <= currentTime
+    ) {
+      storageService.tryRefreshToken();
     }
   },
 
-  // --- EVENTS ---
-  subscribeNotifications: (listener: NotifyListener) => {
-    _notifyListeners.push(listener);
-    return () => {
-      _notifyListeners = _notifyListeners.filter((l) => l !== listener);
-    };
-  },
-  notify: (type: NotifyType, message: string) => {
-    _notifyListeners.forEach((l) => l(type, message));
-  },
-  subscribeSyncStatus: (listener: SyncStatusListener) => {
-    _syncStatusListeners.push(listener);
-    return () => {
-      _syncStatusListeners = _syncStatusListeners.filter((l) => l !== listener);
-    };
-  },
-  notifySyncStatus: (isSyncing: boolean) => {
-    _syncStatusListeners.forEach((l) => l(isSyncing));
-  },
-  checkGlobalDirtyState: () => {},
+  // --- AUTH LOGIC ---
 
-  // --- AUTH ---
+  tryRefreshToken: async (): Promise<string | null> => {
+    if (_isRefreshing) {
+      return new Promise((resolve) => _refreshSubscribers.push(resolve));
+    }
+    _isRefreshing = true;
+
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "refresh" }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        _accessToken = data.accessToken;
+        const expiryTime = Date.now() + 24 * 60 * 60 * 1000;
+        safeLocalStorageSet(AUTH_KEYS.ACCESS_TOKEN, data.accessToken);
+        safeLocalStorageSet(AUTH_KEYS.TOKEN_EXPIRY, expiryTime.toString());
+
+        _refreshSubscribers.forEach((cb) => cb(data.accessToken));
+        return data.accessToken;
+      } else if (res.status === 401 || res.status === 403) {
+        storageService.clearAuth();
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      _isRefreshing = false;
+      _refreshSubscribers = [];
+    }
+  },
+
+  clearAuth: () => {
+    _accessToken = null;
+    localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
+  },
+
   login: async (code: string): Promise<boolean> => {
     try {
       const res = await fetch("/api/auth", {
@@ -207,9 +138,9 @@ export const storageService = {
       if (res.ok) {
         const data = await res.json();
         _accessToken = data.accessToken;
-        const expiryTime = new Date().getTime() + 24 * 60 * 60 * 1000;
-        localStorage.setItem(AUTH_KEYS.ACCESS_TOKEN, data.accessToken);
-        localStorage.setItem(AUTH_KEYS.TOKEN_EXPIRY, expiryTime.toString());
+        const expiryTime = Date.now() + 24 * 60 * 60 * 1000;
+        safeLocalStorageSet(AUTH_KEYS.ACCESS_TOKEN, data.accessToken);
+        safeLocalStorageSet(AUTH_KEYS.TOKEN_EXPIRY, expiryTime.toString());
         return true;
       }
       return false;
@@ -226,274 +157,110 @@ export const storageService = {
         body: JSON.stringify({ action: "logout" }),
       });
     } finally {
-      _accessToken = null;
-      // Clear stored tokens on logout
-      if (typeof window !== "undefined") {
-        localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
-        localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
-      }
+      storageService.clearAuth();
+      window.location.reload(); // 彻底重置应用状态
     }
   },
 
-  isAuthenticated: async (): Promise<boolean> => {
-    const token = await ensureAccessToken();
-    return !!token;
-  },
+  // --- DATA OPERATIONS ---
 
-  updateAccessCode: async (
-    currentCode: string,
-    newCode: string
-  ): Promise<boolean> => {
-    const token = await ensureAccessToken();
-    if (!token) return false;
-    try {
-      const res = await fetch("/api/auth", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ action: "update", currentCode, newCode }),
-      });
-      return res.ok;
-    } catch {
-      return false;
-    }
-  },
-
-  // --- CORE DATA OPERATIONS ---
-
-  // 改进：增加保存冷却时间，防止频繁操作 KV
-  _lastSaveTime: 0,
-
-  fetchAllData: async (): Promise<{
-    categories: Category[];
-    background: string;
-    prefs: UserPreferences;
-    isDefaultCode: boolean;
-  }> => {
+  fetchAllData: async () => {
     let cloudData = null;
-
-    // 1. Try Fetching from Cloud
     try {
       const res = await fetch("/api/bootstrap");
-      if (res.ok) {
-        cloudData = await res.json();
-      }
+      if (res.ok) cloudData = await res.json();
     } catch (e) {
-      console.warn("Network offline or failed, falling back to cache.");
+      console.warn("Cloud offline, using local cache.");
     }
 
-    // 2. Determine raw data source
-    let finalCategories: any = INITIAL_CATEGORIES;
-    let finalBackground: any = DEFAULT_BACKGROUND;
-    let finalPrefs: any = DEFAULT_PREFS;
-    let isDefaultCode = false;
-
-    if (cloudData) {
-      finalCategories = cloudData.categories;
-      finalBackground = cloudData.background;
-      finalPrefs = cloudData.prefs;
-      isDefaultCode = !!cloudData.isDefaultCode;
-
-      // Update Cache immediately with what we got
-      safeLocalStorageSet(
-        LS_KEYS.CATEGORIES,
-        finalCategories || INITIAL_CATEGORIES
+    const categories =
+      cloudData?.categories ??
+      safeJsonParse(
+        localStorage.getItem(LS_KEYS.CATEGORIES),
+        INITIAL_CATEGORIES
       );
-      safeLocalStorageSet(
-        LS_KEYS.BACKGROUND,
-        finalBackground || DEFAULT_BACKGROUND
-      );
-      safeLocalStorageSet(LS_KEYS.PREFS, finalPrefs || DEFAULT_PREFS);
-    } else {
-      // Read from LocalStorage Cache
-      const rawCat = localStorage.getItem(LS_KEYS.CATEGORIES);
-      finalCategories = safeJsonParse(rawCat, INITIAL_CATEGORIES);
+    const background =
+      cloudData?.background ??
+      localStorage.getItem(LS_KEYS.BACKGROUND) ??
+      DEFAULT_BACKGROUND;
+    const prefs =
+      cloudData?.prefs ??
+      safeJsonParse(localStorage.getItem(LS_KEYS.PREFS), DEFAULT_PREFS);
 
-      const rawBg = localStorage.getItem(LS_KEYS.BACKGROUND);
-      finalBackground = rawBg || DEFAULT_BACKGROUND;
-      // Handle legacy string quirks from background
-      if (
-        typeof finalBackground === "string" &&
-        finalBackground.startsWith('"')
-      ) {
-        try {
-          finalBackground = JSON.parse(finalBackground);
-        } catch {}
-      }
-      // Handle wrapped background object
-      if (
-        typeof finalBackground === "string" &&
-        finalBackground.startsWith("{")
-      ) {
-        const parsed = safeJsonParse<any>(finalBackground, null);
-        if (parsed && parsed.data) finalBackground = parsed.data;
-      }
-
-      finalPrefs = safeJsonParse(
-        localStorage.getItem(LS_KEYS.PREFS),
-        DEFAULT_PREFS
-      );
-    }
-
-    // --- 3. FINAL DEFENSIVE VALIDATION (Prevents White Screen) ---
-
-    // GUARANTEE: Categories must be an Array
-    if (!Array.isArray(finalCategories)) {
-      // One last attempt to unwrap if safeJsonParse didn't catch it deeply
-      if (
-        finalCategories &&
-        typeof finalCategories === "object" &&
-        Array.isArray((finalCategories as any).data)
-      ) {
-        finalCategories = (finalCategories as any).data;
-      } else {
-        console.warn(
-          "Categories data corrupted, resetting to default to prevent crash."
-        );
-        finalCategories = INITIAL_CATEGORIES;
-      }
-    }
-
-    // GUARANTEE: Background must be a String
-    if (typeof finalBackground !== "string") {
-      finalBackground = DEFAULT_BACKGROUND;
-    }
-
-    // GUARANTEE: Prefs must be an Object
-    if (!finalPrefs || typeof finalPrefs !== "object") {
-      finalPrefs = DEFAULT_PREFS;
-    }
+    // 同步缓存
+    safeLocalStorageSet(LS_KEYS.CATEGORIES, categories);
+    safeLocalStorageSet(LS_KEYS.BACKGROUND, background);
+    safeLocalStorageSet(LS_KEYS.PREFS, prefs);
 
     return {
-      categories: finalCategories,
-      background: finalBackground,
-      prefs: finalPrefs,
-      isDefaultCode,
-    };
-  },
-
-  // Strategy: Optimistic UI (Update Local) -> Async Cloud Sync (If Admin)
-  _saveItem: async (key: string, data: any, type: string) => {
-    safeLocalStorageSet(key, data);
-    const token = await ensureAccessToken();
-    if (!token) return;
-
-    // 强制限制保存间隔为 2 秒，防止 KV 写入冲突
-    const now = Date.now();
-    if (now - storageService._lastSaveTime < 2000) {
-      storageService.notify("info", "保存太频繁，稍后将同步到云端");
-      return;
-    }
-    storageService._lastSaveTime = now;
-
-    storageService.notifySyncStatus(true);
-
-    try {
-      const res = await fetch("/api/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ type, data }),
-      });
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          _accessToken = null;
-          // Clear stored tokens on 401 error
-          if (typeof window !== "undefined") {
-            localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
-            localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
-          }
-        }
-        throw new Error(`Sync error ${res.status}`);
-      }
-    } catch (e) {
-      console.error(`Sync failed for ${type}`, e);
-      storageService.notify("error", `Cloud sync failed. Saved locally.`);
-    } finally {
-      storageService.notifySyncStatus(false);
-    }
-  },
-
-  saveCategories: async (categories: Category[]) => {
-    return storageService._saveItem(
-      LS_KEYS.CATEGORIES,
       categories,
-      "categories"
-    );
-  },
-
-  setBackground: async (url: string) => {
-    return storageService._saveItem(LS_KEYS.BACKGROUND, url, "background");
-  },
-
-  savePreferences: async (prefs: UserPreferences) => {
-    return storageService._saveItem(LS_KEYS.PREFS, prefs, "prefs");
-  },
-
-  syncPendingChanges: async () => {},
-
-  // --- BACKUP / RESTORE ---
-
-  exportData: () => {
-    const categories = safeJsonParse<Category[]>(
-      localStorage.getItem(LS_KEYS.CATEGORIES),
-      INITIAL_CATEGORIES
-    );
-
-    let background =
-      localStorage.getItem(LS_KEYS.BACKGROUND) || DEFAULT_BACKGROUND;
-    if (background.startsWith('"'))
-      try {
-        background = JSON.parse(background);
-      } catch {}
-
-    const prefs = safeJsonParse<UserPreferences>(
-      localStorage.getItem(LS_KEYS.PREFS),
-      DEFAULT_PREFS
-    );
-
-    const backup: BackupData = {
-      version: CURRENT_BACKUP_VERSION,
-      timestamp: Date.now(),
-      categories: Array.isArray(categories) ? categories : INITIAL_CATEGORIES,
       background,
       prefs,
+      isDefaultCode: !!cloudData?.isDefaultCode,
     };
-
-    const dataUri =
-      "data:application/json;charset=utf-8," +
-      encodeURIComponent(JSON.stringify(backup, null, 2));
-    const link = document.createElement("a");
-    link.href = dataUri;
-    link.download = `modern-nav-backup-${new Date()
-      .toISOString()
-      .slice(0, 10)}.json`;
-    link.click();
   },
 
-  importData: (file: File): Promise<Partial<BackupData>> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const parsed = JSON.parse(e.target?.result as string);
-          if (Array.isArray(parsed)) {
-            resolve({ categories: parsed });
-          } else {
-            resolve(parsed as BackupData);
+  // 💡 防抖保存逻辑
+  _saveItem: async (key: string, data: any, type: string) => {
+    safeLocalStorageSet(key, data);
+
+    if (_saveDebounceTimer) clearTimeout(_saveDebounceTimer);
+
+    _saveDebounceTimer = setTimeout(async () => {
+      const storedToken = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
+      const token = _accessToken || storedToken;
+      if (!token) return;
+
+      storageService.notifySyncStatus(true);
+      try {
+        const res = await fetch("/api/update", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ type, data }),
+        });
+
+        if (res.status === 401) {
+          const newToken = await storageService.tryRefreshToken();
+          if (newToken) {
+            return storageService._saveItem(key, data, type);
           }
-        } catch {
-          reject(new Error("Invalid backup file"));
+          storageService.clearAuth();
         }
-      };
-      reader.readAsText(file);
-    });
+
+        if (!res.ok) throw new Error("D1 Sync Failed");
+      } catch (e) {
+        console.error("Sync Error:", e);
+        storageService.notify("error", "云端同步失败，数据已暂存本地");
+      } finally {
+        storageService.notifySyncStatus(false);
+      }
+    }, 1000);
   },
+
+  saveCategories: (categories: Category[]) =>
+    storageService._saveItem(LS_KEYS.CATEGORIES, categories, "categories"),
+  setBackground: (url: string) =>
+    storageService._saveItem(LS_KEYS.BACKGROUND, url, "background"),
+  savePreferences: (prefs: UserPreferences) =>
+    storageService._saveItem(LS_KEYS.PREFS, prefs, "prefs"),
+
+  // --- EVENTS ---
+  subscribeNotifications: (l: NotifyListener) => {
+    _notifyListeners.push(l);
+    return () => (_notifyListeners = _notifyListeners.filter((i) => i !== l));
+  },
+  notify: (type: NotifyType, msg: string) =>
+    _notifyListeners.forEach((l) => l(type, msg)),
+  subscribeSyncStatus: (l: SyncStatusListener) => {
+    _syncStatusListeners.push(l);
+    return () =>
+      (_syncStatusListeners = _syncStatusListeners.filter((i) => i !== l));
+  },
+  notifySyncStatus: (status: boolean) =>
+    _syncStatusListeners.forEach((l) => l(status)),
 };
 
 storageService.init();
