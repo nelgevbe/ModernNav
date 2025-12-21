@@ -5,7 +5,7 @@ ModernNav 是一个现代、极简的卡片式导航仪表盘，采用毛玻璃�
 
 本项目基于 **React**、**Tailwind CSS** 和 **Cloudflare Pages** (Functions + D1 Database) 构建。
 
-[English Documentation](README_en.md)
+[English Documentation](README_en.md) | [📅 开发计划 (Roadmap)](ROADMAP.md)
 
 ## ✨ 功能特性
 
@@ -61,9 +61,9 @@ npm run dev
     npm install -D wrangler
     ```
 
-2.  初始化本地数据库表结构 (确保项目根目录有 schema.sql):
+2.  初始化本地数据库表结构 (使用 txt 格式文件):
     ```bash
-    npx wrangler d1 execute modern-nav-db --local --file=./schema.sql
+    npx wrangler d1 execute modern-nav-db --local --file=./schema.txt
     ```
 
 3.  运行 Cloudflare Pages 模拟环境:
@@ -92,12 +92,13 @@ npm run dev
 ### 第四步: 配置数据库 (D1)
 1.  项目创建完成后，在 Cloudflare 侧边栏点击 **Workers & Pages** > **D1 SQL Database**。
 2.  点击 **Create** 创建一个数据库 (例如命名为 `modern-nav-db`)。
-3.  点击进入该数据库，选择 **Console** 标签页，将项目根目录下的 `schema.sql` 内容复制进去并 **Execute**，以初始化表结构。
-4.  回到您刚才创建的 Pages 项目页面: 点击 **Settings** > **Functions** > **D1 Database Bindings**。
-5.  添加绑定 (Add binding):
+3.  点击进入该数据库，选择 **Console** 标签页。
+4.  **重要:** 打开项目中的 `schema.txt` 文件，复制其中的 SQL 语句并在 Console 中 **Execute**，以初始化表结构和默认密码。
+5.  回到您刚才创建的 Pages 项目页面: 点击 **Settings** > **Functions** > **D1 Database Bindings**。
+6.  添加绑定 (Add binding):
     *   **Variable name (变量名):** 必须填写 `DB` (必须完全一致)。
     *   **D1 Database:** 选择您刚才创建的 `modern-nav-db`。
-6.  **保存** 并 **重新部署** (进入 Deployments > 点击最新部署右侧的三个点 > Retry deployment)。
+7.  **保存** 并 **重新部署** (进入 Deployments > 点击最新部署右侧的三个点 > Retry deployment)。
 
 ## ⚙️ 配置与使用
 
@@ -119,8 +120,8 @@ npm run dev
 │   ├── bootstrap.ts   # 初始化数据加载 (Read D1)
 │   ├── update.ts      # 数据保存 (Write D1)
 │   └── auth.ts        # 鉴权逻辑 (D1 Auth Code)
-├── schema.sql         # 数据库初始化脚本
-└── ...
+├── schema.txt         # 数据库初始化脚本 (SQL语句)
+└── ROADMAP.md         # 开发计划文档
 ```
 
 ## 📄 许可证

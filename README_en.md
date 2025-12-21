@@ -5,7 +5,7 @@ ModernNav is a modern, minimalist, card-based navigation dashboard featuring a f
 
 Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + D1 Database).
 
-[中文文档](README.md)
+[中文文档](README.md) | [📅 Roadmap](ROADMAP.md)
 
 ## ✨ Features
 
@@ -61,9 +61,9 @@ To test the Backend API and D1 storage locally, you need `wrangler`.
     npm install -D wrangler
     ```
 
-2.  Initialize local database schema:
+2.  Initialize local database schema (using the text file):
     ```bash
-    npx wrangler d1 execute modern-nav-db --local --file=./schema.sql
+    npx wrangler d1 execute modern-nav-db --local --file=./schema.txt
     ```
 
 3.  Run the Cloudflare Pages simulation:
@@ -92,12 +92,13 @@ Push this code to your GitHub or GitLab repository.
 ### Step 4: Configure Database (D1)
 1.  After the project is created, go to **Workers & Pages** > **D1**.
 2.  Click **Create** to create a database (e.g., `modern-nav-db`).
-3.  Go to the database **Console** tab, paste the content of `schema.sql`, and click **Execute**.
-4.  Go back to your Pages project settings: **Settings** > **Functions** > **D1 Database Bindings**.
-5.  Add a binding:
+3.  Go to the database **Console** tab.
+4.  Open `schema.txt` in your project, copy the content, paste it into the console, and click **Execute**.
+5.  Go back to your Pages project settings: **Settings** > **Functions** > **D1 Database Bindings**.
+6.  Add a binding:
     *   **Variable name:** `DB` (Must be exact)
     *   **D1 Database:** Select the namespace you created.
-6.  **Save** and **Redeploy** (Go to Deployments > Retry deployment).
+7.  **Save** and **Redeploy** (Go to Deployments > Retry deployment).
 
 ## ⚙️ Configuration & Usage
 
@@ -123,7 +124,8 @@ Push this code to your GitHub or GitLab repository.
 ├── services/          # Data layer (handles Token refresh, Interceptors, Sync logic)
 ├── types.ts           # TypeScript interfaces
 ├── App.tsx            # Main application logic
-└── index.html         # Entry point & Tailwind config
+├── schema.txt         # Database initialization SQL commands
+└── ROADMAP.md         # Development Plan
 ```
 
 ## 📄 License
