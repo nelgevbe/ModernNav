@@ -1300,7 +1300,7 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
                           } ${
                             dragOverCategoryIndex === index &&
                             draggedCategoryIndex !== index
-                              ? "bg-[var(--theme-primary)]/20 border-[var(--theme-primary)] shadow-[0_0_10px_rgba(99,102,241,0.3)]"
+                              ? "bg-[var(--theme-primary)]/20 border-[var(--theme-primary)] shadow-themed-light"
                               : ""
                           }`}
                         >

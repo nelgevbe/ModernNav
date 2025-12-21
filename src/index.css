@@ -44,6 +44,15 @@ body {
   color: white;
 }
 
+/* Theme-based shadow classes */
+.shadow-themed {
+  box-shadow: 0 0 15px var(--theme-primary);
+}
+
+.shadow-themed-light {
+  box-shadow: 0 0 10px var(--theme-primary);
+}
+
 /*
    CORE GLASSMORPHISM VARIABLES
    Optimized for macOS aesthetic
