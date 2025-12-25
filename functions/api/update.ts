@@ -3,7 +3,12 @@ interface Env {
 }
 
 // 导入共享工具
-import { verify, getClientIP, RateLimiter, ERROR_MESSAGES } from "./utils/authHelpers";
+import {
+  verify,
+  getClientIP,
+  RateLimiter,
+  ERROR_MESSAGES,
+} from "./utils/authHelpers";
 
 // 创建速率限制器实例
 const updateRateLimiter = new RateLimiter(20, 60 * 1000); // 1分钟内最多20次更新请求

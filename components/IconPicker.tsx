@@ -1,0 +1,199 @@
+import React, { useMemo } from "react";
+import { Search, Smile } from "lucide-react";
+import * as Icons from "lucide-react";
+import { useLanguage } from "../contexts/LanguageContext";
+
+// Categorized Suggestions
+const SUGGESTED_ICONS = [
+  "Link",
+  "ExternalLink",
+  "Globe",
+  "Github",
+  "Youtube",
+  "Twitter",
+  "Instagram",
+  "Linkedin",
+  "Code",
+  "Terminal",
+  "Cpu",
+  "Database",
+  "Cloud",
+  "Server",
+  "Hash",
+  "Layers",
+  "MessageSquare",
+  "Mail",
+  "Bell",
+  "User",
+  "Users",
+  "Settings",
+  "Shield",
+  "Lock",
+  "Search",
+  "Heart",
+  "Star",
+  "Coffee",
+  "Music",
+  "Video",
+  "Camera",
+  "Image",
+  "File",
+  "Folder",
+  "Briefcase",
+  "ShoppingBag",
+  "CreditCard",
+  "Wallet",
+  "Home",
+  "Map",
+];
+
+const SUGGESTED_EMOJIS = [
+  "🚀",
+  "🔥",
+  "✨",
+  "⚡",
+  "💡",
+  "🛠️",
+  "📦",
+  "🎨",
+  "🎮",
+  "🎧",
+  "📸",
+  "📽️",
+  "🏠",
+  "🌍",
+  "💼",
+  "💻",
+  "📱",
+  "🔒",
+  "🔑",
+  "🏷️",
+  "📌",
+  "📎",
+  "📅",
+  "📊",
+  "🌈",
+  "🍎",
+  "☕",
+  "🍕",
+  "🍺",
+  "🏀",
+  "⚽",
+  "🚗",
+  "✈️",
+  "🚢",
+  "🛸",
+  "🤖",
+];
+
+interface IconPickerProps {
+  show: boolean;
+  onClose: () => void;
+  value: string;
+  onChange: (val: string) => void;
+  searchTerm: string;
+  onSearchChange: (val: string) => void;
+  pickerRef: React.RefObject<HTMLDivElement>;
+}
+
+export const IconPicker: React.FC<IconPickerProps> = ({
+  show,
+  onClose,
+  value,
+  onChange,
+  searchTerm,
+  onSearchChange,
+  pickerRef,
+}) => {
+  const { t } = useLanguage();
+
+  const filteredIconNames = useMemo(() => {
+    if (!searchTerm.trim()) return SUGGESTED_ICONS;
+    const search = searchTerm.toLowerCase();
+    return Object.keys(Icons)
+      .filter(
+        (name) =>
+          name.toLowerCase().includes(search) &&
+          name !== "createLucideIcon" &&
+          typeof (Icons as any)[name] === "function"
+      )
+      .slice(0, 48);
+  }, [searchTerm]);
+
+  if (!show) return null;
+
+  return (
+    <div
+      className="absolute top-full right-0 w-64 mt-2 apple-glass-dark rounded-xl border border-white/10 shadow-2xl p-3 z-50 animate-fade-in-down"
+      ref={pickerRef}
+    >
+      <div className="relative mb-3">
+        <Search
+          size={14}
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500"
+        />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Search icons..."
+          className="w-full bg-slate-950/50 border border-white/5 rounded-md pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[var(--theme-primary)]/50"
+        />
+      </div>
+
+      <div className="max-h-48 overflow-y-auto pr-1 custom-scrollbar space-y-4">
+        <div>
+          <div className="text-[9px] text-slate-500 uppercase font-black tracking-[0.1em] mb-2 px-1">
+            {searchTerm ? "Search Results" : "Suggested Icons"}
+          </div>
+          <div className="grid grid-cols-6 gap-1.5">
+            {filteredIconNames.map((name) => {
+              const IconComp = (Icons as any)[name];
+              return (
+                <button
+                  key={name}
+                  onClick={() => {
+                    onChange(name);
+                    onClose();
+                  }}
+                  title={name}
+                  type="button"
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-all text-slate-400 hover:text-white active:scale-90 ${
+                    value === name
+                      ? "bg-[var(--theme-primary)]/20 text-white ring-1 ring-[var(--theme-primary)]/30"
+                      : ""
+                  }`}
+                >
+                  {IconComp && <IconComp size={16} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {!searchTerm && (
+          <div>
+            <div className="text-[9px] text-slate-500 uppercase font-black tracking-[0.1em] mb-2 px-1">
+              Common Emojis
+            </div>
+            <div className="grid grid-cols-6 gap-1.5">
+              {SUGGESTED_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => {
+                    onChange(emoji);
+                    onClose();
+                  }}
+                  type="button"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-base active:scale-90"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
