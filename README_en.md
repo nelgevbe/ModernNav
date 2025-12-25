@@ -150,7 +150,7 @@ Push this code to your GitHub or GitLab repository.
 │   └── color.ts                # Dominant Color Extraction Algorithm
 ├── App.tsx                     # Main Application Component
 ├── constants.tsx               # Default Constants
-├── schema.txt                  # Database Initialization SQL
+├── schema.sql                  # Database Initialization SQL
 ├── types.ts                    # TypeScript Type Definitions
 └── ...
 ```

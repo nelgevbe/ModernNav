@@ -150,7 +150,7 @@ npm run dev
 │   └── color.ts                # 图片主色调提取算法
 ├── App.tsx                     # 主应用组件
 ├── constants.tsx               # 默认常量配置
-├── schema.txt                  # 数据库初始化 SQL
+├── schema.sql                 # 数据库初始化 SQL
 ├── types.ts                    # TypeScript 类型定义
 └── ...
 ```
