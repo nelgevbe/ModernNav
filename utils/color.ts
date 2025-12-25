@@ -56,11 +56,11 @@ export const getDominantColor = (imageSrc: string): Promise<string> => {
       } catch (e) {
         // Fallback for CORS issues (tainted canvas)
         console.warn("Could not extract color due to CORS:", e);
-        resolve("#6280a3");
+        resolve("#6280a3"); // Default Indigo
       }
     };
 
-    img.onerror = () => resolve("#6280a3");
+    img.onerror = () => resolve("#6280a3"); // Default Indigo
   });
 };
 

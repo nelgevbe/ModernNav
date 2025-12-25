@@ -79,6 +79,11 @@ const translations = {
     bg_updated: "Appearance settings updated!",
     label_blur: "Background Blur",
     label_opacity: "Card Opacity",
+    label_theme_color: "Theme Color",
+    btn_auto_extract: "Auto Extract",
+    btn_custom_color: "Custom",
+    theme_updated: "Theme color updated!",
+    extracting_color: "Extracting color...",
 
     // Manager UI
     sidebar_categories: "Categories",
@@ -187,6 +192,11 @@ const translations = {
     bg_updated: "外观设置已更新！",
     label_blur: "背景模糊度",
     label_opacity: "卡片透明度",
+    label_theme_color: "主题色",
+    btn_auto_extract: "自动从图片提取",
+    btn_custom_color: "自定义选择",
+    theme_updated: "主题色已更新！",
+    extracting_color: "正在提取颜色...",
 
     // Manager UI
     sidebar_categories: "分类列表",

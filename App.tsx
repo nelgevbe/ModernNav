@@ -28,7 +28,8 @@ const App: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [background, setBackground] = useState<string>(DEFAULT_BACKGROUND);
   const [cardOpacity, setCardOpacity] = useState<number>(0.1);
-  const [themeColor, setThemeColor] = useState<string>("#6366f1");
+  const [themeColor, setThemeColor] = useState<string>("#6280a3");
+  const [themeColorAuto, setThemeColorAuto] = useState<boolean>(true);
   const [themeMode, setThemeMode] = useState<ThemeMode>(ThemeMode.Dark);
   const [isDefaultCode, setIsDefaultCode] = useState(false);
 
@@ -63,19 +64,20 @@ const App: React.FC = () => {
         setCardOpacity(data.prefs.cardOpacity);
         setThemeMode(data.prefs.themeMode);
         setIsDefaultCode(data.isDefaultCode);
+        setThemeColorAuto(data.prefs.themeColorAuto ?? true);
 
-        if (data.prefs.themeColor) {
-          setThemeColor(data.prefs.themeColor);
-        } else {
-          if (
-            data.background.startsWith("http") ||
-            data.background.startsWith("data:")
-          ) {
-            const color = await getDominantColor(data.background);
-            setThemeColor(color);
-          }
+        let finalColor = data.prefs.themeColor || "#6280a3";
+
+        if (
+          (data.prefs.themeColorAuto ?? true) &&
+          data.background.startsWith("http")
+        ) {
+          finalColor = await getDominantColor(data.background);
         }
 
+        setThemeColor(finalColor);
+
+        // Set Active Category
         if (data.categories.length > 0) {
           setActiveCategory(data.categories[0].id);
         }
@@ -88,6 +90,16 @@ const App: React.FC = () => {
 
     initData();
   }, []);
+
+  // 确保 CSS 实时同步
+  useEffect(() => {
+    document.documentElement.style.setProperty("--theme-primary", themeColor);
+
+    document.documentElement.style.setProperty(
+      "--theme-hover",
+      `color-mix(in srgb, ${themeColor}, black 10%)`
+    );
+  }, [themeColor]);
 
   // Update Sliding Pill Position
   useEffect(() => {
@@ -114,11 +126,12 @@ const App: React.FC = () => {
     };
   }, [activeCategory, categories, loading]);
 
-  // Extract color when background changes (UI only)
+  // Extract color when background changes (if auto mode is on)
   useEffect(() => {
     const updateTheme = async () => {
       if (
         !loading &&
+        themeColorAuto &&
         (background.startsWith("http") || background.startsWith("data:"))
       ) {
         const color = await getDominantColor(background);
@@ -126,21 +139,7 @@ const App: React.FC = () => {
       }
     };
     updateTheme();
-  }, [background, loading]);
-
-  // Persist Preferences
-  useEffect(() => {
-    if (loading) return;
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    storageService.savePreferences({
-      cardOpacity,
-      themeColor,
-      themeMode,
-    });
-  }, [themeMode, cardOpacity, themeColor, loading]);
+  }, [background, loading, themeColorAuto]);
 
   // Ensure activeCategory is valid
   useEffect(() => {
@@ -171,10 +170,46 @@ const App: React.FC = () => {
   }, [activeCategory, categories, activeSubCategoryId, loading]);
 
   // Handle appearance updates from Modal
-  const handleUpdateAppearance = (url: string, opacity: number) => {
+  const handleUpdateAppearance = async (
+    url: string,
+    opacity: number,
+    color?: string
+  ) => {
+    const updatedColor = color || themeColor;
+
     setBackground(url);
     setCardOpacity(opacity);
-    storageService.setBackground(url);
+    setThemeColor(updatedColor);
+
+    if (color) setThemeColorAuto(false);
+
+    try {
+      await storageService.setBackground(url);
+      await storageService.savePreferences(
+        {
+          cardOpacity: opacity,
+          themeColor: updatedColor,
+          themeMode,
+          themeColorAuto: color ? false : themeColorAuto,
+        },
+        true
+      );
+    } catch (err) {
+      console.error("Failed to save theme preferences:", err);
+    }
+  };
+
+  const handleUpdateThemeColor = (color: string, auto: boolean) => {
+    setThemeColor(color);
+    setThemeColorAuto(auto);
+    document.documentElement.style.setProperty("--theme-primary", color);
+
+    storageService.savePreferences({
+      cardOpacity,
+      themeColor: color,
+      themeMode,
+      themeColorAuto: auto,
+    });
   };
 
   const toggleTheme = () => {
@@ -646,8 +681,9 @@ const App: React.FC = () => {
         categories={categories}
         setCategories={setCategories}
         background={background}
-        prefs={{ cardOpacity }}
+        prefs={{ cardOpacity, themeColor, themeMode, themeColorAuto }}
         onUpdateAppearance={handleUpdateAppearance}
+        onUpdateTheme={handleUpdateThemeColor}
         isDefaultCode={isDefaultCode}
       />
     </div>

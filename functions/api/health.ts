@@ -1,5 +1,5 @@
 interface Env {
-  DB: D1Database;
+  DB?: D1Database;
 }
 
 import { logger } from "./utils/logger";
@@ -12,16 +12,22 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
 
   try {
     // 检查数据库连接
-    try {
-      await env.DB.prepare("SELECT 1").first();
-      checks.database = {
-        status: "healthy",
-        responseTime: Date.now() - startTime,
-      };
-    } catch (error) {
-      checks.database = { status: "unhealthy", error: error.message };
+    if (!env.DB) {
+      checks.database = { status: "unavailable", error: "Database not bound" };
       status = "degraded";
       statusCode = 503;
+    } else {
+      try {
+        await env.DB.prepare("SELECT 1").first();
+        checks.database = {
+          status: "healthy",
+          responseTime: Date.now() - startTime,
+        };
+      } catch (error) {
+        checks.database = { status: "unhealthy", error: error.message };
+        status = "degraded";
+        statusCode = 503;
+      }
     }
 
     // 检查系统内存使用情况（简单检查）

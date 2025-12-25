@@ -1,5 +1,5 @@
 interface Env {
-  DB: D1Database;
+  DB?: D1Database;
 }
 
 // 简单内存缓存，减少数据库查询
@@ -23,9 +23,9 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
     }
 
     // 从数据库获取数据
-    const { results } = await env.DB.prepare(
+    const { results } = env.DB ? await env.DB.prepare(
       "SELECT key, value FROM config"
-    ).all<{ key: string; value: string }>();
+    ).all<{ key: string; value: string }>() : { results: [] };
 
     const configMap = new Map();
     results?.forEach((row) => configMap.set(row.key, row.value));
@@ -39,13 +39,45 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
       categories = JSON.parse(configMap.get("categories") || "[]");
 
       // 验证categories结构
-      if (!Array.isArray(categories)) {
-        console.warn("Invalid categories format in database, using default");
-        categories = [];
+      if (!Array.isArray(categories) || categories.length === 0) {
+        console.warn("Invalid or empty categories format in database, using default");
+        // 返回默认分类结构
+        categories = [
+          {
+            id: "home",
+            title: "Home",
+            subCategories: [
+              {
+                id: "default",
+                title: "Default",
+                items: [
+                  { id: "1", title: "Google", url: "https://google.com", icon: "Search" },
+                  { id: "2", title: "GitHub", url: "https://github.com", icon: "Github" }
+                ]
+              }
+            ]
+          }
+        ];
       }
     } catch (e) {
       console.error("Error parsing categories from database:", e);
-      categories = [];
+      // 返回默认分类结构
+      categories = [
+        {
+          id: "home",
+          title: "Home",
+          subCategories: [
+            {
+              id: "default",
+              title: "Default",
+              items: [
+                { id: "1", title: "Google", url: "https://google.com", icon: "Search" },
+                { id: "2", title: "GitHub", url: "https://github.com", icon: "Github" }
+              ]
+            }
+          ]
+        }
+      ];
     }
 
     try {
@@ -56,9 +88,14 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
         console.warn("Invalid background format in database, using default");
         background = null;
       }
+      
+      // 如果没有背景，使用默认背景
+      if (!background) {
+        background = "radial-gradient(circle at 50% -20%, #334155, #0f172a, #020617)";
+      }
     } catch (e) {
       console.error("Error parsing background from database:", e);
-      background = null;
+      background = "radial-gradient(circle at 50% -20%, #334155, #0f172a, #020617)";
     }
 
     try {
@@ -69,9 +106,22 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
         console.warn("Invalid prefs format in database, using default");
         prefs = null;
       }
+      
+      // 如果没有prefs，使用默认值
+      if (!prefs) {
+        prefs = {
+          cardOpacity: 0.1,
+          themeColor: "#6280a3",
+          themeMode: "dark" // 字符串形式，将在前端被正确解析
+        };
+      }
     } catch (e) {
       console.error("Error parsing prefs from database:", e);
-      prefs = null;
+      prefs = {
+        cardOpacity: 0.1,
+        themeColor: "#6280a3",
+        themeMode: "dark"
+      };
     }
 
     const authCode = configMap.get("auth_code");
@@ -102,11 +152,30 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
     // 即使出错也返回基本结构，确保前端能正常工作
     return new Response(
       JSON.stringify({
-        categories: [],
-        background: null,
-        prefs: null,
+        categories: [
+          {
+            id: "home",
+            title: "Home",
+            subCategories: [
+              {
+                id: "default",
+                title: "Default",
+                items: [
+                  { id: "1", title: "Google", url: "https://google.com", icon: "Search" },
+                  { id: "2", title: "GitHub", url: "https://github.com", icon: "Github" }
+                ]
+              }
+            ]
+          }
+        ],
+        background: "radial-gradient(circle at 50% -20%, #334155, #0f172a, #020617)",
+        prefs: {
+          cardOpacity: 0.1,
+          themeColor: "#6280a3",
+          themeMode: "dark"
+        },
         isDefaultCode: true,
-        error: "Failed to load configuration",
+        error: "Failed to load configuration, using defaults",
       }),
       {
         status: 500,

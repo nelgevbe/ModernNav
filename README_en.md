@@ -61,10 +61,10 @@ To test the Backend API and D1 storage locally, you need `wrangler`.
     npm install -D wrangler
     ```
 
-2.  Initialize local database schema (using the SQL file):
+2.  Initialize local database schema (using the text file):
 
     ```bash
-    npx wrangler d1 execute modern-nav-db --local --file=./schema.sql
+    npx wrangler d1 execute modern-nav-db --local --file=./schema.txt
     ```
 
 3.  Run the Cloudflare Pages simulation:
@@ -98,7 +98,7 @@ Push this code to your GitHub or GitLab repository.
 1.  After the project is created, go to **Workers & Pages** > **D1**.
 2.  Click **Create** to create a database (e.g., `modern-nav-db`).
 3.  Go to the database **Console** tab.
-4.  Open `schema.sql` in your project, copy the content, paste it into the console, and click **Execute**.
+4.  Open `schema.txt` in your project, copy the content, paste it into the console, and click **Execute**.
 5.  Go back to your Pages project settings: **Settings** > **Functions** > **D1 Database Bindings**.
 6.  Add a binding:
     - **Variable name:** `DB` (Must be exact)
@@ -116,37 +116,43 @@ Push this code to your GitHub or GitLab repository.
 
 ### Customization
 
-- **Content:** Add categories and links in the "Content" tab. Reorder them using drag and drop.
+- **Content:** Add categories, sub-menus, and links in the "Content" tab. Reorder them using drag and drop.
 - **Appearance:** Change the background URL and adjust card opacity in the "Appearance" tab.
 
 ## 📂 Project Structure
 
-```
-├── components/        # React UI components
-│   ├── GlassCard.tsx  # Glassmorphism card component
-│   ├── LinkManagerModal.tsx  # Link management modal
-│   ├── SearchBar.tsx  # Search bar component
-│   ├── SyncIndicator.tsx  # Sync status indicator
-│   └── Toast.tsx      # Toast notification component
-├── contexts/          # React Contexts
-│   └── LanguageContext.tsx  # Internationalization context
-├── functions/api/     # Cloudflare Pages Functions (Backend API)
-│   ├── bootstrap.ts   # Initial data load (Read D1)
-│   ├── update.ts      # Data save (Write D1)
-│   ├── auth.ts        # Authentication API endpoint (handles login, token refresh, etc.)
-│   ├── health.ts      # Health check endpoint
-│   └── utils/         # API utility library
-│       ├── authHelpers.ts  # Authentication utilities (encryption, verification, rate limiting, etc.)
-│       ├── logger.ts  # Logging utilities
-│       └── validation.ts  # Data validation utilities
-├── services/          # Service layer
-│   └── storage.ts     # Data storage service
-├── utils/             # Utility functions
-│   └── color.ts       # Color processing utilities
-├── schema.sql         # Database initialization script (SQL)
-├── constants.tsx      # Constants definitions
-├── types.ts           # TypeScript type definitions
-└── ROADMAP.md         # Development roadmap
+```text
+├── components/                 # React UI Components
+│   ├── settings/               # Settings Modal Tabs
+│   │   ├── AppearanceTab.tsx   # Appearance settings
+│   │   ├── AuthScreen.tsx      # Login/Verification screen
+│   │   ├── ContentTab.tsx      # Content management (Categories/Links)
+│   │   ├── DataTab.tsx         # Data import/export
+│   │   └── SecurityTab.tsx     # Security settings (Change password)
+│   ├── CategoryNav.tsx         # Main Navigation Bar
+│   ├── GlassCard.tsx           # Frosted Glass Card Component
+│   ├── IconPicker.tsx          # Icon Selector
+│   ├── LinkManagerModal.tsx    # Settings Modal Container
+│   ├── SearchBar.tsx           # Aggregated Search Bar
+│   ├── SyncIndicator.tsx       # Cloud Sync Status Indicator
+│   └── Toast.tsx               # Notification Component
+├── contexts/                   # React Context
+│   └── LanguageContext.tsx     # Internationalization State
+├── functions/api/              # Cloudflare Pages Functions (Backend API)
+│   ├── auth.ts                 # Authentication Logic (Login/Refresh/Update)
+│   ├── bootstrap.ts            # Initial Data Load (Read D1)
+│   └── update.ts               # Data Persistence (Write D1)
+├── hooks/                      # Custom Hooks
+│   └── useCategoryDragDrop.ts  # Complex Drag & Drop Logic Encapsulation
+├── services/                   # Business Logic Services
+│   └── storage.ts              # Core Data Layer (Cache, Sync, Crypto, API)
+├── utils/                      # Utilities
+│   └── color.ts                # Dominant Color Extraction Algorithm
+├── App.tsx                     # Main Application Component
+├── constants.tsx               # Default Constants
+├── schema.sql                  # Database Initialization SQL
+├── types.ts                    # TypeScript Type Definitions
+└── ...
 ```
 
 ## 📄 License

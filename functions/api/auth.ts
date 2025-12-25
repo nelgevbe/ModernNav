@@ -1,5 +1,5 @@
 interface Env {
-  DB: D1Database;
+  DB?: D1Database;
 }
 
 // 导入共享工具
@@ -50,6 +50,53 @@ export const onRequestPost = async ({
         JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }),
         {
           status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // 如果没有数据库，使用默认密码
+    if (!env.DB) {
+      console.log("No database available, using default code");
+      const storedCode = "admin";
+
+      // 登录
+      if (action === "login") {
+        if (!code || typeof code !== "string") {
+          return new Response(
+            JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }),
+            {
+              status: 400,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        if (code !== storedCode) {
+          console.log(`Login failed: provided="${code}", stored="${storedCode}"`);
+          return new Response(
+            JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }),
+            {
+              status: 401,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        return respondWithCookie(
+          {
+            success: true,
+            accessToken: await generateToken("access", storedCode),
+          },
+          await generateToken("refresh", storedCode)
+        );
+      }
+
+      // 其他操作返回错误
+      return new Response(
+        JSON.stringify({ error: "Database not available for this operation" }),
+        {
+          status: 503,
           headers: { "Content-Type": "application/json" },
         }
       );
@@ -196,6 +243,16 @@ export const onRequestPost = async ({
           }),
           {
             status: 400,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      if (!env.DB) {
+        return new Response(
+          JSON.stringify({ error: "Database not available for password update" }),
+          {
+            status: 503,
             headers: { "Content-Type": "application/json" },
           }
         );

@@ -88,8 +88,8 @@ export const GlassCard: React.FC<GlassCardProps> = ({
         className="absolute inset-0 pointer-events-none rounded-2xl z-0"
         style={{
           boxShadow: isDark
-            ? "inset 0 1px 0 0 rgba(255,255,255,0.08)"
-            : "inset 0 1px 0 0 rgba(255,255,255,0.4)",
+            ? "inset 0 0.4px 0 0 rgba(255,255,255,0.08)"
+            : "inset 0 0.4px 0 0 rgba(255,255,255,0.4)",
         }}
       />
 

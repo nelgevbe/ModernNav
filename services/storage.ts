@@ -1,4 +1,4 @@
-import { Category, ThemeMode } from "../types";
+import { Category, ThemeMode, UserPreferences } from "../types";
 import { INITIAL_CATEGORIES } from "../constants";
 
 // --- AUTH STATE ---
@@ -30,16 +30,11 @@ export const DEFAULT_BACKGROUND =
   "radial-gradient(circle at 50% -20%, #334155, #0f172a, #020617)";
 const CURRENT_BACKUP_VERSION = 1;
 
-export interface UserPreferences {
-  cardOpacity: number;
-  themeColor?: string;
-  themeMode: ThemeMode;
-}
-
 const DEFAULT_PREFS: UserPreferences = {
   cardOpacity: 0.1,
   themeColor: "#6280a3",
   themeMode: ThemeMode.Dark,
+  themeColorAuto: true,
 };
 
 // Backup Data Structure
@@ -58,10 +53,12 @@ const safeJsonParse = <T>(jsonString: string | null, fallback: T): T => {
   try {
     const parsed = JSON.parse(jsonString);
     if (parsed && typeof parsed === "object" && "data" in parsed) {
-      if (Array.isArray(fallback) && Array.isArray(parsed.data))
+      if (Array.isArray(fallback) && Array.isArray(parsed.data)) {
         return parsed.data as T;
-      if (!Array.isArray(fallback) && typeof parsed.data === "object")
+      }
+      if (!Array.isArray(fallback) && typeof parsed.data === "object") {
         return parsed.data as T;
+      }
     }
     return parsed as T;
   } catch (e) {
@@ -439,8 +436,8 @@ export const storageService = {
     storageService._saveItem(LS_KEYS.CATEGORIES, categories, "categories"),
   setBackground: async (url: string) =>
     storageService._saveItem(LS_KEYS.BACKGROUND, url, "background"),
-  savePreferences: async (prefs: UserPreferences) =>
-    storageService._saveItem(LS_KEYS.PREFS, prefs, "prefs"),
+  savePreferences: async (prefs: UserPreferences, force: boolean = false) =>
+    storageService._saveItem(LS_KEYS.PREFS, prefs, "prefs", force),
   syncPendingChanges: async (force = false) => {
     if (!storageService._isOnline && !force) {
       storageService._pendingSync = true;

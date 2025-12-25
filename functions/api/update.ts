@@ -1,9 +1,14 @@
 interface Env {
-  DB: D1Database;
+  DB?: D1Database;
 }
 
 // 导入共享工具
-import { verify, getClientIP, RateLimiter, ERROR_MESSAGES } from "./utils/authHelpers";
+import {
+  verify,
+  getClientIP,
+  RateLimiter,
+  ERROR_MESSAGES,
+} from "./utils/authHelpers";
 
 // 创建速率限制器实例
 const updateRateLimiter = new RateLimiter(20, 60 * 1000); // 1分钟内最多20次更新请求
@@ -41,6 +46,16 @@ export const onRequestPost = async ({
         JSON.stringify({ error: ERROR_MESSAGES.UNAUTHORIZED }),
         {
           status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!env.DB) {
+      return new Response(
+        JSON.stringify({ error: "Database not available" }),
+        {
+          status: 503,
           headers: { "Content-Type": "application/json" },
         }
       );
@@ -122,6 +137,16 @@ export const onRequestPost = async ({
         }),
         {
           status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!env.DB) {
+      return new Response(
+        JSON.stringify({ error: "Database not available" }),
+        {
+          status: 503,
           headers: { "Content-Type": "application/json" },
         }
       );

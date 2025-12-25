@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export interface LinkItem {
   id: string;
@@ -28,6 +28,13 @@ export interface SearchEngine {
 }
 
 export enum ThemeMode {
-  Dark = 'dark',
-  Light = 'light'
+  Dark = "dark",
+  Light = "light",
+}
+
+export interface UserPreferences {
+  cardOpacity: number;
+  themeColor?: string;
+  themeMode: ThemeMode;
+  themeColorAuto?: boolean;
 }
