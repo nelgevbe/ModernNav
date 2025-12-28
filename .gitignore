@@ -24,6 +24,7 @@ dist-ssr
 *.sln
 *.sw?
 
+
 # Dependency directories
 node_modules/*
 package-lock.json
@@ -32,4 +33,3 @@ scripts/*
 functions/_worker.ts
 .wrangler/*
 wrangler.toml
-.vscode/*

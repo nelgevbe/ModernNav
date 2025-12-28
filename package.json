@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "dev:all": "wrangler pages dev --proxy 3000 --d1 DB=6a7615a5-58c7-486e-85f1-5defec3dab01"
+    "dev:all": "wrangler pages dev --proxy 3000"
   },
   "dependencies": {
     "lucide-react": "^0.344.0",
