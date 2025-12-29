@@ -16,9 +16,10 @@ Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + D1
 - **🔍 Aggregated Search:** Integrated search bar supporting Google, Bing, Baidu, GitHub, and more.
 - **🔐 Stateless Security:** Implements **Stateless Dual Token Authentication** (HMAC-Signed). Sessions require **zero database writes**, using D1 only for storing the admin code, while maintaining maximum security via HttpOnly Cookies and token rotation against XSS/CSRF.
 - **🛡️ Robust Data Handling:** Built-in strict type validation and automatic error recovery prevent application crashes (White Screen of Death) caused by malformed data structure updates.
-- **☁️ Smart Hybrid Storage:**
-  - **Read Strategy (Network First):** Prioritizes fetching the latest data from the cloud, automatically falling back to local cache if offline, ensuring instant loading and offline availability.
-  - **Write Strategy (Optimistic UI):** Changes are applied immediately to the interface without waiting for server response, while silently syncing to Cloudflare D1 in the background for a smooth experience.
+- **☁️ Smart Hybrid Storage (v2.0):**
+  - **Dirty Data Priority (Dirty-First):** Introduces intelligent state tracking. If there are unsynced local changes (Dirty Data), the system enforces the use of local data to prevent overwriting by stale cloud data.
+  - **State Persistence:** "Unsynced" status is persisted. Even if you refresh the page or close the browser immediately after making changes, your data remains safe and will automatically retry syncing when online.
+  - **Instant Consistency:** Removed server-side caching to ensure every configuration read fetches the latest data from the database, eliminating "reversion" issues.
 - **🌍 Internationalization:** Built-in support for English and Chinese (Simplified).
 - **💾 Full Backup:** Export your entire configuration (links, background, settings) to JSON and restore anytime.
 

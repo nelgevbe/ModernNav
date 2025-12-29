@@ -2,25 +2,8 @@ interface Env {
   DB?: D1Database;
 }
 
-// 简单内存缓存，减少数据库查询
-const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 5 * 1000; // 5秒缓存
-
 export const onRequestGet = async ({ env }: { env: Env }) => {
   try {
-    // 检查缓存
-    const cacheKey = "bootstrap_data";
-    const cached = cache.get(cacheKey);
-
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      return new Response(JSON.stringify(cached.data), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "public, max-age=30",
-        },
-      });
-    }
 
     // 从数据库获取数据
     const { results } = env.DB ? await env.DB.prepare(
@@ -132,18 +115,11 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
       isDefaultCode: !authCode || authCode === "admin",
     };
 
-    // 更新缓存
-    cache.set(cacheKey, {
-      data: responseData,
-      timestamp: Date.now(),
-    });
-
     return new Response(JSON.stringify(responseData), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=30",
-        ETag: `"${Date.now()}"`, // 简单的ETag
+        "Cache-Control": "no-store",
       },
     });
   } catch (error) {

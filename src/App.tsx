@@ -221,6 +221,7 @@ const App: React.FC = () => {
       cardOpacity,
       themeColor,
       themeMode: newTheme,
+      themeColorAuto,
     });
   };
 

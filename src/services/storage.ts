@@ -24,6 +24,7 @@ const LS_KEYS = {
   CATEGORIES: "modernNav_categories",
   BACKGROUND: "modernNav_bg",
   PREFS: "modernNav_prefs",
+  DIRTY: "modernNav_dirty",
 };
 
 export const DEFAULT_BACKGROUND =
@@ -155,6 +156,8 @@ export const storageService = {
         return;
       }
 
+      storageService._loadDirtyState();
+      
       const storedToken = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
       const storedExpiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
 
@@ -209,9 +212,37 @@ export const storageService = {
     );
   },
 
+
   _isSynced: false,
   _isOnline: navigator.onLine,
   _pendingSync: false,
+  _dirty: {
+    categories: false,
+    background: false,
+    prefs: false,
+  },
+
+  _saveDirtyState: () => {
+    safeLocalStorageSet(LS_KEYS.DIRTY, storageService._dirty);
+  },
+
+  _loadDirtyState: () => {
+    const dirtyState = safeJsonParse(localStorage.getItem(LS_KEYS.DIRTY), {
+      categories: false,
+      background: false,
+      prefs: false,
+    });
+    // Ensure structure is valid
+    storageService._dirty = {
+      categories: !!dirtyState?.categories,
+      background: !!dirtyState?.background,
+      prefs: !!dirtyState?.prefs,
+    };
+    storageService._pendingSync = Object.values(storageService._dirty).some(
+      (v) => v
+    );
+  },
+
 
   _setupOnlineListener: () => {
     if (typeof window !== "undefined") {
@@ -324,7 +355,27 @@ export const storageService = {
       cloudData?.prefs ||
       safeJsonParse(localStorage.getItem(LS_KEYS.PREFS), DEFAULT_PREFS);
 
-    // 背景图和 categories 防护逻辑
+    // Data Priority: Local (if dirty) > Cloud > Local (fallback) > Default
+    
+    // 1. Categories
+    if (!storageService._dirty.categories && cloudData?.categories) {
+       finalCategories = cloudData.categories;
+    } else {
+       // Keep local version (it's either dirty or cloud is missing/failed)
+       // logic already handled by initial assignment from localStorage above
+    }
+
+    // 2. Background
+    if (!storageService._dirty.background && cloudData?.background) {
+       finalBackground = cloudData.background;
+    }
+
+    // 3. Prefs
+    if (!storageService._dirty.prefs && cloudData?.prefs) {
+       finalPrefs = cloudData.prefs;
+    }
+
+    // 防护逻辑
     if (!Array.isArray(finalCategories)) finalCategories = INITIAL_CATEGORIES;
     if (
       typeof finalBackground === "string" &&
@@ -377,6 +428,13 @@ export const storageService = {
 
   _saveItem: async (key: string, data: any, type: string, force = false) => {
     safeLocalStorageSet(key, data);
+    
+    // Mark as dirty and save status
+    if (type === "categories") storageService._dirty.categories = true;
+    if (type === "background") storageService._dirty.background = true;
+    if (type === "prefs") storageService._dirty.prefs = true;
+    storageService._saveDirtyState();
+    
     const token = await ensureAccessToken();
     if (!token) {
       storageService._isSynced = false;
@@ -410,6 +468,16 @@ export const storageService = {
       if (res.ok) {
         storageService._isSynced = true;
         storageService._pendingSync = false;
+        
+        // Clear dirty flag for this specific type
+        if (type === "categories") storageService._dirty.categories = false;
+        if (type === "background") storageService._dirty.background = false;
+        if (type === "prefs") storageService._dirty.prefs = false;
+        storageService._saveDirtyState();
+
+        // Check if any other items are still dirty
+        storageService._pendingSync = Object.values(storageService._dirty).some(v => v);
+
       } else if (res.status === 401) {
         _accessToken = null;
         localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
@@ -456,71 +524,59 @@ export const storageService = {
 
     try {
       storageService.notifySyncStatus(true);
+      
+      // Load current dirty state
+      storageService._loadDirtyState();
+      const dirty = storageService._dirty;
 
-      // 获取云端数据
+      // 1. Push Local -> Cloud (Only if dirty)
+      if (dirty.categories) {
+        const data = safeJsonParse(localStorage.getItem(LS_KEYS.CATEGORIES), []);
+        await storageService._saveItem(LS_KEYS.CATEGORIES, data, "categories", true);
+      }
+      if (dirty.background) {
+         const data = localStorage.getItem(LS_KEYS.BACKGROUND) || "";
+         await storageService._saveItem(LS_KEYS.BACKGROUND, data, "background", true);
+      }
+      if (dirty.prefs) {
+         const data = safeJsonParse(localStorage.getItem(LS_KEYS.PREFS), {});
+         await storageService._saveItem(LS_KEYS.PREFS, data, "prefs", true);
+      }
+
+      // 2. Pull Cloud -> Local (Only if Clean)
+      // fetch cloud data to check if we need to update anything that is NOT dirty
       const res = await fetch("/api/bootstrap");
       if (!res.ok) throw new Error("Failed to fetch cloud data");
       const cloudData = await res.json();
 
-      // 获取本地数据
-      const localCategories = safeJsonParse(
-        localStorage.getItem(LS_KEYS.CATEGORIES),
-        null
-      );
-      const localBackground = localStorage.getItem(LS_KEYS.BACKGROUND);
-      const localPrefs = safeJsonParse(
-        localStorage.getItem(LS_KEYS.PREFS),
-        null
-      );
+      let updated = false;
 
-      // 比较数据并处理冲突
-      const categoriesChanged =
-        JSON.stringify(localCategories) !==
-        JSON.stringify(cloudData.categories);
-      const backgroundChanged = localBackground !== cloudData.background;
-      const prefsChanged =
-        JSON.stringify(localPrefs) !== JSON.stringify(cloudData.prefs);
-
-      // 如果有本地更改，推送到云端
-      if (categoriesChanged && localCategories) {
-        await storageService._saveItem(
-          LS_KEYS.CATEGORIES,
-          localCategories,
-          "categories",
-          true
-        );
+      if (!storageService._dirty.categories && cloudData.categories) {
+         // Check if different to avoid unnecessary writes/renders? 
+         // For now, trust cloud is 'truth' if local is clean.
+         safeLocalStorageSet(LS_KEYS.CATEGORIES, cloudData.categories);
+         updated = true;
+      }
+      
+      if (!storageService._dirty.background && cloudData.background) {
+         safeLocalStorageSet(LS_KEYS.BACKGROUND, cloudData.background);
+         updated = true;
+      }
+      
+      if (!storageService._dirty.prefs && cloudData.prefs) {
+         safeLocalStorageSet(LS_KEYS.PREFS, cloudData.prefs);
+         updated = true;
       }
 
-      if (backgroundChanged && localBackground) {
-        await storageService._saveItem(
-          LS_KEYS.BACKGROUND,
-          localBackground,
-          "background",
-          true
-        );
+      if (updated) {
+        // We can notify the user gently, or just silently succeed.
+        // Removed the "Data synced from cloud" toast as requested to reduce noise.
       }
+      
+      // Re-evaluate pending sync status
+      storageService._pendingSync = Object.values(storageService._dirty).some(v => v);
+      storageService._isSynced = !storageService._pendingSync;
 
-      if (prefsChanged && localPrefs) {
-        await storageService._saveItem(
-          LS_KEYS.PREFS,
-          localPrefs,
-          "prefs",
-          true
-        );
-      }
-
-      // 如果没有本地更改，从云端拉取
-      if (!categoriesChanged && !backgroundChanged && !prefsChanged) {
-        safeLocalStorageSet(LS_KEYS.CATEGORIES, cloudData.categories);
-        safeLocalStorageSet(LS_KEYS.BACKGROUND, cloudData.background);
-        safeLocalStorageSet(LS_KEYS.PREFS, cloudData.prefs);
-
-        // 通知前端数据已更新
-        storageService.notify("info", "Data synced from cloud");
-      }
-
-      storageService._isSynced = true;
-      storageService._pendingSync = false;
     } catch (error) {
       console.error("Sync failed:", error);
       storageService._pendingSync = true;
