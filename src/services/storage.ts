@@ -27,6 +27,12 @@ const DEFAULT_PREFS: UserPreferences = {
   themeColor: "#6280a3",
   themeMode: ThemeMode.Dark,
   themeColorAuto: true,
+  faviconApi: "https://favicon.im/{domain}?larger=true",
+  siteTitle: "ModernNav",
+  footerGithub: "https://github.com/lyan0220",
+  footerLinks: [
+    { title: "Friendly Links", url: "https://coyoo.ggff.net/" }
+  ],
 };
 
 // Backup Data Structure

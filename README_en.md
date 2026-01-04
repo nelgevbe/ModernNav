@@ -8,14 +8,17 @@ Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + D1
 
 ## ✨ Features
 
-- **🎨 Immersive UI (v3.0):** Features a full-width background preview with a high-density "Custom Settings" control area, supporting real-time previews and frosted glass effects.
-- **⚙️ Precision Layout Engine (v3.0):** Supports dynamic adjustment of card dimensions, canvas width, grid columns, and card opacity, ensuring layout determinacy.
-- **🔌 Core Architecture Decoupling (v3.0):** Business logic is completely decoupled from the view layer into the `useDashboardLogic` hook, significantly improving responsiveness and code robustness.
-- **🌓 Intelligent Color Extraction:** Supports automatic theme switching and intelligently extracts dominant colors from background images.
-- **🖱️ Drag & Drop:** Easily reorder categories and links via a drag-and-drop interface in management.
-- **🖼️ High Personalization:** Deeply customize card specifications, background styles, and theme details for ultimate creative freedom.
-- **🌍 I18n & Human-centric Copy:** Built-in support for professionally optimized English and Chinese human-centric copy.
-- **⚡ Minimalist Feedback System:** Proprietary text-only glowing floating notifications for zero visual noise.
+- **🎨 Modern Card UI (v3.0):** Supports background preview and real-time configuration preview with frosted glass effects.
+- **⚙️ Global Configuration (v3.1):** "General" tab to manage site title, Favicon API, and footer links.
+- **🧩 Dynamic Footer System (v3.1):** Supports custom GitHub links and multiple friendship links.
+- **🌐 Custom Favicon API (v3.1):** Configure Favicon fetching services (e.g., Google, favicon.im) with `{domain}` placeholder.
+- **📐 Flexible Layout Settings (v3.0):** Adjust card dimensions, canvas width, grid columns, and card opacity.
+- **🔌 Logical Hook Management (v3.0):** Business logic managed via the `useDashboardLogic` hook.
+- **🌓 Intelligent Color Extraction:** Supports automatic theme switching and extracts dominant colors from backgrounds.
+- **🖱️ Drag & Drop:** Reorder categories and links via drag-and-drop.
+- **🖼️ High Personalization:** Customize card specifications, background styles, and theme details.
+- **🌍 I18n & Copy Support:** Built-in support for English and Chinese copy across all settings.
+- **⚡ Lightweight Status Indicators:** Text-only floating notifications to reduce visual noise.
 - **🔐 Enhanced Security (v2.1):** Unified API client with HttpOnly Cookie silent refresh and CSRF protection.
 - **☁️ Smart Hybrid Storage (v2.0):** Features a "Dirty-First" strategy and state persistence to prevent data loss.
 - **💾 Full Backup:** One-click data export and restore for total control.
@@ -137,6 +140,7 @@ Push this code to your GitHub or GitLab repository.
 │   │   │   ├── AuthScreen.tsx      # Auth/Login Screen
 │   │   │   ├── ContentTab.tsx      # Content Management Tab
 │   │   │   ├── DataTab.tsx         # Data Backup/Restore Tab
+│   │   │   ├── GeneralTab.tsx      # General Settings Tab (New)
 │   │   │   └── SecurityTab.tsx     # Security Settings Tab
 │   │   ├── BackgroundLayer.tsx # Immersive Background Rendering
 │   │   ├── CategoryNav.tsx     # Navigation Bar
@@ -160,7 +164,8 @@ Push this code to your GitHub or GitLab repository.
 │   ├── types/                  # TypeScript Types
 │   │   └── index.ts            # Type Definitions
 │   ├── utils/                  # Frontend Utilities
-│   │   └── color.ts            # Color Extraction
+│   │   ├── color.ts            # Color Extraction
+│   │   └── favicon.ts          # Favicon Generation (New)
 │   ├── App.tsx                 # Root Component
 │   ├── constants.tsx           # App Constants
 │   ├── index.tsx               # Entry Point

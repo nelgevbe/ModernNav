@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   Image as ImageIcon,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { Category, UserPreferences } from "../types";
 import { storageService } from "../services/storage";
@@ -16,6 +17,7 @@ import { AppearanceTab } from "./settings/AppearanceTab";
 import { DataTab } from "./settings/DataTab";
 import { SecurityTab } from "./settings/SecurityTab";
 import { ContentTab } from "./settings/ContentTab";
+import { GeneralTab } from "./settings/GeneralTab";
 
 interface LinkManagerModalProps {
   isOpen: boolean;
@@ -29,7 +31,8 @@ interface LinkManagerModalProps {
     opacity: number,
     color?: string,
     layoutPrefs?: { width: number; cardWidth: number; cardHeight: number; cols: number },
-    themeAuto?: boolean
+    themeAuto?: boolean,
+    extraPrefs?: Partial<UserPreferences>
   ) => void;
 
   isDefaultCode?: boolean;
@@ -52,7 +55,7 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
 
   // --- UI State ---
   const [activeTab, setActiveTab] = useState<
-    "content" | "appearance" | "data" | "security"
+    "content" | "appearance" | "general" | "data" | "security"
   >("content");
 
   // Initial Auth Check
@@ -151,6 +154,17 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
                     {t("tab_content")}
                   </button>
                   <button
+                    onClick={() => setActiveTab("general")}
+                    className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      activeTab === "general"
+                        ? "bg-[var(--theme-primary)] text-white shadow-md"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <Settings size={14} className="inline mr-1 mb-0.5" />{" "}
+                    {t("tab_general") || "General"}
+                  </button>
+                  <button
                     onClick={() => setActiveTab("appearance")}
                     className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${
                       activeTab === "appearance"
@@ -209,6 +223,13 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
                 <ContentTab
                   categories={categories}
                   onUpdateCategories={syncCategories}
+                  faviconApi={prefs.faviconApi}
+                />
+              )}
+              {activeTab === "general" && (
+                <GeneralTab
+                  prefs={prefs}
+                  onUpdate={(newPrefs) => onUpdateAppearance(background, prefs.cardOpacity, prefs.themeColor, undefined, prefs.themeColorAuto, newPrefs)}
                 />
               )}
               {activeTab === "appearance" && (

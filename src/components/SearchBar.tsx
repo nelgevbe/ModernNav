@@ -3,12 +3,15 @@ import { Search, ChevronDown } from "lucide-react";
 import { SearchEngine, ThemeMode } from "../types";
 import { SEARCH_ENGINES } from "../constants";
 import { useLanguage } from "../contexts/LanguageContext";
+import { getFaviconUrl } from "../utils/favicon";
+import { SmartIcon } from "./SmartIcon";
 
 interface SearchBarProps {
   themeMode: ThemeMode;
+  faviconApi?: string;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({ themeMode }) => {
+export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) => {
   const [query, setQuery] = useState("");
   const [selectedEngine, setSelectedEngine] = useState<SearchEngine>(
     SEARCH_ENGINES[0]
@@ -121,8 +124,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({ themeMode }) => {
                   : "text-slate-500 hover:text-slate-900 hover:bg-black/5"
               }`}
             >
-              <span className="flex items-center justify-center w-5 h-5 rounded-md overflow-hidden shadow-sm opacity-60 group-hover:opacity-100 transition-opacity">
-                {selectedEngine.icon}
+              <span className="flex items-center justify-center w-5 h-5 rounded-md overflow-hidden shadow-sm transition-opacity">
+                <SmartIcon 
+                  icon={getFaviconUrl(selectedEngine.icon, faviconApi)} 
+                  size={20} 
+                  imgClassName="w-5 h-5 object-contain"
+                />
               </span>
               <ChevronDown
                 size={14}
@@ -176,8 +183,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({ themeMode }) => {
                       : `opacity-90 ${itemHover}`
                   }`}
                 >
-                  <span className="w-3.5 h-3.5 flex items-center justify-center rounded-sm overflow-hidden shadow-sm bg-white/10">
-                    {engine.icon}
+                  <span className="w-3.5 h-3.5 flex items-center justify-center rounded-sm overflow-hidden shadow-sm">
+                    <SmartIcon 
+                      icon={getFaviconUrl(engine.icon, faviconApi)} 
+                      size={14}
+                      imgClassName="w-3.5 h-3.5 object-contain"
+                    />
                   </span>
                   <span className="font-medium tracking-tight">
                     {engine.name}

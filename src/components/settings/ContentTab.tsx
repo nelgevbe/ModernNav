@@ -17,10 +17,12 @@ import { Category, LinkItem, SubCategory } from "../../types";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { IconPicker } from "../IconPicker";
 import { useCategoryDragDrop } from "../../hooks/useCategoryDragDrop";
+import { getFaviconUrl } from "../../utils/favicon";
 
 interface ContentTabProps {
   categories: Category[];
   onUpdateCategories: (categories: Category[]) => void;
+  faviconApi?: string;
 }
 
 type LinkFormData = Partial<LinkItem> & { subCategoryId: string };
@@ -28,6 +30,7 @@ type LinkFormData = Partial<LinkItem> & { subCategoryId: string };
 export const ContentTab: React.FC<ContentTabProps> = ({
   categories,
   onUpdateCategories,
+  faviconApi,
 }) => {
   const { t } = useLanguage();
 
@@ -292,13 +295,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
 
     let finalIcon = linkFormData.icon;
     if (!finalIcon && linkFormData.url) {
-      try {
-        const urlToParse = linkFormData.url.match(/^https?:\/\//)
-          ? linkFormData.url
-          : `https://${linkFormData.url}`;
-        const hostname = new URL(urlToParse).hostname;
-        if (hostname) finalIcon = `https://favicon.im/${hostname}?larger=true`;
-      } catch (e) {}
+      finalIcon = getFaviconUrl(linkFormData.url, faviconApi) || "Link";
     }
 
     const newItem: LinkItem = {

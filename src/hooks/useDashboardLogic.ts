@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { storageService, DEFAULT_BACKGROUND } from "../services/storage";
 import { getDominantColor } from "../utils/color";
 import { Category, ThemeMode, UserPreferences } from "../types";
@@ -21,6 +21,11 @@ export const useDashboardLogic = () => {
   const [cardWidth, setCardWidth] = useState<number>(96);
   const [cardHeight, setCardHeight] = useState<number>(96);
   const [gridColumns, setGridColumns] = useState<number>(6);
+  // New Global Preferences
+  const [siteTitle, setSiteTitle] = useState<string>("ModernNav");
+  const [faviconApi, setFaviconApi] = useState<string>("https://favicon.im/{domain}?larger=true");
+  const [footerGithub, setFooterGithub] = useState<string>("https://github.com/lyan0220");
+  const [footerLinks, setFooterLinks] = useState<{title: string, url: string}[]>([]);
 
   const { language, setLanguage } = useLanguage();
 
@@ -43,6 +48,10 @@ export const useDashboardLogic = () => {
         setCardWidth(data.prefs.cardWidth ?? 96);
         setCardHeight(data.prefs.cardHeight ?? 96);
         setGridColumns(data.prefs.gridColumns ?? 6);
+        setSiteTitle(data.prefs.siteTitle ?? "ModernNav");
+        setFaviconApi(data.prefs.faviconApi ?? "https://favicon.im/{domain}?larger=true");
+        setFooterGithub(data.prefs.footerGithub ?? "https://github.com/lyan0220");
+        setFooterLinks(data.prefs.footerLinks ?? []);
 
         let finalColor = data.prefs.themeColor || "#6280a3";
 
@@ -126,7 +135,8 @@ export const useDashboardLogic = () => {
     opacity: number,
     color?: string,
     layoutPrefs?: { width: number; cardWidth: number; cardHeight: number; cols: number },
-    themeAuto?: boolean
+    themeAuto?: boolean,
+    extraPrefs?: Partial<UserPreferences>
   ) => {
     const updatedColor = color || themeColor;
     const updatedAuto = themeAuto !== undefined ? themeAuto : (color ? false : themeColorAuto);
@@ -143,6 +153,18 @@ export const useDashboardLogic = () => {
       setGridColumns(layoutPrefs.cols);
     }
 
+    if (extraPrefs) {
+      if (extraPrefs.siteTitle !== undefined) setSiteTitle(extraPrefs.siteTitle);
+      if (extraPrefs.faviconApi !== undefined) setFaviconApi(extraPrefs.faviconApi);
+      if (extraPrefs.footerGithub !== undefined) setFooterGithub(extraPrefs.footerGithub);
+      if (extraPrefs.footerLinks !== undefined) setFooterLinks(extraPrefs.footerLinks);
+    }
+
+    const finalSiteTitle = extraPrefs?.siteTitle !== undefined ? extraPrefs.siteTitle : siteTitle;
+    const finalFaviconApi = extraPrefs?.faviconApi !== undefined ? extraPrefs.faviconApi : faviconApi;
+    const finalFooterGithub = extraPrefs?.footerGithub !== undefined ? extraPrefs.footerGithub : footerGithub;
+    const finalFooterLinks = extraPrefs?.footerLinks !== undefined ? extraPrefs.footerLinks : footerLinks;
+
     try {
       await storageService.setBackground(url);
       await storageService.savePreferences(
@@ -155,6 +177,10 @@ export const useDashboardLogic = () => {
           cardWidth: layoutPrefs?.cardWidth ?? cardWidth,
           cardHeight: layoutPrefs?.cardHeight ?? cardHeight,
           gridColumns: layoutPrefs?.cols ?? gridColumns,
+          siteTitle: finalSiteTitle,
+          faviconApi: finalFaviconApi,
+          footerGithub: finalFooterGithub,
+          footerLinks: finalFooterLinks,
         },
         true
       );
@@ -210,6 +236,10 @@ export const useDashboardLogic = () => {
       cardWidth,
       cardHeight,
       gridColumns,
+      siteTitle,
+      faviconApi,
+      footerGithub,
+      footerLinks,
     },
     actions: {
       setCategories,

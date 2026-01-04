@@ -1,19 +1,4 @@
-import React from "react";
 import { Category, SearchEngine } from "./types";
-import {
-  Globe,
-  Github,
-  Search,
-  Code,
-  Layout,
-  Video,
-  Coffee,
-  ShoppingBag,
-  Terminal,
-  Server,
-  Cloud,
-  Mail,
-} from "lucide-react";
 
 export const INITIAL_CATEGORIES: Category[] = [
   {
@@ -139,48 +124,24 @@ export const SEARCH_ENGINES: SearchEngine[] = [
     id: "google",
     name: "Google",
     urlTemplate: "https://www.google.com/search?q=",
-    icon: (
-      <img
-        src="https://favicon.im/google.com?larger=true"
-        alt="Google"
-        className="w-full h-full object-contain"
-      />
-    ),
+    icon: "google.com",
   },
   {
     id: "baidu",
     name: "Baidu",
     urlTemplate: "https://www.baidu.com/s?wd=",
-    icon: (
-      <img
-        src="https://favicon.im/baidu.com?larger=true"
-        alt="Baidu"
-        className="w-full h-full object-contain"
-      />
-    ),
+    icon: "baidu.com",
   },
   {
     id: "bing",
     name: "Bing",
     urlTemplate: "https://www.bing.com/search?q=",
-    icon: (
-      <img
-        src="https://favicon.im/bing.com?larger=true"
-        alt="Bing"
-        className="w-full h-full object-contain"
-      />
-    ),
+    icon: "bing.com",
   },
   {
     id: "github",
     name: "GitHub",
     urlTemplate: "https://github.com/search?q=",
-    icon: (
-      <img
-        src="https://favicon.im/github.com?larger=true"
-        alt="GitHub"
-        className="w-full h-full object-contain bg-white rounded-full p-[1px]"
-      />
-    ),
+    icon: "github.com",
   },
 ];

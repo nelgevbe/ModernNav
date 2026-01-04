@@ -38,6 +38,7 @@ const translations = {
     tab_appearance: "Appearance",
     tab_data: "Data",
     tab_security: "Security",
+    tab_general: "General",
 
     // Security Tab
     access_control: "Access Control",
@@ -129,6 +130,16 @@ const translations = {
     desc_placeholder: "Optional description",
     add_link_card: "Save Link",
     update_link_card: "Update Link",
+    
+    // General Tab
+    label_site_title: "Site Title",
+    label_favicon_api: "Favicon API",
+    label_favicon_api_desc: "The API used to fetch website icons. Use {domain} as a placeholder for the URL domain. Example: https://favicon.im/{domain}",
+    label_github_link: "GitHub Link",
+    label_friendship_links: "Friendly Links",
+    btn_add_link: "Add Link",
+    btn_update_settings: "Update Settings",
+    msg_saved: "Saved!",
 
     // Sync
     syncing_msg: "Syncing changes to cloud...",
@@ -162,6 +173,7 @@ const translations = {
     tab_appearance: "外观设置",
     tab_data: "数据备份",
     tab_security: "安全设置",
+    tab_general: "全局设置",
 
     // Security Tab
     access_control: "访问控制",
@@ -252,6 +264,16 @@ const translations = {
     desc_placeholder: "可选描述",
     add_link_card: "保存链接",
     update_link_card: "更新链接",
+
+    // General Tab
+    label_site_title: "站点标题",
+    label_favicon_api: "图标 API 模板",
+    label_favicon_api_desc: "用于自动抓取网站图标的地址。使用 {domain} 作为目标域名的占位符。例如：https://favicon.im/{domain}",
+    label_github_link: "GitHub 链接",
+    label_friendship_links: "友情链接",
+    btn_add_link: "添加链接",
+    btn_update_settings: "更新设置",
+    msg_saved: "已保存！",
 
     // Sync
     syncing_msg: "正在同步到云端...",

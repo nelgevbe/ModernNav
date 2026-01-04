@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FolderOpen } from "lucide-react";
 import { SmartIcon } from "./components/SmartIcon";
 import { SearchBar } from "./components/SearchBar";
@@ -13,6 +13,7 @@ import { SkeletonLoader } from "./components/SkeletonLoader";
 import { useDashboardLogic } from "./hooks/useDashboardLogic";
 import { useLanguage } from "./contexts/LanguageContext";
 import { ThemeMode } from "./types";
+import { getFaviconUrl } from "./utils/favicon";
 
 const App: React.FC = () => {
   const { state, actions } = useDashboardLogic();
@@ -31,10 +32,18 @@ const App: React.FC = () => {
     cardWidth,
     cardHeight,
     gridColumns,
+    siteTitle,
+    faviconApi,
+    footerGithub,
+    footerLinks,
   } = state;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { t } = useLanguage();
+
+  useEffect(() => {
+    document.title = siteTitle || "ModernNav";
+  }, [siteTitle]);
 
   if (loading) {
     return (
@@ -105,7 +114,7 @@ const App: React.FC = () => {
         style={{ maxWidth: `${maxContainerWidth}px` }}
       >
         <section className="w-full mb-14 animate-fade-in-down relative z-[70] isolation-isolate">
-          <SearchBar themeMode={themeMode} />
+          <SearchBar themeMode={themeMode} faviconApi={faviconApi} />
         </section>
 
         <main className="w-full pb-20 relative z-[10] space-y-8">
@@ -143,8 +152,7 @@ const App: React.FC = () => {
                 {visibleSubCategory.items.map((link, index) => {
                   // Fallback icon logic: Use provided icon, or try to get favicon from URL
                   const iconSource =
-                    link.icon ||
-                    `https://www.google.com/s2/favicons?domain=${new URL(link.url).hostname}&sz=64`;
+                    link.icon || getFaviconUrl(link.url, faviconApi);
 
                   return (
                     <GlassCard
@@ -214,7 +222,11 @@ const App: React.FC = () => {
 
       <SyncIndicator />
 
-      <Footer isDark={isDark} />
+      <Footer 
+        isDark={isDark} 
+        github={footerGithub} 
+        links={footerLinks} 
+      />
 
       <LinkManagerModal
         isOpen={isModalOpen}
@@ -230,10 +242,14 @@ const App: React.FC = () => {
           maxContainerWidth,
           cardWidth,
           cardHeight,
-          gridColumns
+          gridColumns,
+          siteTitle,
+          faviconApi,
+          footerGithub,
+          footerLinks,
         }}
-        onUpdateAppearance={(url: string, opacity: number, color?: string, layout?: any, themeAuto?: boolean) => 
-          actions.handleUpdateAppearance(url, opacity, color, layout, themeAuto)
+        onUpdateAppearance={(url: string, opacity: number, color?: string, layout?: any, themeAuto?: boolean, extra?: any) => 
+          actions.handleUpdateAppearance(url, opacity, color, layout, themeAuto, extra)
         }
         isDefaultCode={isDefaultCode}
       />

@@ -1,4 +1,3 @@
-import React from "react";
 
 export interface LinkItem {
   id: string;
@@ -24,12 +23,17 @@ export interface SearchEngine {
   id: string;
   name: string;
   urlTemplate: string;
-  icon: React.ReactNode;
+  icon: string;
 }
 
 export enum ThemeMode {
   Dark = "dark",
   Light = "light",
+}
+
+export interface FooterLink {
+  title: string;
+  url: string;
 }
 
 export interface UserPreferences {
@@ -41,6 +45,10 @@ export interface UserPreferences {
   cardWidth?: number;
   cardHeight?: number;
   gridColumns?: number;
+  siteTitle?: string;
+  faviconApi?: string;
+  footerGithub?: string;
+  footerLinks?: FooterLink[];
 }
 
 

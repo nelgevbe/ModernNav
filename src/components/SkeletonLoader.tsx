@@ -14,7 +14,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
   cardOpacity,
   themeMode,
   maxContainerWidth = 900,
-  cardWidth = 96,
+  cardWidth = 124,
   cardHeight = 96,
   gridColumns = 6,
 }) => {
