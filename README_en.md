@@ -8,26 +8,27 @@ Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + D1
 
 ## ✨ Features
 
-- **🎨 Stunning UI:** Glassmorphism design with adaptive frosted glass effects, smooth animations, and responsive layout.
-- **🌓 Dark/Light Mode:** Automatic theme switching with intelligent color extraction from background images.
-- **🖱️ Drag & Drop:** Easily reorder categories and links via drag and drop in the settings.
-- **🖼️ Customization:** Change background images, adjust blur/opacity levels, and customize theme colors.
-- **📂 Grouping:** Organize links into Categories and Sub-categories (Folders).
-- **🔍 Aggregated Search:** Integrated search bar supporting Google, Bing, Baidu, GitHub, and more.
-- **🔐 Stateless Security:** Implements **Stateless Dual Token Authentication** (HMAC-Signed). Sessions require **zero database writes**, using D1 only for storing the admin code, while maintaining maximum security via HttpOnly Cookies and token rotation against XSS/CSRF.
-- **🛡️ Robust Data Handling:** Built-in strict type validation and automatic error recovery prevent application crashes (White Screen of Death) caused by malformed data structure updates.
-- **☁️ Smart Hybrid Storage:**
-  - **Read Strategy (Network First):** Prioritizes fetching the latest data from the cloud, automatically falling back to local cache if offline, ensuring instant loading and offline availability.
-  - **Write Strategy (Optimistic UI):** Changes are applied immediately to the interface without waiting for server response, while silently syncing to Cloudflare D1 in the background for a smooth experience.
-- **🌍 Internationalization:** Built-in support for English and Chinese (Simplified).
-- **💾 Full Backup:** Export your entire configuration (links, background, settings) to JSON and restore anytime.
+- **🎨 Modern Card UI (v3.0):** Supports background preview and real-time configuration preview with frosted glass effects.
+- **⚙️ Global Configuration (v3.1):** "General" tab to manage site title, Favicon API, and footer links.
+- **🧩 Dynamic Footer System (v3.1):** Supports custom GitHub links and multiple friendship links.
+- **🌐 Custom Favicon API (v3.1):** Configure Favicon fetching services (e.g., Google, favicon.im) with `{domain}` placeholder.
+- **📐 Flexible Layout Settings (v3.0):** Adjust card dimensions, canvas width, grid columns, and card opacity.
+- **🔌 Logical Hook Management (v3.0):** Business logic managed via the `useDashboardLogic` hook.
+- **🌓 Intelligent Color Extraction:** Supports automatic theme switching and extracts dominant colors from backgrounds.
+- **🖱️ Drag & Drop:** Reorder categories and links via drag-and-drop.
+- **🖼️ High Personalization:** Customize card specifications, background styles, and theme details.
+- **🌍 I18n & Copy Support:** Built-in support for English and Chinese copy across all settings.
+- **⚡ Lightweight Status Indicators:** Text-only floating notifications to reduce visual noise.
+- **🔐 Enhanced Security (v2.1):** Unified API client with HttpOnly Cookie silent refresh and CSRF protection.
+- **☁️ Smart Hybrid Storage (v2.0):** Features a "Dirty-First" strategy and state persistence to prevent data loss.
+- **💾 Full Backup:** One-click data export and restore for total control.
 
 ## 🛠️ Tech Stack
 
 - **Frontend:** React 19, Vite, Tailwind CSS, Lucide React
 - **Backend:** Cloudflare Pages Functions (Serverless)
 - **Database:** Cloudflare D1 (Serverless SQL Database)
-- **Auth:** Stateless JWT (HMAC-SHA256) + HttpOnly Cookie
+- **Auth & Requests:** Unified API Client + Silent Refresh (JWT HMAC-SHA256)
 - **Language:** TypeScript
 
 ## 🚀 Getting Started
@@ -125,11 +126,12 @@ Push this code to your GitHub or GitLab repository.
 ├── public/                     # Static Assets
 │   ├── favicon.svg             # Favicon
 │   └── fonts/                  # Local Fonts
-├── functions/api/              # Cloudflare Pages Functions (Backend)
+├── functions/api/              # Cloudflare Pages Functions (Backend API)
 │   ├── auth.ts                 # Auth Endpoint (Login/Refresh/Update)
 │   ├── bootstrap.ts            # Bootstrap Endpoint (Read D1)
+│   ├── health.ts               # Health Check Endpoint
 │   ├── update.ts               # Sync Endpoint (Write D1)
-│   └── utils/                  # Backend Utilities (Auth/Validation)
+│   └── utils/                  # Backend Utilities (authHelpers/validation/logger)
 ├── src/                        # Frontend Source Code
 │   ├── assets/                 # Assets
 │   ├── components/             # React UI Components
@@ -138,24 +140,32 @@ Push this code to your GitHub or GitLab repository.
 │   │   │   ├── AuthScreen.tsx      # Auth/Login Screen
 │   │   │   ├── ContentTab.tsx      # Content Management Tab
 │   │   │   ├── DataTab.tsx         # Data Backup/Restore Tab
+│   │   │   ├── GeneralTab.tsx      # General Settings Tab (New)
 │   │   │   └── SecurityTab.tsx     # Security Settings Tab
+│   │   ├── BackgroundLayer.tsx # Immersive Background Rendering
 │   │   ├── CategoryNav.tsx     # Navigation Bar
+│   │   ├── Footer.tsx          # Responsive Footer
 │   │   ├── GlassCard.tsx       # Glass Effect Card
 │   │   ├── IconPicker.tsx      # Icon Selector
 │   │   ├── LinkManagerModal.tsx # Settings Modal Container
 │   │   ├── SearchBar.tsx       # Search Bar
+│   │   ├── SkeletonLoader.tsx  # Semantic Skeleton Loader
+│   │   ├── SmartIcon.tsx       # Intelligent Icon Capture
 │   │   ├── SyncIndicator.tsx   # Sync Status Indicator
 │   │   └── Toast.tsx           # Toast Notification
 │   ├── contexts/               # Global State
 │   │   └── LanguageContext.tsx # i18n Context
 │   ├── hooks/                  # Custom Hooks
+│   │   ├── useDashboardLogic.ts # Core Business Logic (State/Sync/Updates)
 │   │   └── useCategoryDragDrop.ts # Drag & Drop Logic
-│   ├── services/               # Services
-│   │   └── storage.ts          # Storage & Sync Service (Core)
+│   ├── services/               # Services layer
+│   │   ├── apiClient.ts        # Unified API Client (Auth/Intercept/Retry)
+│   │   └── storage.ts          # Storage & Sync Service (Core logic)
 │   ├── types/                  # TypeScript Types
 │   │   └── index.ts            # Type Definitions
 │   ├── utils/                  # Frontend Utilities
-│   │   └── color.ts            # Color Extraction
+│   │   ├── color.ts            # Color Extraction
+│   │   └── favicon.ts          # Favicon Generation (New)
 │   ├── App.tsx                 # Root Component
 │   ├── constants.tsx           # App Constants
 │   ├── index.tsx               # Entry Point

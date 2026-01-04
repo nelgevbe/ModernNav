@@ -38,6 +38,7 @@ const translations = {
     tab_appearance: "Appearance",
     tab_data: "Data",
     tab_security: "Security",
+    tab_general: "General",
 
     // Security Tab
     access_control: "Access Control",
@@ -85,6 +86,16 @@ const translations = {
     theme_updated: "Theme color updated!",
     extracting_color: "Extracting color...",
 
+    // Layout/Precision
+    precision_controls: "Custom Settings",
+    geometry_layout: "Card specifications and layout",
+    canvas_width: "Canvas Width",
+    grid_cols: "Grid Columns",
+    card_width: "Card Width",
+    card_height: "Card Height",
+    surface_opacity: "Surface Opacity",
+    visual_identity: "Visual Identity",
+
     // Manager UI
     sidebar_categories: "Categories",
     search_links_placeholder: "Search links...",
@@ -119,6 +130,16 @@ const translations = {
     desc_placeholder: "Optional description",
     add_link_card: "Save Link",
     update_link_card: "Update Link",
+    
+    // General Tab
+    label_site_title: "Site Title",
+    label_favicon_api: "Favicon API",
+    label_favicon_api_desc: "The API used to fetch website icons. Use {domain} as a placeholder for the URL domain. Example: https://favicon.im/{domain}",
+    label_github_link: "GitHub Link",
+    label_friendship_links: "Friendly Links",
+    btn_add_link: "Add Link",
+    btn_update_settings: "Update Settings",
+    msg_saved: "Saved!",
 
     // Sync
     syncing_msg: "Syncing changes to cloud...",
@@ -152,6 +173,7 @@ const translations = {
     tab_appearance: "外观设置",
     tab_data: "数据备份",
     tab_security: "安全设置",
+    tab_general: "全局设置",
 
     // Security Tab
     access_control: "访问控制",
@@ -198,6 +220,16 @@ const translations = {
     theme_updated: "主题色已更新！",
     extracting_color: "正在提取颜色...",
 
+    // Layout/Precision
+    precision_controls: "自定义设置",
+    geometry_layout: "卡片规格与布局",
+    canvas_width: "画布宽度",
+    grid_cols: "网格列数",
+    card_width: "卡片宽度",
+    card_height: "卡片高度",
+    surface_opacity: "卡片表面透明度",
+    visual_identity: "视觉识别",
+
     // Manager UI
     sidebar_categories: "分类列表",
     search_links_placeholder: "搜索当前分类链接...",
@@ -232,6 +264,16 @@ const translations = {
     desc_placeholder: "可选描述",
     add_link_card: "保存链接",
     update_link_card: "更新链接",
+
+    // General Tab
+    label_site_title: "站点标题",
+    label_favicon_api: "图标 API 模板",
+    label_favicon_api_desc: "用于自动抓取网站图标的地址。使用 {domain} 作为目标域名的占位符。例如：https://favicon.im/{domain}",
+    label_github_link: "GitHub 链接",
+    label_friendship_links: "友情链接",
+    btn_add_link: "添加链接",
+    btn_update_settings: "更新设置",
+    msg_saved: "已保存！",
 
     // Sync
     syncing_msg: "正在同步到云端...",
