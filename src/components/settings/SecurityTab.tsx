@@ -61,7 +61,7 @@ export const SecurityTab: React.FC = () => {
         </div>
         <form onSubmit={handleUpdate} className="space-y-5 max-w-sm mx-auto">
           <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+            <label className="label-xs mb-2 tracking-[0.2em]">
               {t("current_code")}
             </label>
             <input
@@ -70,11 +70,11 @@ export const SecurityTab: React.FC = () => {
               onChange={(e) =>
                 setPasswordForm({ ...passwordForm, current: e.target.value })
               }
-              className="w-full bg-slate-950/50 border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder-slate-700 focus:outline-none focus:border-red-500 transition-all text-sm"
+              className="input-primary py-3 px-4 focus:border-red-500"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+            <label className="label-xs mb-2 tracking-[0.2em]">
               {t("new_code")}
             </label>
             <input
@@ -83,11 +83,11 @@ export const SecurityTab: React.FC = () => {
               onChange={(e) =>
                 setPasswordForm({ ...passwordForm, new: e.target.value })
               }
-              className="w-full bg-slate-950/50 border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder-slate-700 focus:outline-none focus:border-red-500 transition-all text-sm"
+              className="input-primary py-3 px-4 focus:border-red-500"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+            <label className="label-xs mb-2 tracking-[0.2em]">
               {t("confirm_code")}
             </label>
             <input
@@ -96,7 +96,7 @@ export const SecurityTab: React.FC = () => {
               onChange={(e) =>
                 setPasswordForm({ ...passwordForm, confirm: e.target.value })
               }
-              className="w-full bg-slate-950/50 border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder-slate-700 focus:outline-none focus:border-red-500 transition-all text-sm"
+              className="input-primary py-3 px-4 focus:border-red-500"
             />
           </div>
           <div className="flex items-center justify-between pt-2">

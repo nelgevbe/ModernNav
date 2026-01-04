@@ -59,7 +59,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           type="password"
           value={authInput}
           onChange={(e) => setAuthInput(e.target.value)}
-          className="w-full bg-slate-950/50 border border-white/[0.1] rounded-xl px-4 py-3 text-center text-white placeholder-slate-600 focus:outline-none focus:border-[var(--theme-primary)] focus:ring-1 focus:ring-[var(--theme-primary)]/50 transition-all tracking-widest text-lg"
+          className="input-primary py-3 px-4 text-center tracking-widest text-lg"
           placeholder="••••"
           autoFocus
         />
@@ -70,7 +70,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         )}
         <button
           type="submit"
-          className="w-full bg-[var(--theme-primary)] hover:bg-[var(--theme-hover)] text-white font-medium py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-[var(--theme-primary)]/20"
+          className="btn-primary w-full py-3 rounded-xl text-base"
         >
           {isVerifying ? (
             <Loader2 className="animate-spin" size={18} />
