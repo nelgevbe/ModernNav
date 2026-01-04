@@ -127,6 +127,13 @@ body {
   isolation: isolate;
 }
 
+
+/* Responsive Grid Utility */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols, 2), minmax(0, 1fr));
+}
+
 @layer components {
   .input-primary {
     @apply w-full bg-slate-900/50 border border-white/[0.1] rounded-lg px-3 py-2 text-white placeholder-slate-600 outline-none transition-colors duration-200 text-sm;

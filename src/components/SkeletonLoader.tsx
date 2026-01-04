@@ -37,10 +37,12 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
         </div>
 
         <div
-          className="grid gap-3 sm:gap-4 w-full"
-          style={{
-            gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
-          }}
+          className="grid gap-3 sm:gap-4 w-full responsive-grid"
+          style={
+            {
+              "--grid-cols": gridColumns,
+            } as React.CSSProperties
+          }
         >
           {[...Array(16)].map((_, i) => (
             <GlassCard

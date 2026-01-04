@@ -229,7 +229,7 @@ export const storageService = {
   fetchAllData: async () => {
     let cloudData = null;
     try {
-      cloudData = await apiClient.request("/api/bootstrap");
+      cloudData = await apiClient.request(`/api/bootstrap?_=${Date.now()}`);
     } catch (e) {
       console.warn("Fetch failed");
     }

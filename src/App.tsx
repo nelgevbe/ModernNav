@@ -11,6 +11,7 @@ import { CategoryNav } from "./components/CategoryNav";
 import { Footer } from "./components/Footer";
 import { SkeletonLoader } from "./components/SkeletonLoader";
 import { useDashboardLogic } from "./hooks/useDashboardLogic";
+import { useResponsiveColumns } from "./hooks/useResponsiveColumns"; // Import the hook
 import { useLanguage } from "./contexts/LanguageContext";
 import { ThemeMode } from "./types";
 import { getFaviconUrl } from "./utils/favicon";
@@ -41,6 +42,9 @@ const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { t } = useLanguage();
 
+  // Dynamic Column Calculation
+  const effectiveColumns = useResponsiveColumns(gridColumns, maxContainerWidth, cardWidth);
+
   useEffect(() => {
     document.title = siteTitle || "ModernNav";
   }, [siteTitle]);
@@ -60,7 +64,7 @@ const App: React.FC = () => {
             maxContainerWidth={maxContainerWidth}
             cardWidth={cardWidth}
             cardHeight={cardHeight}
-            gridColumns={gridColumns}
+            gridColumns={effectiveColumns} // Use effective columns for Skeleton
           />
         </div>
       </div>
@@ -90,6 +94,7 @@ const App: React.FC = () => {
           --theme-active: color-mix(in srgb, ${themeColor}, black 20%);
           --theme-light: color-mix(in srgb, ${themeColor}, white 30%);
           --glass-blur: ${adaptiveGlassBlur}px;
+          --grid-cols: ${effectiveColumns}; /* Bind effective columns to CSS var */
         }
       `}</style>
 
@@ -144,10 +149,7 @@ const App: React.FC = () => {
 
               <div
                 key={visibleSubCategory.id}
-                className="grid gap-3 sm:gap-4 w-full"
-                style={{
-                  gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
-                }}
+                className="grid gap-3 sm:gap-4 w-full responsive-grid"
               >
                 {visibleSubCategory.items.map((link, index) => {
                   // Fallback icon logic: Use provided icon, or try to get favicon from URL
@@ -258,3 +260,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
