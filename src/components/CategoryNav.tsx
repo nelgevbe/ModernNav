@@ -94,7 +94,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   const slidingPillClass = `absolute top-0 bottom-0 rounded-full transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] pointer-events-none ${
     isDark
       ? "bg-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] border border-white/5"
-      : "bg-white shadow-[0_2px_8px_-2px_rgba(0,0,0,0.12)] border border-black/5"
+      : "bg-[color-mix(in_srgb,var(--theme-primary),transparent_80%)] shadow-[inset_0_2px_8px_-2px_rgba(0,0,0,0.12)] border border-black/5"
   }`;
 
   const categoryButtonBase = `
