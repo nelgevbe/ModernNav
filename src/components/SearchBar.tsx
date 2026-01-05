@@ -11,7 +11,10 @@ interface SearchBarProps {
   faviconApi?: string;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) => {
+export const SearchBar: React.FC<SearchBarProps> = ({
+  themeMode,
+  faviconApi,
+}) => {
   const [query, setQuery] = useState("");
   const [selectedEngine, setSelectedEngine] = useState<SearchEngine>(
     SEARCH_ENGINES[0]
@@ -64,12 +67,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) =
   const dropdownText = isDark ? "text-white" : "text-slate-800";
 
   const itemBase =
-    "flex-shrink-0 flex items-center gap-2 px-2.5 h-6 rounded-md transition-all text-[11px] whitespace-nowrap";
+    "flex-shrink-0 flex items-center gap-2 px-2.5 h-6 rounded-md transition-all text-[11px] whitespace-nowrap relative z-10";
   const itemHover = isDark
-    ? "hover:bg-[var(--theme-primary)]/20 hover:text-white"
-    : "hover:bg-black/5 hover:text-slate-900";
+    ? "hover:bg-white/15 hover:text-white"
+    : "hover:bg-black/15 hover:text-slate-900";
   const itemActive =
-    "bg-[var(--theme-primary)] text-white font-medium shadow-md";
+    "bg-[var(--theme-primary)] text-white font-medium shadow-lg";
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -102,9 +105,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) =
     setIsDropdownOpen(false);
   };
 
-  // NOTE: Width reduced to max-w-[400px]
+  // NOTE: Width reduced to max-w-[450px]
   return (
-    <div className="w-full max-w-[400px] mx-auto relative z-[70] transition-all duration-300">
+    <div className="w-full max-w-[450px] mx-auto relative z-[70] transition-all duration-300">
       <form
         onSubmit={handleSearch}
         className="relative w-full group"
@@ -120,14 +123,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) =
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className={`h-full flex items-center gap-2 pl-4 pr-3 rounded-l-2xl transition-colors min-w-[70px] ${dividerColor} ${
                 isDark
-                  ? "text-white/50 hover:text-white hover:bg-white/5"
-                  : "text-slate-500 hover:text-slate-900 hover:bg-black/5"
+                  ? "text-white/50 hover:text-white hover:bg-white/10"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-black/10"
               }`}
             >
               <span className="flex items-center justify-center w-5 h-5 rounded-md overflow-hidden shadow-sm transition-opacity">
-                <SmartIcon 
-                  icon={getFaviconUrl(selectedEngine.icon, faviconApi)} 
-                  size={20} 
+                <SmartIcon
+                  icon={getFaviconUrl(selectedEngine.icon, faviconApi)}
+                  size={20}
                   imgClassName="w-5 h-5 object-contain"
                 />
               </span>
@@ -158,8 +161,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) =
             type="submit"
             className={`p-2.5 mr-1 transition-all rounded-xl ${iconColor} ${
               isDark
-                ? "hover:bg-[var(--theme-primary)]/20 hover:text-white"
-                : "hover:bg-black/5 hover:text-slate-900"
+                ? "hover:bg-white/15 hover:text-white"
+                : "hover:bg-black/15 hover:text-slate-900"
             }`}
           >
             <Search size={18} />
@@ -184,8 +187,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) =
                   }`}
                 >
                   <span className="w-3.5 h-3.5 flex items-center justify-center rounded-sm overflow-hidden shadow-sm">
-                    <SmartIcon 
-                      icon={getFaviconUrl(engine.icon, faviconApi)} 
+                    <SmartIcon
+                      icon={getFaviconUrl(engine.icon, faviconApi)}
                       size={14}
                       imgClassName="w-3.5 h-3.5 object-contain"
                     />
