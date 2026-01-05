@@ -398,7 +398,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
     <div className="bg-slate-950/40 border-t border-white/[0.08] p-4 animate-fade-in backdrop-blur-md relative z-20">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 sm:col-span-1">
-          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+          <label className="label-xs">
             {t("label_title")}
           </label>
           <input
@@ -408,12 +408,12 @@ export const ContentTab: React.FC<ContentTabProps> = ({
               setLinkFormData({ ...linkFormData, title: e.target.value })
             }
             placeholder={t("title_placeholder")}
-            className="w-full bg-slate-900/50 border border-white/[0.1] rounded-lg px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-[var(--theme-primary)] focus:ring-1 focus:ring-[var(--theme-primary)]/50 transition-all text-sm"
+            className="input-primary"
             autoFocus
           />
         </div>
         <div className="col-span-2 sm:col-span-1 relative" ref={iconPickerRef}>
-          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+          <label className="label-xs">
             {t("label_icon")}
           </label>
           <div className="relative group/icon">
@@ -429,7 +429,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                 setIconSearch(e.target.value);
               }}
               placeholder={t("icon_placeholder")}
-              className="w-full bg-slate-900/50 border border-white/[0.1] rounded-lg pl-10 pr-10 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-[var(--theme-primary)] focus:ring-1 focus:ring-[var(--theme-primary)]/50 transition-all text-sm"
+              className="input-primary pl-10 pr-10"
             />
             <button
               onClick={() => setShowIconPicker(!showIconPicker)}
@@ -449,7 +449,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
           />
         </div>
         <div className="col-span-2 sm:col-span-1">
-          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+          <label className="label-xs">
             {t("label_url")}
           </label>
           <input
@@ -459,11 +459,11 @@ export const ContentTab: React.FC<ContentTabProps> = ({
               setLinkFormData({ ...linkFormData, url: e.target.value })
             }
             placeholder={t("url_placeholder")}
-            className="w-full bg-slate-900/50 border border-white/[0.1] rounded-lg px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-[var(--theme-primary)] focus:ring-1 focus:ring-[var(--theme-primary)]/50 transition-all text-sm"
+            className="input-primary"
           />
         </div>
         <div className="col-span-2 sm:col-span-1">
-          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+          <label className="label-xs">
             {t("label_desc")}
           </label>
           <input
@@ -473,19 +473,19 @@ export const ContentTab: React.FC<ContentTabProps> = ({
               setLinkFormData({ ...linkFormData, description: e.target.value })
             }
             placeholder={t("desc_placeholder")}
-            className="w-full bg-slate-900/50 border border-white/[0.1] rounded-lg px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-[var(--theme-primary)] focus:ring-1 focus:ring-[var(--theme-primary)]/50 transition-all text-sm"
+            className="input-primary"
           />
         </div>
         <div className="col-span-2 flex gap-2 pt-1">
           <button
             onClick={closeLinkForm}
-            className="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 px-3 py-2 rounded-lg text-xs font-medium transition-colors border border-white/5"
+            className="flex-1 btn-secondary"
           >
             {t("cancel")}
           </button>
           <button
             onClick={handleSaveLink}
-            className="flex-1 bg-[var(--theme-primary)] hover:bg-[var(--theme-hover)] text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-2 shadow-lg shadow-[var(--theme-primary)]/20"
+            className="flex-1 btn-primary"
           >
             {editingLinkId ? <Save size={14} /> : <Plus size={14} />}
             {editingLinkId ? t("update_link_card") : t("add_link_card")}
@@ -590,7 +590,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
               value={newCategoryTitle}
               onChange={(e) => setNewCategoryTitle(e.target.value)}
               placeholder={t("add_category_placeholder")}
-              className="min-w-0 flex-1 bg-slate-900/50 border border-white/[0.1] rounded-md px-2 py-1.5 text-white placeholder-slate-600 focus:outline-none focus:border-[var(--theme-primary)] text-xs"
+              className="input-primary rounded-md px-2 py-1.5 text-xs"
               onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
             />
             <button
@@ -616,7 +616,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
               placeholder={t("search_links_placeholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950/50 border border-white/[0.1] rounded-full pl-9 pr-4 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[var(--theme-primary)] transition-all"
+              className="input-primary rounded-full pl-9 pr-4 py-1.5 text-xs"
             />
           </div>
           <button
@@ -642,7 +642,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                 value={newSubMenuTitle}
                 onChange={(e) => setNewSubMenuTitle(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddSubMenu()}
-                className="flex-1 bg-slate-900/50 border border-white/[0.1] rounded-lg px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-sm"
+                className="input-primary focus:border-emerald-500 focus:ring-emerald-500"
               />
               <button
                 onClick={handleAddSubMenu}
