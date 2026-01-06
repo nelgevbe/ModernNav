@@ -21,6 +21,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   );
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [hoveredEngine, setHoveredEngine] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLFormElement>(null);
   const { t } = useLanguage();
 
@@ -62,15 +63,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     ? "border-r border-white/5 group-hover:border-white/10"
     : "border-r border-slate-500/5 group-hover:border-slate-500/20";
 
-  const dropdownClasses = isDark ? "apple-glass-dark" : "apple-glass-light";
+  const dropdownClasses = isDark
+    ? "apple-glass-dark-no-isolation"
+    : "apple-glass-light-no-isolation";
 
   const dropdownText = isDark ? "text-white" : "text-slate-800";
 
   const itemBase =
-    "flex-shrink-0 flex items-center gap-2 px-2.5 h-6 rounded-md transition-all text-[11px] whitespace-nowrap relative z-10";
+    "flex-shrink-0 flex items-center gap-2 px-2.5 h-6 rounded-md text-[11px] whitespace-nowrap";
   const itemHover = isDark
-    ? "hover:bg-white/15 hover:text-white"
-    : "hover:bg-black/15 hover:text-slate-900";
+    ? "bg-white/10 text-white"
+    : "bg-black/10 text-slate-900";
   const itemActive =
     "bg-[var(--theme-primary)] text-white font-medium shadow-lg";
 
@@ -171,33 +174,39 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
         {/* Dropdown Menu */}
         {isDropdownOpen && (
-          <div
-            className={`absolute top-full left-0 right-0 mt-2 px-1 h-10 flex items-center ${dropdownClasses} rounded-xl overflow-hidden animate-fade-in origin-top z-[80] shadow-2xl`}
-          >
-            <div className="flex flex-row overflow-x-auto no-scrollbar gap-1.5 px-1 items-center w-full h-full">
-              {SEARCH_ENGINES.map((engine) => (
-                <button
-                  key={engine.id}
-                  type="button"
-                  onClick={() => handleEngineSelect(engine)}
-                  className={`${itemBase} ${dropdownText} ${
-                    selectedEngine.id === engine.id
-                      ? itemActive
-                      : `opacity-90 ${itemHover}`
-                  }`}
-                >
-                  <span className="w-3.5 h-3.5 flex items-center justify-center rounded-sm overflow-hidden shadow-sm">
-                    <SmartIcon
-                      icon={getFaviconUrl(engine.icon, faviconApi)}
-                      size={14}
-                      imgClassName="w-3.5 h-3.5 object-contain"
-                    />
-                  </span>
-                  <span className="font-medium tracking-tight">
-                    {engine.name}
-                  </span>
-                </button>
-              ))}
+          <div className="absolute top-full left-0 right-0 mt-2 z-[80]">
+            <div
+              className={`px-1 ${dropdownClasses} rounded-xl overflow-hidden shadow-2xl`}
+            >
+              <div className="h-10 flex flex-row overflow-x-auto no-scrollbar gap-1.5 px-1 items-center">
+                {SEARCH_ENGINES.map((engine) => (
+                  <button
+                    key={engine.id}
+                    type="button"
+                    onClick={() => handleEngineSelect(engine)}
+                    onMouseEnter={() => setHoveredEngine(engine.id)}
+                    onMouseLeave={() => setHoveredEngine(null)}
+                    className={`${itemBase} ${dropdownText} ${
+                      selectedEngine.id === engine.id
+                        ? itemActive
+                        : hoveredEngine === engine.id
+                        ? itemHover
+                        : "opacity-90"
+                    }`}
+                  >
+                    <span className="w-3.5 h-3.5 flex items-center justify-center rounded-sm overflow-hidden shadow-sm">
+                      <SmartIcon
+                        icon={getFaviconUrl(engine.icon, faviconApi)}
+                        size={14}
+                        imgClassName="w-3.5 h-3.5 object-contain"
+                      />
+                    </span>
+                    <span className="font-medium tracking-tight">
+                      {engine.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
