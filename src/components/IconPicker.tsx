@@ -150,6 +150,9 @@ export const IconPicker: React.FC<IconPickerProps> = ({
     <div
       className="absolute top-full right-0 w-64 mt-2 apple-glass-dark rounded-xl border border-white/10 shadow-2xl p-3 z-50 animate-fade-in-down"
       ref={pickerRef}
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onMouseUp={(e) => e.stopPropagation()}
     >
       <div className="relative mb-3">
         <svg
@@ -188,7 +191,8 @@ export const IconPicker: React.FC<IconPickerProps> = ({
               return (
                 <button
                   key={name}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onChange(name);
                     onClose();
                   }}
@@ -216,7 +220,8 @@ export const IconPicker: React.FC<IconPickerProps> = ({
               {SUGGESTED_EMOJIS.map((emoji) => (
                 <button
                   key={emoji}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onChange(emoji);
                     onClose();
                   }}

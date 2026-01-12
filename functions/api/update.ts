@@ -1,25 +1,16 @@
 interface Env {
+  // @ts-expect-error - D1Database is provided by Cloudflare environment
   DB?: D1Database;
 }
 
 // 导入共享工具
-import {
-  verify,
-  getClientIP,
-  RateLimiter,
-  ERROR_MESSAGES,
-} from "./utils/authHelpers";
+import { verify, getClientIP, RateLimiter, ERROR_MESSAGES } from "./utils/authHelpers";
+import { UpdatePayload } from "../../src/types";
 
 // 创建速率限制器实例
 const updateRateLimiter = new RateLimiter(20, 60 * 1000); // 1分钟内最多20次更新请求
 
-export const onRequestPost = async ({
-  request,
-  env,
-}: {
-  request: Request;
-  env: Env;
-}) => {
+export const onRequestPost = async ({ request, env }: { request: Request; env: Env }) => {
   try {
     const clientIP = getClientIP(request);
 
@@ -42,86 +33,65 @@ export const onRequestPost = async ({
     const token = request.headers.get("Authorization")?.split(" ")[1];
 
     if (!token) {
-      return new Response(
-        JSON.stringify({ error: ERROR_MESSAGES.UNAUTHORIZED }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: ERROR_MESSAGES.UNAUTHORIZED }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (!env.DB) {
-      return new Response(
-        JSON.stringify({ error: "Database not available" }),
-        {
-          status: 503,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Database not available" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    const codeRow = await env.DB.prepare(
-      "SELECT value FROM config WHERE key = 'auth_code'"
-    ).first<{ value: string }>();
+    const codeRow = await env.DB.prepare("SELECT value FROM config WHERE key = 'auth_code'").first<{
+      value: string;
+    }>();
     const storedCode = codeRow?.value || "admin";
 
     if (!(await verify(token, storedCode))) {
-      return new Response(
-        JSON.stringify({ error: ERROR_MESSAGES.UNAUTHORIZED }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: ERROR_MESSAGES.UNAUTHORIZED }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // 2. 验证请求数据
-    const requestBody = await request.json();
+    const requestBody = (await request.json()) as UpdatePayload;
 
     if (!requestBody || typeof requestBody !== "object") {
-      return new Response(
-        JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    const { type, data } = requestBody as any;
+    const { type, data } = requestBody;
 
     if (!type || typeof type !== "string") {
-      return new Response(
-        JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // 验证数据类型
     if (data === undefined || data === null) {
-      return new Response(
-        JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // 限制可更新的配置项类型，防止恶意更新
     const allowedTypes = ["categories", "background", "prefs", "auth_code"];
     if (!allowedTypes.includes(type)) {
-      return new Response(
-        JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // 3. 写入数据 (利用 UPSERT)
@@ -143,13 +113,10 @@ export const onRequestPost = async ({
     }
 
     if (!env.DB) {
-      return new Response(
-        JSON.stringify({ error: "Database not available" }),
-        {
-          status: 503,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Database not available" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     await env.DB.prepare(

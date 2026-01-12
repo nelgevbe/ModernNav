@@ -21,12 +21,8 @@ export const useCategoryDragDrop = ({
   setCollapsedSubMenus,
 }: UseCategoryDragDropProps) => {
   // --- State ---
-  const [draggedCategoryIndex, setDraggedCategoryIndex] = useState<
-    number | null
-  >(null);
-  const [dragOverCategoryIndex, setDragOverCategoryIndex] = useState<
-    number | null
-  >(null);
+  const [draggedCategoryIndex, setDraggedCategoryIndex] = useState<number | null>(null);
+  const [dragOverCategoryIndex, setDragOverCategoryIndex] = useState<number | null>(null);
 
   const [draggedLink, setDraggedLink] = useState<{
     categoryId: string;
@@ -37,13 +33,9 @@ export const useCategoryDragDrop = ({
     subId: string;
     index: number;
   } | null>(null);
-  const [dragOverSubMenuId, setDragOverSubMenuId] = useState<string | null>(
-    null
-  );
+  const [dragOverSubMenuId, setDragOverSubMenuId] = useState<string | null>(null);
 
-  const hoverSwitchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
+  const hoverSwitchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --- Logic ---
 
@@ -68,11 +60,7 @@ export const useCategoryDragDrop = ({
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragOverCategory = (
-    e: React.DragEvent,
-    index: number,
-    catId: string
-  ) => {
+  const handleDragOverCategory = (e: React.DragEvent, index: number, catId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
 
@@ -110,11 +98,7 @@ export const useCategoryDragDrop = ({
     setDragOverCategoryIndex(null);
   };
 
-  const handleDropCategory = (
-    e: React.DragEvent,
-    targetIndex: number,
-    targetCatId: string
-  ) => {
+  const handleDropCategory = (e: React.DragEvent, targetIndex: number, targetCatId: string) => {
     e.preventDefault();
 
     // Drop Category
@@ -134,13 +118,9 @@ export const useCategoryDragDrop = ({
     // Drop Link onto Category (Move Link to Default Submenu of Target Category)
     if (draggedLink) {
       const sourceCatId = draggedLink.categoryId;
-      const newCategories = JSON.parse(
-        JSON.stringify(categories)
-      ) as Category[];
+      const newCategories = JSON.parse(JSON.stringify(categories)) as Category[];
       const sourceCat = newCategories.find((c) => c.id === sourceCatId);
-      const sourceSub = sourceCat?.subCategories.find(
-        (s) => s.id === draggedLink.subId
-      );
+      const sourceSub = sourceCat?.subCategories.find((s) => s.id === draggedLink.subId);
 
       if (!sourceCat || !sourceSub) {
         resetDragState();
@@ -159,11 +139,7 @@ export const useCategoryDragDrop = ({
     }
   };
 
-  const handleDragStartLink = (
-    e: React.DragEvent,
-    subId: string,
-    index: number
-  ) => {
+  const handleDragStartLink = (e: React.DragEvent, subId: string, index: number) => {
     e.stopPropagation();
     if (isAnyEditing) {
       e.preventDefault();
@@ -174,10 +150,7 @@ export const useCategoryDragDrop = ({
   };
 
   const handleDragEnterLink = (subId: string, index: number) => {
-    if (
-      draggedLink &&
-      (draggedLink.subId !== subId || draggedLink.index !== index)
-    ) {
+    if (draggedLink && (draggedLink.subId !== subId || draggedLink.index !== index)) {
       setDragOverLink({ subId, index });
     }
   };
@@ -202,49 +175,41 @@ export const useCategoryDragDrop = ({
       resetDragState();
       return;
     }
-    if (
-      draggedLink.categoryId === selectedCategoryId &&
-      draggedLink.subId === targetSubId
-    ) {
+    if (draggedLink.categoryId === selectedCategoryId && draggedLink.subId === targetSubId) {
       resetDragState();
       return;
     }
 
     const newCategories = JSON.parse(JSON.stringify(categories)) as Category[];
-    const sourceCatIndex = newCategories.findIndex(
-      (c) => c.id === draggedLink.categoryId
-    );
+    const sourceCatIndex = newCategories.findIndex((c) => c.id === draggedLink.categoryId);
     if (sourceCatIndex === -1) {
       resetDragState();
       return;
     }
 
-    const sourceSubIndex = newCategories[
-      sourceCatIndex
-    ].subCategories.findIndex((s) => s.id === draggedLink.subId);
+    const sourceSubIndex = newCategories[sourceCatIndex].subCategories.findIndex(
+      (s) => s.id === draggedLink.subId
+    );
     if (sourceSubIndex === -1) {
       resetDragState();
       return;
     }
 
-    const [movedItem] = newCategories[sourceCatIndex].subCategories[
-      sourceSubIndex
-    ].items.splice(draggedLink.index, 1);
-    const targetCatIndex = newCategories.findIndex(
-      (c) => c.id === selectedCategoryId
+    const [movedItem] = newCategories[sourceCatIndex].subCategories[sourceSubIndex].items.splice(
+      draggedLink.index,
+      1
     );
-    const targetSubIndex = newCategories[
-      targetCatIndex
-    ].subCategories.findIndex((s) => s.id === targetSubId);
+    const targetCatIndex = newCategories.findIndex((c) => c.id === selectedCategoryId);
+    const targetSubIndex = newCategories[targetCatIndex].subCategories.findIndex(
+      (s) => s.id === targetSubId
+    );
 
     if (targetSubIndex === -1) {
       resetDragState();
       return;
     }
 
-    newCategories[targetCatIndex].subCategories[targetSubIndex].items.push(
-      movedItem
-    );
+    newCategories[targetCatIndex].subCategories[targetSubIndex].items.push(movedItem);
     onUpdateCategories(newCategories);
 
     // Auto expand if collapsed
@@ -256,11 +221,7 @@ export const useCategoryDragDrop = ({
     resetDragState();
   };
 
-  const handleDropLink = (
-    e: React.DragEvent,
-    targetSubId: string,
-    targetIndex: number
-  ) => {
+  const handleDropLink = (e: React.DragEvent, targetSubId: string, targetIndex: number) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -278,31 +239,28 @@ export const useCategoryDragDrop = ({
     }
 
     const newCategories = JSON.parse(JSON.stringify(categories)) as Category[];
-    const sourceCatIndex = newCategories.findIndex(
-      (c) => c.id === draggedLink.categoryId
-    );
+    const sourceCatIndex = newCategories.findIndex((c) => c.id === draggedLink.categoryId);
     if (sourceCatIndex === -1) {
       resetDragState();
       return;
     }
 
-    const sourceSubIndex = newCategories[
-      sourceCatIndex
-    ].subCategories.findIndex((s) => s.id === draggedLink.subId);
+    const sourceSubIndex = newCategories[sourceCatIndex].subCategories.findIndex(
+      (s) => s.id === draggedLink.subId
+    );
     if (sourceSubIndex === -1) {
       resetDragState();
       return;
     }
 
-    const [movedItem] = newCategories[sourceCatIndex].subCategories[
-      sourceSubIndex
-    ].items.splice(draggedLink.index, 1);
-    const targetCatIndex = newCategories.findIndex(
-      (c) => c.id === selectedCategoryId
+    const [movedItem] = newCategories[sourceCatIndex].subCategories[sourceSubIndex].items.splice(
+      draggedLink.index,
+      1
     );
-    const targetSubIndex = newCategories[
-      targetCatIndex
-    ].subCategories.findIndex((s) => s.id === targetSubId);
+    const targetCatIndex = newCategories.findIndex((c) => c.id === selectedCategoryId);
+    const targetSubIndex = newCategories[targetCatIndex].subCategories.findIndex(
+      (s) => s.id === targetSubId
+    );
 
     if (targetSubIndex !== -1) {
       newCategories[targetCatIndex].subCategories[targetSubIndex].items.splice(

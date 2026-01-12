@@ -44,10 +44,7 @@ export async function verify(token: string, secret: string): Promise<boolean> {
   }
 }
 
-export async function generateToken(
-  type: "access" | "refresh",
-  secret: string
-): Promise<string> {
+export async function generateToken(type: "access" | "refresh", secret: string): Promise<string> {
   const payload = btoa(
     JSON.stringify({
       exp: Date.now() + (type === "access" ? ACCESS_TTL : REFRESH_TTL),
@@ -64,14 +61,14 @@ export function respondWithCookie(body: any, token: string, clear = false) {
     (clear ? "" : token) +
     "; HttpOnly; Secure; SameSite=Strict; Path=/api/auth; Max-Age=" +
     (clear ? 0 : REFRESH_TTL / 1000);
-  
+
   return new Response(JSON.stringify(body), {
-    headers: { 
-      "Content-Type": "application/json", 
+    headers: {
+      "Content-Type": "application/json",
       "Set-Cookie": cookie,
       // 增加安全头
       "X-Content-Type-Options": "nosniff",
-      "X-Frame-Options": "DENY"
+      "X-Frame-Options": "DENY",
     },
   });
 }
@@ -135,16 +132,8 @@ export class RateLimiter {
 // 获取客户端IP助手
 export function getClientIP(request: Request): string {
   return (
-    request.headers.get("CF-Connecting-IP") ||
-    request.headers.get("X-Forwarded-For") ||
-    "unknown"
+    request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || "unknown"
   );
 }
 
-export {
-  ACCESS_TTL,
-  REFRESH_TTL,
-  RATE_LIMIT_WINDOW,
-  RATE_LIMIT_MAX_REQUESTS,
-  ERROR_MESSAGES,
-};
+export { ACCESS_TTL, REFRESH_TTL, RATE_LIMIT_WINDOW, RATE_LIMIT_MAX_REQUESTS, ERROR_MESSAGES };

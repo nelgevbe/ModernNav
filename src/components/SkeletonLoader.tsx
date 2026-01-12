@@ -26,10 +26,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
       <div className="w-full max-w-[400px] mx-auto h-12 rounded-2xl bg-white/5 border border-white/10 mb-14" />
 
       {/* Grid Skeleton */}
-      <div
-        className="mx-auto w-full"
-        style={{ maxWidth: `${maxContainerWidth}px` }}
-      >
+      <div className="mx-auto w-full" style={{ maxWidth: `${maxContainerWidth}px` }}>
         <div className="flex items-center gap-4 mb-6">
           <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-white/10"></div>
           <div className="w-24 h-3 bg-white/10 rounded-full" />

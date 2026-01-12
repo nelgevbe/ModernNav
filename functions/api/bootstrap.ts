@@ -1,17 +1,19 @@
+import { BootstrapResponse } from "../../src/types";
+
 interface Env {
+  // @ts-expect-error - D1Database is provided by Cloudflare environment
   DB?: D1Database;
 }
 
 export const onRequestGet = async ({ env }: { env: Env }) => {
   try {
-
     // 从数据库获取数据
-    const { results } = env.DB ? await env.DB.prepare(
-      "SELECT key, value FROM config"
-    ).all<{ key: string; value: string }>() : { results: [] };
+    const { results } = env.DB
+      ? await env.DB.prepare("SELECT key, value FROM config").all<{ key: string; value: string }>()
+      : { results: [] };
 
     const configMap = new Map();
-    results?.forEach((row) => configMap.set(row.key, row.value));
+    results?.forEach((row: { key: string; value: string }) => configMap.set(row.key, row.value));
 
     // 验证和解析数据
     let categories = [];
@@ -35,11 +37,11 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
                 title: "Default",
                 items: [
                   { id: "1", title: "Google", url: "https://google.com", icon: "Search" },
-                  { id: "2", title: "GitHub", url: "https://github.com", icon: "Github" }
-                ]
-              }
-            ]
-          }
+                  { id: "2", title: "GitHub", url: "https://github.com", icon: "Github" },
+                ],
+              },
+            ],
+          },
         ];
       }
     } catch (e) {
@@ -55,11 +57,11 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
               title: "Default",
               items: [
                 { id: "1", title: "Google", url: "https://google.com", icon: "Search" },
-                { id: "2", title: "GitHub", url: "https://github.com", icon: "Github" }
-              ]
-            }
-          ]
-        }
+                { id: "2", title: "GitHub", url: "https://github.com", icon: "Github" },
+              ],
+            },
+          ],
+        },
       ];
     }
 
@@ -71,7 +73,7 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
         console.warn("Invalid background format in database, using default");
         background = null;
       }
-      
+
       // 如果没有背景，使用默认背景
       if (!background) {
         background = "radial-gradient(circle at 50% -20%, #334155, #0f172a, #020617)";
@@ -89,13 +91,13 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
         console.warn("Invalid prefs format in database, using default");
         prefs = null;
       }
-      
+
       // 如果没有prefs，使用默认值
       if (!prefs) {
         prefs = {
           cardOpacity: 0.1,
           themeColor: "#6280a3",
-          themeMode: "dark" // 字符串形式，将在前端被正确解析
+          themeMode: "dark", // 字符串形式，将在前端被正确解析
         };
       }
     } catch (e) {
@@ -103,12 +105,12 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
       prefs = {
         cardOpacity: 0.1,
         themeColor: "#6280a3",
-        themeMode: "dark"
+        themeMode: "dark",
       };
     }
 
     const authCode = configMap.get("auth_code");
-    const responseData = {
+    const responseData: BootstrapResponse = {
       categories,
       background,
       prefs,
@@ -138,17 +140,17 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
                 title: "Default",
                 items: [
                   { id: "1", title: "Google", url: "https://google.com", icon: "Search" },
-                  { id: "2", title: "GitHub", url: "https://github.com", icon: "Github" }
-                ]
-              }
-            ]
-          }
+                  { id: "2", title: "GitHub", url: "https://github.com", icon: "Github" },
+                ],
+              },
+            ],
+          },
         ],
         background: "radial-gradient(circle at 50% -20%, #334155, #0f172a, #020617)",
         prefs: {
           cardOpacity: 0.1,
           themeColor: "#6280a3",
-          themeMode: "dark"
+          themeMode: "dark",
         },
         isDefaultCode: true,
         error: "Failed to load configuration, using defaults",

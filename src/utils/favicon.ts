@@ -5,16 +5,16 @@
  */
 export const getFaviconUrl = (url: string, template?: string): string => {
   if (!url) return "";
-  
+
   try {
     // Ensure URL has a protocol for parsing
     const urlToParse = url.match(/^https?:\/\//) ? url : `https://${url}`;
     const hostname = new URL(urlToParse).hostname;
-    
+
     if (!hostname) return "";
 
     const apiTemplate = template || "https://favicon.im/{domain}?larger=true";
-    
+
     // Replace placeholder
     return apiTemplate.replace("{domain}", hostname);
   } catch (e) {

@@ -5,12 +5,8 @@ interface BackgroundLayerProps {
   isDark: boolean;
 }
 
-export const BackgroundLayer: React.FC<BackgroundLayerProps> = ({
-  background,
-  isDark,
-}) => {
-  const isBackgroundUrl =
-    background.startsWith("http") || background.startsWith("data:");
+export const BackgroundLayer: React.FC<BackgroundLayerProps> = ({ background, isDark }) => {
+  const isBackgroundUrl = background.startsWith("http") || background.startsWith("data:");
 
   return (
     <div className="fixed inset-0 z-0">

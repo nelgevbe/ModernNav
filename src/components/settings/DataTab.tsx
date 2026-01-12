@@ -5,20 +5,12 @@ import { storageService } from "../../services/storage";
 import { Category, UserPreferences } from "../../types";
 
 interface DataTabProps {
-  onImport: (
-    categories: Category[],
-    background?: string,
-    prefs?: UserPreferences
-  ) => void;
+  onImport: (categories: Category[], background?: string, prefs?: UserPreferences) => void;
   background: string;
   prefs: UserPreferences;
 }
 
-export const DataTab: React.FC<DataTabProps> = ({
-  onImport,
-  background,
-  prefs,
-}) => {
+export const DataTab: React.FC<DataTabProps> = ({ onImport, background, prefs }) => {
   const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<{
@@ -37,11 +29,7 @@ export const DataTab: React.FC<DataTabProps> = ({
       const importedData = await storageService.importData(file);
 
       // Callback to parent to update state
-      onImport(
-        importedData.categories || [],
-        importedData.background,
-        importedData.prefs
-      );
+      onImport(importedData.categories || [], importedData.background, importedData.prefs);
 
       setImportStatus({ type: "success", message: t("import_success") });
     } catch (error: any) {
@@ -62,18 +50,12 @@ export const DataTab: React.FC<DataTabProps> = ({
             <Database size={24} />
           </div>
           <div>
-            <h3 className="text-blue-400 font-bold tracking-tight mb-1">
-              {t("data_risk_title")}
-            </h3>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              {t("data_risk_desc")}
-            </p>
+            <h3 className="text-blue-400 font-bold tracking-tight mb-1">{t("data_risk_title")}</h3>
+            <p className="text-slate-500 text-sm leading-relaxed">{t("data_risk_desc")}</p>
           </div>
         </div>
         <div className="panel-base p-6 rounded-2xl">
-          <h3 className="text-white font-bold mb-1 tracking-tight">
-            {t("backup_config")}
-          </h3>
+          <h3 className="text-white font-bold mb-1 tracking-tight">{t("backup_config")}</h3>
           <p className="text-xs text-slate-500 mb-6">{t("backup_desc")}</p>
           <button
             onClick={handleExport}
@@ -87,9 +69,7 @@ export const DataTab: React.FC<DataTabProps> = ({
           </button>
         </div>
         <div className="panel-base p-6 rounded-2xl">
-          <h3 className="text-white font-bold mb-1 tracking-tight">
-            {t("restore_config")}
-          </h3>
+          <h3 className="text-white font-bold mb-1 tracking-tight">{t("restore_config")}</h3>
           <p className="text-xs text-slate-500 mb-6">{t("restore_desc")}</p>
           <input
             type="file"

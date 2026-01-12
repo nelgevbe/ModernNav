@@ -27,10 +27,24 @@ dist-ssr
 
 
 # Dependency directories
-node_modules/*
-package-lock.json
+node_modules/
 metadata.json
-scripts/*
+scripts/
 functions/_worker.ts
-.wrangler/*
+.wrangler/
 wrangler.toml
+DEVELOPMENT_PLAN.md
+
+# Build and Test
+dist/
+dist-ssr/
+coverage/
+test_results.*
+src_lint_report.*
+task.md
+**/__tests__/
+
+# Temp files
+*.txt
+!README.md
+!README_en.md

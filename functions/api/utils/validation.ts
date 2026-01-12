@@ -88,7 +88,7 @@ export function validateLinkItem(data: any): { valid: boolean; message?: string 
   }
 
   try {
-    new URL(data.url.startsWith("http") ? data.url : ("https://" + data.url));
+    new URL(data.url.startsWith("http") ? data.url : "https://" + data.url);
   } catch {
     return { valid: false, message: "Link URL must be a valid URL" };
   }
@@ -189,14 +189,20 @@ export function validateFullCategory(category: any): { valid: boolean; message?:
   for (const subCategory of category.subCategories) {
     const subValidation = validateSubCategory(subCategory);
     if (!subValidation.valid) {
-      return { valid: false, message: `SubCategory "${subCategory.title || "unnamed"}": ${subValidation.message}` };
+      return {
+        valid: false,
+        message: `SubCategory "${subCategory.title || "unnamed"}": ${subValidation.message}`,
+      };
     }
 
     // 验证子分类中的每个链接
     for (const item of subCategory.items) {
       const itemValidation = validateLinkItem(item);
       if (!itemValidation.valid) {
-        return { valid: false, message: `Link "${item.title || "unnamed"}" in "${subCategory.title || "unnamed"}": ${itemValidation.message}` };
+        return {
+          valid: false,
+          message: `Link "${item.title || "unnamed"}" in "${subCategory.title || "unnamed"}": ${itemValidation.message}`,
+        };
       }
     }
   }

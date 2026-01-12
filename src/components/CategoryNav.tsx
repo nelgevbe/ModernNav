@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { ChevronDown, Globe, Moon, Sun, Settings } from "lucide-react";
+import { ChevronDown, Globe, Moon, Sun, Settings, Menu, X } from "lucide-react";
 import { Category, ThemeMode } from "../types";
 import { useLanguage } from "../contexts/LanguageContext";
 
@@ -26,8 +26,9 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   toggleLanguage,
   openSettings,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const isDark = themeMode === ThemeMode.Dark;
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Navigation Animation State
   const [navPillStyle, setNavPillStyle] = useState({
@@ -72,9 +73,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
       return `${navDropdownItemBase} bg-[var(--theme-primary)] text-white font-medium shadow-md`;
     }
     return `${navDropdownItemBase} ${
-      isDark
-        ? "text-white/90 hover:bg-white/10"
-        : "text-slate-700 hover:bg-black/5"
+      isDark ? "text-white/90 hover:bg-white/10" : "text-slate-700 hover:bg-black/5"
     } active:scale-[0.98]`;
   };
 
@@ -106,9 +105,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
     if (isActive) {
       return isDark ? "text-white font-medium" : "text-slate-900 font-medium";
     }
-    return isDark
-      ? "text-white/50 hover:text-white/80"
-      : "text-slate-500 hover:text-slate-800";
+    return isDark ? "text-white/50 hover:text-white/80" : "text-slate-500 hover:text-slate-800";
   };
 
   const actionButtonClass = `
@@ -145,126 +142,251 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
     />
   );
 
-  return (
-    <nav className="flex justify-center items-center py-6 px-4 relative z-[100] isolation-isolate text-sm font-medium tracking-wide">
-      <div className={islandContainerClass} style={islandStyle}>
-        {glassLayerNoise}
-        {glassLayerRim}
-        {glassLayerSheen}
+  const currentCategoryObj = categories.find((c) => c.id === activeCategory);
 
-        <div className="relative z-10 flex items-center gap-1 flex-wrap justify-center max-w-full px-1">
-          {/* SECTION 1: Categories */}
-          <div className="relative flex items-center" ref={navTrackRef}>
-            <div
-              className={slidingPillClass}
-              style={{
-                left: navPillStyle.left,
-                width: navPillStyle.width,
-                opacity: navPillStyle.opacity,
-                height: "100%",
-              }}
-            />
+  return (
+    <>
+      {/* 
+          1. MOBILE NAVIGATION: FIXED TOP BAR 
+          Visible only on screens smaller than 'md'
+      */}
+      <nav
+        className={`md:hidden fixed top-0 left-0 right-0 z-[1000] transition-all duration-300 ${
+          isDark ? "bg-slate-900/80" : "bg-white/80"
+        } border-b ${isDark ? "border-white/5" : "border-slate-200/50"} backdrop-blur-xl`}
+      >
+        <div className="flex items-center justify-between h-14 px-4">
+          {/* Left: Burger Menu Trigger */}
+          <button
+            onClick={() => setIsExpanded(true)}
+            className={`p-2 rounded-lg transition-colors ${
+              isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"
+            }`}
+          >
+            <Menu size={20} />
+          </button>
+
+          {/* Right: Quick Actions */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleLanguage}
+              className={`p-2 rounded-lg transition-colors ${
+                isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"
+              }`}
+            >
+              <Globe size={18} />
+            </button>
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-lg transition-colors ${
+                isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"
+              }`}
+            >
+              {isDark ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+            <button
+              onClick={openSettings}
+              className={`p-2 rounded-lg transition-colors ${
+                isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"
+              }`}
+            >
+              <Settings size={18} />
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Drawer Overlay */}
+      <div 
+        className={`md:hidden fixed inset-0 z-[2000] transition-all duration-300 ${
+          isExpanded ? "visible" : "invisible"
+        }`}
+      >
+        {/* Backdrop */}
+        <div 
+          onClick={() => setIsExpanded(false)}
+          className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
+            isExpanded ? "opacity-100" : "opacity-0"
+          }`}
+        />
+
+        {/* Drawer Panel */}
+        <div 
+          className={`absolute top-0 left-0 bottom-0 w-[280px] shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex flex-col ${
+            isExpanded ? "translate-x-0" : "-translate-x-full"
+          } ${isDark ? "bg-slate-900/95 border-r border-white/10" : "bg-white/95 border-r border-slate-200"}`}
+          style={{ backdropFilter: 'blur(20px)' }}
+        >
+          {/* Drawer Header */}
+          <div className="p-6 border-b border-white/5 flex items-center justify-between">
+             <h2 className={`text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                {t('sidebar_categories')}
+             </h2>
+             <button 
+               onClick={() => setIsExpanded(false)}
+               className={`p-2 rounded-full ${isDark ? 'hover:bg-white/5 text-white/40' : 'hover:bg-black/5 text-slate-400'}`}
+             >
+               <X size={20} />
+             </button>
+          </div>
+
+          {/* Drawer Links */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2">
             {categories.map((cat) => {
-              const hasSingleDefault =
-                cat.subCategories.length === 1 &&
-                cat.subCategories[0].title === "Default";
               const isActive = activeCategory === cat.id;
               return (
-                <div key={cat.id} className="relative group">
+                <div key={cat.id} className="space-y-1">
                   <button
-                    ref={(el) => {
-                      tabsRef.current[cat.id] = el;
+                    onClick={() => {
+                      onCategoryClick(cat);
+                      // If no subcategories or only default, close drawer on click
+                      if (cat.subCategories.length <= 1) setIsExpanded(false);
                     }}
-                    onClick={() => onCategoryClick(cat)}
-                    className={`${categoryButtonBase} ${categoryButtonColors(
+                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
                       isActive
-                    )}`}
+                        ? "bg-[var(--theme-primary)] text-white shadow-md font-bold"
+                        : `${isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"}`
+                    }`}
                   >
-                    <span className="truncate max-w-[120px] relative z-10">
-                      {cat.title}
-                    </span>
-                    {!hasSingleDefault && (
-                      <ChevronDown
-                        size={14}
-                        className={`relative z-10 transition-transform duration-300 group-hover:rotate-180 ${
-                          isActive ? "text-current" : "opacity-50"
-                        }`}
-                      />
+                    <span className="text-sm">{cat.title}</span>
+                    {cat.subCategories.length > 1 && (
+                      <ChevronDown size={14} className={`transition-transform duration-300 ${isActive ? 'rotate-180' : '-rotate-90 opacity-40'}`} />
                     )}
                   </button>
-                  {!hasSingleDefault && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 hidden group-hover:block z-[100] w-34 animate-fade-in origin-top">
-                      <div
-                        className={`${dropdownClasses} rounded-xl p-1 flex flex-col gap-0.5 overflow-hidden ring-1 ring-white/5 shadow-2xl`}
-                      >
-                        {cat.subCategories.length > 0 ? (
-                          cat.subCategories.map((sub) => (
-                            <button
-                              key={sub.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onSubCategoryClick(cat.id, sub.id);
-                              }}
-                              className={getDropdownItemClass(
-                                activeCategory === cat.id &&
-                                  activeSubCategoryId === sub.id
-                              )}
-                            >
-                              <span className="truncate">{sub.title}</span>
-                              {activeCategory === cat.id &&
-                                activeSubCategoryId === sub.id && (
-                                  <div className="w-1 h-1 rounded-full bg-white shadow-sm"></div>
-                                )}
-                            </button>
-                          ))
-                        ) : (
-                          <div
-                            className={`px-3 py-2 text-[10px] text-center italic ${
-                              isDark ? "text-white/40" : "text-slate-400"
-                            }`}
-                          >
-                            {t("no_submenus")}
-                          </div>
-                        )}
-                      </div>
+
+                  {/* Sub-categories in Drawer */}
+                  {isActive && cat.subCategories.length > 1 && (
+                    <div className="mt-1 space-y-1 ml-2 pl-4 border-l border-white/10">
+                      {cat.subCategories.map((sub) => (
+                        <button
+                          key={sub.id}
+                          onClick={() => {
+                            onSubCategoryClick(cat.id, sub.id);
+                            setIsExpanded(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all ${
+                            activeSubCategoryId === sub.id
+                              ? `text-[var(--theme-primary)] font-bold bg-[var(--theme-primary)]/10`
+                              : `${isDark ? "text-white/40 hover:text-white/70" : "text-slate-500 hover:text-slate-900"}`
+                          }`}
+                        >
+                          {sub.title}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
               );
             })}
           </div>
-
-          {/* SECTION 2: Separator */}
-          <div
-            className={`w-[1px] h-5 mx-2 rounded-full ${
-              isDark ? "bg-white/10" : "bg-slate-400/20"
-            }`}
-          ></div>
-
-          {/* SECTION 3: Actions */}
-          <button
-            onClick={toggleLanguage}
-            className={actionButtonClass}
-            title="Switch Language"
-          >
-            <Globe size={18} />
-          </button>
-          <button
-            onClick={toggleTheme}
-            className={actionButtonClass}
-            title="Toggle Theme"
-          >
-            {isDark ? <Moon size={18} /> : <Sun size={18} />}
-          </button>
-          <button
-            onClick={openSettings}
-            className={actionButtonClass}
-            title={t("settings")}
-          >
-            <Settings size={18} />
-          </button>
         </div>
       </div>
-    </nav>
+
+      {/* 
+          2. DESKTOP NAVIGATION: DYNAMIC ISLAND
+          Visible only on screens 'md' and larger
+      */}
+      <nav className="hidden md:flex justify-center items-center py-6 px-4 relative z-[100] isolation-isolate text-sm font-medium tracking-wide">
+        <div className={islandContainerClass} style={islandStyle}>
+          {glassLayerNoise}
+          {glassLayerRim}
+          {glassLayerSheen}
+
+          <div className="relative z-10 flex items-center gap-1 flex-wrap justify-center max-w-full px-1">
+            {/* SECTION 1: Categories */}
+            <div className="relative flex items-center" ref={navTrackRef}>
+              <div
+                className={slidingPillClass}
+                style={{
+                  left: navPillStyle.left,
+                  width: navPillStyle.width,
+                  opacity: navPillStyle.opacity,
+                  height: "100%",
+                }}
+              />
+              {categories.map((cat) => {
+                const hasSingleDefault =
+                  cat.subCategories.length === 1 && cat.subCategories[0].title === "Default";
+                const isActive = activeCategory === cat.id;
+                return (
+                  <div key={cat.id} className="relative group">
+                    <button
+                      ref={(el) => {
+                        tabsRef.current[cat.id] = el;
+                      }}
+                      onClick={() => onCategoryClick(cat)}
+                      className={`${categoryButtonBase} ${categoryButtonColors(isActive)}`}
+                    >
+                      <span className="truncate max-w-[120px] relative z-10">{cat.title}</span>
+                      {!hasSingleDefault && (
+                        <ChevronDown
+                          size={14}
+                          className={`relative z-10 transition-transform duration-300 group-hover:rotate-180 ${
+                            isActive ? "text-current" : "opacity-50"
+                          }`}
+                        />
+                      )}
+                    </button>
+                    {!hasSingleDefault && (
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 hidden group-hover:block z-[100] w-34 animate-fade-in origin-top">
+                        <div
+                          className={`${dropdownClasses} rounded-xl p-1 flex flex-col gap-0.5 overflow-hidden ring-1 ring-white/5 shadow-2xl`}
+                        >
+                          {cat.subCategories.length > 0 ? (
+                            cat.subCategories.map((sub) => (
+                              <button
+                                key={sub.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onSubCategoryClick(cat.id, sub.id);
+                                }}
+                                className={getDropdownItemClass(
+                                  activeCategory === cat.id && activeSubCategoryId === sub.id
+                                )}
+                              >
+                                <span className="truncate">{sub.title}</span>
+                                {activeCategory === cat.id && activeSubCategoryId === sub.id && (
+                                  <div className="w-1 h-1 rounded-full bg-white shadow-sm"></div>
+                                )}
+                              </button>
+                            ))
+                          ) : (
+                            <div
+                              className={`px-3 py-2 text-[10px] text-center italic ${
+                                isDark ? "text-white/40" : "text-slate-400"
+                              }`}
+                            >
+                              {t("no_submenus")}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* SECTION 2: Separator */}
+            <div
+              className={`w-[1px] h-5 mx-2 rounded-full ${
+                isDark ? "bg-white/10" : "bg-slate-400/20"
+              }`}
+            ></div>
+
+            {/* SECTION 3: Actions */}
+            <button onClick={toggleLanguage} className={actionButtonClass} title="Switch Language">
+              <Globe size={18} />
+            </button>
+            <button onClick={toggleTheme} className={actionButtonClass} title="Toggle Theme">
+              {isDark ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+            <button onClick={openSettings} className={actionButtonClass} title={t("settings")}>
+              <Settings size={18} />
+            </button>
+          </div>
+        </div>
+      </nav>
+    </>
   );
 };

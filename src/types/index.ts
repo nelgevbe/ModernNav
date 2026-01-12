@@ -1,4 +1,3 @@
-
 export interface LinkItem {
   id: string;
   title: string;
@@ -51,4 +50,21 @@ export interface UserPreferences {
   footerLinks?: FooterLink[];
 }
 
+export interface ApiResponse<T = any> {
+  data?: T;
+  error?: string;
+  success?: boolean;
+}
 
+export interface BootstrapResponse {
+  categories: Category[];
+  background: string;
+  prefs: UserPreferences;
+  isDefaultCode: boolean;
+  error?: string;
+}
+
+export interface UpdatePayload {
+  type: "categories" | "background" | "prefs" | "auth_code";
+  data: any;
+}
