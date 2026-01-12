@@ -56,8 +56,8 @@ export default defineConfig({
               return "ui-vendor";
             }
             if (
-              id.includes("/react/") || 
-              id.includes("/react-dom/") || 
+              id.includes("/react/") ||
+              id.includes("/react-dom/") ||
               id.includes("/react-is/") ||
               id.includes("/scheduler/") ||
               id.includes("/prop-types/")

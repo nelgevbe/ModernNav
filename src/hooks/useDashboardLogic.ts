@@ -16,35 +16,47 @@ export const useDashboardLogic = () => {
   const [background, setBackground] = useState<string>(localData.background);
   const [cardOpacity, setCardOpacity] = useState<number>(localData.prefs.cardOpacity);
   const [themeColor, setThemeColor] = useState<string>(localData.prefs.themeColor || "#6280a3");
-  const [themeColorAuto, setThemeColorAuto] = useState<boolean>(localData.prefs.themeColorAuto ?? true);
+  const [themeColorAuto, setThemeColorAuto] = useState<boolean>(
+    localData.prefs.themeColorAuto ?? true
+  );
   const [themeMode, setThemeMode] = useState<ThemeMode>(localData.prefs.themeMode);
   const [isDefaultCode, setIsDefaultCode] = useState(localData.isDefaultCode);
-  
+
   // Initialize active category
   const [activeCategory, setActiveCategory] = useState<string>(
     localData.categories.length > 0 ? localData.categories[0].id : ""
   );
-  
+
   // Helper to find first subcategory
   const getFirstSubCat = (cats: Category[], catId: string) => {
-    const cat = cats.find(c => c.id === catId);
+    const cat = cats.find((c) => c.id === catId);
     return cat && cat.subCategories.length > 0 ? cat.subCategories[0].id : "";
   };
 
   const [activeSubCategoryId, setActiveSubCategoryId] = useState<string>(
-    localData.categories.length > 0 ? getFirstSubCat(localData.categories, localData.categories[0].id) : ""
+    localData.categories.length > 0
+      ? getFirstSubCat(localData.categories, localData.categories[0].id)
+      : ""
   );
 
   // New Layout Preferences
-  const [maxContainerWidth, setMaxContainerWidth] = useState<number>(localData.prefs.maxContainerWidth ?? 900);
+  const [maxContainerWidth, setMaxContainerWidth] = useState<number>(
+    localData.prefs.maxContainerWidth ?? 900
+  );
   const [cardWidth, setCardWidth] = useState<number>(localData.prefs.cardWidth ?? 96);
   const [cardHeight, setCardHeight] = useState<number>(localData.prefs.cardHeight ?? 96);
   const [gridColumns, setGridColumns] = useState<number>(localData.prefs.gridColumns ?? 6);
   // New Global Preferences
   const [siteTitle, setSiteTitle] = useState<string>(localData.prefs.siteTitle ?? "ModernNav");
-  const [faviconApi, setFaviconApi] = useState<string>(localData.prefs.faviconApi ?? "https://favicon.im/{domain}?larger=true");
-  const [footerGithub, setFooterGithub] = useState<string>(localData.prefs.footerGithub ?? "https://github.com/lyan0220");
-  const [footerLinks, setFooterLinks] = useState<{title: string, url: string}[]>(localData.prefs.footerLinks ?? []);
+  const [faviconApi, setFaviconApi] = useState<string>(
+    localData.prefs.faviconApi ?? "https://favicon.im/{domain}?larger=true"
+  );
+  const [footerGithub, setFooterGithub] = useState<string>(
+    localData.prefs.footerGithub ?? "https://github.com/lyan0220"
+  );
+  const [footerLinks, setFooterLinks] = useState<{ title: string; url: string }[]>(
+    localData.prefs.footerLinks ?? []
+  );
 
   const { language, setLanguage } = useLanguage();
 
@@ -53,7 +65,7 @@ export const useDashboardLogic = () => {
     const initData = async () => {
       // If we have local data, we don't show loading spinner, but we still digest the promise
       if (!hasLocalData) setLoading(true);
-      
+
       try {
         const data = await storageService.fetchAllData();
 
@@ -76,25 +88,21 @@ export const useDashboardLogic = () => {
 
         let finalColor = data.prefs.themeColor || "#6280a3";
 
-        if (
-          (data.prefs.themeColorAuto ?? true) &&
-          data.background.startsWith("http")
-        ) {
+        if ((data.prefs.themeColorAuto ?? true) && data.background.startsWith("http")) {
           finalColor = await getDominantColor(data.background);
         }
 
         setThemeColor(finalColor);
 
         // Update Active Category only if currently empty or invalid
-        // (Optional: Logic to keep user on current category effectively handled by state persistence if we wanted, 
+        // (Optional: Logic to keep user on current category effectively handled by state persistence if we wanted,
         // but here we just ensure validity if data changed structure)
-        
+
         // Note: We generally don't want to reset active category while user is browsing if sync finishes late.
         // But if we had NO local data, we must set it.
         if (!hasLocalData && data.categories.length > 0) {
-           setActiveCategory(data.categories[0].id);
+          setActiveCategory(data.categories[0].id);
         }
-
       } catch (e) {
         console.error("Failed to load app data", e);
       } finally {
@@ -103,7 +111,7 @@ export const useDashboardLogic = () => {
     };
 
     initData();
-  }, []);
+  }, [hasLocalData]);
 
   // Sync Theme Color to CSS Variable
   useEffect(() => {
@@ -145,9 +153,7 @@ export const useDashboardLogic = () => {
     if (!loading) {
       const currentCat = categories.find((c) => c.id === activeCategory);
       if (currentCat && currentCat.subCategories.length > 0) {
-        const subExists = currentCat.subCategories.find(
-          (s) => s.id === activeSubCategoryId
-        );
+        const subExists = currentCat.subCategories.find((s) => s.id === activeSubCategoryId);
         if (!subExists) {
           setActiveSubCategoryId(currentCat.subCategories[0].id);
         }
@@ -166,7 +172,7 @@ export const useDashboardLogic = () => {
     extraPrefs?: Partial<UserPreferences>
   ) => {
     const updatedColor = color || themeColor;
-    const updatedAuto = themeAuto !== undefined ? themeAuto : (color ? false : themeColorAuto);
+    const updatedAuto = themeAuto !== undefined ? themeAuto : color ? false : themeColorAuto;
 
     setBackground(url);
     setCardOpacity(opacity);
@@ -188,9 +194,12 @@ export const useDashboardLogic = () => {
     }
 
     const finalSiteTitle = extraPrefs?.siteTitle !== undefined ? extraPrefs.siteTitle : siteTitle;
-    const finalFaviconApi = extraPrefs?.faviconApi !== undefined ? extraPrefs.faviconApi : faviconApi;
-    const finalFooterGithub = extraPrefs?.footerGithub !== undefined ? extraPrefs.footerGithub : footerGithub;
-    const finalFooterLinks = extraPrefs?.footerLinks !== undefined ? extraPrefs.footerLinks : footerLinks;
+    const finalFaviconApi =
+      extraPrefs?.faviconApi !== undefined ? extraPrefs.faviconApi : faviconApi;
+    const finalFooterGithub =
+      extraPrefs?.footerGithub !== undefined ? extraPrefs.footerGithub : footerGithub;
+    const finalFooterLinks =
+      extraPrefs?.footerLinks !== undefined ? extraPrefs.footerLinks : footerLinks;
 
     try {
       await storageService.setBackground(url);
@@ -216,10 +225,8 @@ export const useDashboardLogic = () => {
     }
   };
 
-
   const toggleTheme = () => {
-    const newTheme =
-      themeMode === ThemeMode.Dark ? ThemeMode.Light : ThemeMode.Dark;
+    const newTheme = themeMode === ThemeMode.Dark ? ThemeMode.Light : ThemeMode.Dark;
     setThemeMode(newTheme);
     storageService.savePreferences({
       cardOpacity,
@@ -286,4 +293,3 @@ export const useDashboardLogic = () => {
     },
   };
 };
-

@@ -44,9 +44,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         <Lock size={40} className="text-slate-400" />
       </div>
       <div>
-        <h2 className="text-2xl font-bold text-white mb-2">
-          {t("admin_access")}
-        </h2>
+        <h2 className="text-2xl font-bold text-white mb-2">{t("admin_access")}</h2>
         <p className="text-slate-400 text-sm">{t("enter_code_msg")}</p>
         {isDefaultCode && (
           <p className="text-emerald-400/90 text-xs mt-3 font-mono bg-emerald-500/10 border border-emerald-500/20 py-1.5 px-3 rounded-md inline-block">
@@ -68,15 +66,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             <AlertCircle size={14} /> {authError}
           </div>
         )}
-        <button
-          type="submit"
-          className="btn-primary w-full py-3 rounded-xl text-base"
-        >
-          {isVerifying ? (
-            <Loader2 className="animate-spin" size={18} />
-          ) : (
-            <LogIn size={18} />
-          )}{" "}
+        <button type="submit" className="btn-primary w-full py-3 rounded-xl text-base">
+          {isVerifying ? <Loader2 className="animate-spin" size={18} /> : <LogIn size={18} />}{" "}
           {t("unlock_btn")}
         </button>
       </form>

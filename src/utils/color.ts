@@ -43,16 +43,11 @@ export const getDominantColor = (imageSrc: string): Promise<string> => {
 
         // Clamp lightness:
         // We want the primary color to pop on a dark background.
-        // Range: 55% - 75% lightness is usually the sweet spot for buttons/text on dark.
         let newL = l;
         if (newL < 0.55) newL = 0.55;
         if (newL > 0.75) newL = 0.75;
 
-        resolve(
-          `hsl(${Math.round(h * 360)}, ${Math.round(newS * 100)}%, ${Math.round(
-            newL * 100
-          )}%)`
-        );
+        resolve(hslToHex(Math.round(h * 360), Math.round(newS * 100), Math.round(newL * 100)));
       } catch (e) {
         // Fallback for CORS issues (tainted canvas)
         console.warn("Could not extract color due to CORS:", e);
@@ -64,6 +59,20 @@ export const getDominantColor = (imageSrc: string): Promise<string> => {
   });
 };
 
+// Helper: HSL to HEX
+export function hslToHex(h: number, s: number, l: number): string {
+  l /= 100;
+  const a = (s * Math.min(l, 1 - l)) / 100;
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
 // Helper: RGB to HSL
 function rgbToHsl(r: number, g: number, b: number) {
   r /= 255;
@@ -71,9 +80,9 @@ function rgbToHsl(r: number, g: number, b: number) {
   b /= 255;
   const max = Math.max(r, g, b),
     min = Math.min(r, g, b);
-  let h = 0,
-    s = 0,
-    l = (max + min) / 2;
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
 
   if (max !== min) {
     const d = max - min;

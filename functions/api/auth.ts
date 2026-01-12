@@ -16,13 +16,7 @@ import {
 // 创建速率限制器实例
 const authRateLimiter = new RateLimiter(15, 15 * 60 * 1000); // 15分钟内最多15次登录尝试
 
-export const onRequestPost = async ({
-  request,
-  env,
-}: {
-  request: Request;
-  env: Env;
-}) => {
+export const onRequestPost = async ({ request, env }: { request: Request; env: Env }) => {
   try {
     const clientIP = getClientIP(request);
 
@@ -46,13 +40,10 @@ export const onRequestPost = async ({
 
     // 输入验证
     if (!action || typeof action !== "string") {
-      return new Response(
-        JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // 如果没有数据库，使用默认密码
@@ -63,24 +54,18 @@ export const onRequestPost = async ({
       // 登录
       if (action === "login") {
         if (!code || typeof code !== "string") {
-          return new Response(
-            JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }),
-            {
-              status: 400,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
+          return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         if (code !== storedCode) {
           console.log(`Login failed: provided="${code}", stored="${storedCode}"`);
-          return new Response(
-            JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }),
-            {
-              status: 401,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
+          return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         return respondWithCookie(
@@ -93,46 +78,33 @@ export const onRequestPost = async ({
       }
 
       // 其他操作返回错误
-      return new Response(
-        JSON.stringify({ error: "Database not available for this operation" }),
-        {
-          status: 503,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Database not available for this operation" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    const codeRow = await env.DB.prepare(
-      "SELECT value FROM config WHERE key = 'auth_code'"
-    ).first<{ value: string }>();
+    const codeRow = await env.DB.prepare("SELECT value FROM config WHERE key = 'auth_code'").first<{
+      value: string;
+    }>();
     const storedCode = codeRow?.value || "admin";
-    console.log(
-      `Auth check: codeRow=${JSON.stringify(
-        codeRow
-      )}, storedCode="${storedCode}"`
-    );
+    console.log(`Auth check: codeRow=${JSON.stringify(codeRow)}, storedCode="${storedCode}"`);
 
     // 1. 登录
     if (action === "login") {
       if (!code || typeof code !== "string") {
-        return new Response(
-          JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }),
-          {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+        return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       if (code !== storedCode) {
         console.log(`Login failed: provided="${code}", stored="${storedCode}"`);
-        return new Response(
-          JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }),
-          {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+        return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       return respondWithCookie(
@@ -146,16 +118,10 @@ export const onRequestPost = async ({
 
     // 2. 刷新 Token
     if (action === "refresh") {
-      const rfToken = request.headers
-        .get("Cookie")
-        ?.match(/refresh_token=([^;]+)/)?.[1];
+      const rfToken = request.headers.get("Cookie")?.match(/refresh_token=([^;]+)/)?.[1];
 
       if (!rfToken) {
-        return respondWithCookie(
-          { error: ERROR_MESSAGES.INVALID_TOKEN },
-          "",
-          true
-        );
+        return respondWithCookie({ error: ERROR_MESSAGES.INVALID_TOKEN }, "", true);
       }
 
       try {
@@ -163,19 +129,11 @@ export const onRequestPost = async ({
         const isValid = await verify(rfToken, storedCode);
         if (!isValid) {
           console.log("Refresh token invalid or expired");
-          return respondWithCookie(
-            { error: ERROR_MESSAGES.INVALID_TOKEN },
-            "",
-            true
-          );
+          return respondWithCookie({ error: ERROR_MESSAGES.INVALID_TOKEN }, "", true);
         }
       } catch (error) {
         console.error("Token verification error during refresh:", error);
-        return respondWithCookie(
-          { error: ERROR_MESSAGES.INVALID_TOKEN },
-          "",
-          true
-        );
+        return respondWithCookie({ error: ERROR_MESSAGES.INVALID_TOKEN }, "", true);
       }
 
       return respondWithCookie(
@@ -192,23 +150,17 @@ export const onRequestPost = async ({
       const token = request.headers.get("Authorization")?.split(" ")[1];
 
       if (!token) {
-        return new Response(
-          JSON.stringify({ error: ERROR_MESSAGES.UNAUTHORIZED }),
-          {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+        return new Response(JSON.stringify({ error: ERROR_MESSAGES.UNAUTHORIZED }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       if (!(await verify(token, storedCode))) {
-        return new Response(
-          JSON.stringify({ error: ERROR_MESSAGES.UNAUTHORIZED }),
-          {
-            status: 403,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+        return new Response(JSON.stringify({ error: ERROR_MESSAGES.UNAUTHORIZED }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       if (
@@ -217,23 +169,17 @@ export const onRequestPost = async ({
         typeof currentCode !== "string" ||
         typeof newCode !== "string"
       ) {
-        return new Response(
-          JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }),
-          {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+        return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       if (currentCode !== storedCode) {
-        return new Response(
-          JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }),
-          {
-            status: 403,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+        return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       // 密码强度检查

@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  Sliders,
-  RotateCcw,
-  Save,
-  Wand2,
-  Loader2,
-  Image as ImageIcon,
-} from "lucide-react";
+import { Sliders, RotateCcw, Save, Wand2, Loader2, Image as ImageIcon } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { DEFAULT_BACKGROUND } from "../../services/storage";
 import { getDominantColor } from "../../utils/color";
@@ -62,9 +55,9 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
   const handleUpdateSettings = () => {
     // Unified update call: Background + Opacity + Theme + Layout
     onUpdate(
-      bgInput, 
-      opacityInput, 
-      themeColorInput, 
+      bgInput,
+      opacityInput,
+      themeColorInput,
       {
         width: widthInput,
         cardWidth: cardWidthInput,
@@ -131,7 +124,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
             ) : (
               <div className="w-full h-full opacity-50" style={{ background: bgInput }} />
             )}
-            
+
             {/* Centered Floating Preview Card */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div
@@ -141,8 +134,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                   height: `${(cardHeightInput / 100) * 80}px`,
                   background: `linear-gradient(135deg, rgba(255, 255, 255, ${opacityInput}), rgba(255, 255, 255, ${opacityInput * 0.4}))`,
                 }}
-              >
-              </div>
+              ></div>
             </div>
           </div>
 
@@ -150,11 +142,12 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
           <div className="p-6 pt-2 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="label-xs pl-1">
-                  {t("bg_url_label")}
-                </label>
+                <label className="label-xs pl-1">{t("bg_url_label")}</label>
                 <div className="relative group/input text-sm">
-                  <ImageIcon size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <ImageIcon
+                    size={14}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
+                  />
                   <input
                     type="text"
                     value={bgInput}
@@ -166,14 +159,10 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="label-xs pl-1">
-                  {t("label_theme_color")}
-                </label>
+                <label className="label-xs pl-1">{t("label_theme_color")}</label>
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
-                    <label
-                      className="flex items-center gap-2 bg-white/5 rounded-lg p-1.5 border border-white/5 cursor-pointer hover:bg-white/10 transition-colors"
-                    >
+                    <label className="flex items-center gap-2 bg-white/5 rounded-lg p-1.5 border border-white/5 cursor-pointer hover:bg-white/10 transition-colors">
                       <input
                         type="color"
                         value={themeColorInput}
@@ -194,7 +183,10 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     {isExtracting ? (
                       <Loader2 size={14} className="animate-spin" />
                     ) : (
-                      <Wand2 size={14} className="group-hover:text-[var(--theme-primary)] transition-colors" />
+                      <Wand2
+                        size={14}
+                        className="group-hover:text-[var(--theme-primary)] transition-colors"
+                      />
                     )}
                     <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">
                       {t("btn_auto_extract")}
@@ -214,14 +206,18 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                 <Sliders size={18} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white tracking-tight">{t("precision_controls")}</h3>
-                <p className="text-[9px] text-slate-500 font-medium uppercase tracking-widest mt-0.5">{t("geometry_layout")}</p>
+                <h3 className="text-sm font-bold text-white tracking-tight">
+                  {t("precision_controls")}
+                </h3>
+                <p className="text-[9px] text-slate-500 font-medium uppercase tracking-widest mt-0.5">
+                  {t("geometry_layout")}
+                </p>
               </div>
             </div>
             <div className="flex gap-1.5">
-               <div className="h-1.5 w-1.5 rounded-full bg-slate-700"></div>
-               <div className="h-1.5 w-1.5 rounded-full bg-slate-700"></div>
-               <div className="h-1.5 w-1.5 rounded-full bg-[var(--theme-primary)]"></div>
+              <div className="h-1.5 w-1.5 rounded-full bg-slate-700"></div>
+              <div className="h-1.5 w-1.5 rounded-full bg-slate-700"></div>
+              <div className="h-1.5 w-1.5 rounded-full bg-[var(--theme-primary)]"></div>
             </div>
           </div>
 
@@ -317,15 +313,15 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                   {t("surface_opacity")}
                 </label>
                 <div className="flex items-center gap-3">
-                   <div className="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                     <div
-                       className="h-full bg-[var(--theme-primary)] transition-all duration-300"
-                       style={{ width: `${opacityInput * 100}%` }}
-                     />
-                   </div>
-                   <span className="text-[10px] text-white font-mono font-bold min-w-[32px] text-right">
-                     {Math.round(opacityInput * 100)}%
-                   </span>
+                  <div className="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[var(--theme-primary)] transition-all duration-300"
+                      style={{ width: `${opacityInput * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-white font-mono font-bold min-w-[32px] text-right">
+                    {Math.round(opacityInput * 100)}%
+                  </span>
                 </div>
               </div>
               <input
@@ -354,7 +350,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
             onClick={handleUpdateSettings}
             className="btn-primary flex-1 py-2.5 rounded-2xl tracking-[0.2em] text-[11px]"
           >
-            <Save size={16} /> 
+            <Save size={16} />
             <span>{t("update_bg_btn")}</span>
           </button>
         </div>

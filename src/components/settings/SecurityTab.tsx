@@ -31,10 +31,7 @@ export const SecurityTab: React.FC = () => {
       return;
     }
 
-    const success = await storageService.updateAccessCode(
-      passwordForm.current,
-      passwordForm.new
-    );
+    const success = await storageService.updateAccessCode(passwordForm.current, passwordForm.new);
 
     if (success) {
       setPasswordStatus({ type: "success", message: t("code_updated") });
@@ -53,49 +50,35 @@ export const SecurityTab: React.FC = () => {
             <Shield size={24} />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white tracking-tight">
-              {t("access_control")}
-            </h3>
+            <h3 className="text-lg font-bold text-white tracking-tight">{t("access_control")}</h3>
             <p className="text-sm text-slate-500">{t("access_desc")}</p>
           </div>
         </div>
         <form onSubmit={handleUpdate} className="space-y-5 max-w-sm mx-auto">
           <div>
-            <label className="label-xs mb-2 tracking-[0.2em]">
-              {t("current_code")}
-            </label>
+            <label className="label-xs mb-2 tracking-[0.2em]">{t("current_code")}</label>
             <input
               type={showPassword ? "text" : "password"}
               value={passwordForm.current}
-              onChange={(e) =>
-                setPasswordForm({ ...passwordForm, current: e.target.value })
-              }
+              onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
               className="input-primary py-3 px-4 focus:border-red-500"
             />
           </div>
           <div>
-            <label className="label-xs mb-2 tracking-[0.2em]">
-              {t("new_code")}
-            </label>
+            <label className="label-xs mb-2 tracking-[0.2em]">{t("new_code")}</label>
             <input
               type={showPassword ? "text" : "password"}
               value={passwordForm.new}
-              onChange={(e) =>
-                setPasswordForm({ ...passwordForm, new: e.target.value })
-              }
+              onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
               className="input-primary py-3 px-4 focus:border-red-500"
             />
           </div>
           <div>
-            <label className="label-xs mb-2 tracking-[0.2em]">
-              {t("confirm_code")}
-            </label>
+            <label className="label-xs mb-2 tracking-[0.2em]">{t("confirm_code")}</label>
             <input
               type={showPassword ? "text" : "password"}
               value={passwordForm.confirm}
-              onChange={(e) =>
-                setPasswordForm({ ...passwordForm, confirm: e.target.value })
-              }
+              onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
               className="input-primary py-3 px-4 focus:border-red-500"
             />
           </div>

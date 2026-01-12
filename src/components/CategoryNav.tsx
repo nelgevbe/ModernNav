@@ -72,9 +72,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
       return `${navDropdownItemBase} bg-[var(--theme-primary)] text-white font-medium shadow-md`;
     }
     return `${navDropdownItemBase} ${
-      isDark
-        ? "text-white/90 hover:bg-white/10"
-        : "text-slate-700 hover:bg-black/5"
+      isDark ? "text-white/90 hover:bg-white/10" : "text-slate-700 hover:bg-black/5"
     } active:scale-[0.98]`;
   };
 
@@ -106,9 +104,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
     if (isActive) {
       return isDark ? "text-white font-medium" : "text-slate-900 font-medium";
     }
-    return isDark
-      ? "text-white/50 hover:text-white/80"
-      : "text-slate-500 hover:text-slate-800";
+    return isDark ? "text-white/50 hover:text-white/80" : "text-slate-500 hover:text-slate-800";
   };
 
   const actionButtonClass = `
@@ -166,8 +162,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
             />
             {categories.map((cat) => {
               const hasSingleDefault =
-                cat.subCategories.length === 1 &&
-                cat.subCategories[0].title === "Default";
+                cat.subCategories.length === 1 && cat.subCategories[0].title === "Default";
               const isActive = activeCategory === cat.id;
               return (
                 <div key={cat.id} className="relative group">
@@ -176,13 +171,9 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                       tabsRef.current[cat.id] = el;
                     }}
                     onClick={() => onCategoryClick(cat)}
-                    className={`${categoryButtonBase} ${categoryButtonColors(
-                      isActive
-                    )}`}
+                    className={`${categoryButtonBase} ${categoryButtonColors(isActive)}`}
                   >
-                    <span className="truncate max-w-[120px] relative z-10">
-                      {cat.title}
-                    </span>
+                    <span className="truncate max-w-[120px] relative z-10">{cat.title}</span>
                     {!hasSingleDefault && (
                       <ChevronDown
                         size={14}
@@ -206,15 +197,13 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                                 onSubCategoryClick(cat.id, sub.id);
                               }}
                               className={getDropdownItemClass(
-                                activeCategory === cat.id &&
-                                  activeSubCategoryId === sub.id
+                                activeCategory === cat.id && activeSubCategoryId === sub.id
                               )}
                             >
                               <span className="truncate">{sub.title}</span>
-                              {activeCategory === cat.id &&
-                                activeSubCategoryId === sub.id && (
-                                  <div className="w-1 h-1 rounded-full bg-white shadow-sm"></div>
-                                )}
+                              {activeCategory === cat.id && activeSubCategoryId === sub.id && (
+                                <div className="w-1 h-1 rounded-full bg-white shadow-sm"></div>
+                              )}
                             </button>
                           ))
                         ) : (
@@ -242,25 +231,13 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
           ></div>
 
           {/* SECTION 3: Actions */}
-          <button
-            onClick={toggleLanguage}
-            className={actionButtonClass}
-            title="Switch Language"
-          >
+          <button onClick={toggleLanguage} className={actionButtonClass} title="Switch Language">
             <Globe size={18} />
           </button>
-          <button
-            onClick={toggleTheme}
-            className={actionButtonClass}
-            title="Toggle Theme"
-          >
+          <button onClick={toggleTheme} className={actionButtonClass} title="Toggle Theme">
             {isDark ? <Moon size={18} /> : <Sun size={18} />}
           </button>
-          <button
-            onClick={openSettings}
-            className={actionButtonClass}
-            title={t("settings")}
-          >
+          <button onClick={openSettings} className={actionButtonClass} title={t("settings")}>
             <Settings size={18} />
           </button>
         </div>

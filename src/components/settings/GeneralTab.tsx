@@ -1,5 +1,16 @@
 import React, { useState } from "react";
-import { Globe, Type, Terminal, Save, CheckCircle2, Github, Link as LinkIcon, Plus, Trash2, Info } from "lucide-react";
+import {
+  Globe,
+  Type,
+  Terminal,
+  Save,
+  CheckCircle2,
+  Github,
+  Link as LinkIcon,
+  Plus,
+  Trash2,
+  Info,
+} from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { UserPreferences, FooterLink } from "../../types";
 
@@ -105,7 +116,9 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <LinkIcon size={14} className="text-slate-400" />
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider">{t("label_friendship_links")}</h4>
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                {t("label_friendship_links")}
+              </h4>
             </div>
             <button
               onClick={addFooterLink}
@@ -114,7 +127,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
               <Plus size={12} /> {t("btn_add_link")}
             </button>
           </div>
-          
+
           <div className="space-y-2">
             {formData.footerLinks.map((link, index) => (
               <div key={index} className="flex gap-2 group animate-fade-in relative">
@@ -141,7 +154,9 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
               </div>
             ))}
             {formData.footerLinks.length === 0 && (
-              <p className="text-center py-2 text-slate-700 text-[10px] italic">No friendship links configured.</p>
+              <p className="text-center py-2 text-slate-700 text-[10px] italic">
+                No friendship links configured.
+              </p>
             )}
           </div>
         </div>
@@ -151,9 +166,10 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
           <button
             onClick={handleSave}
             className={`
-              ${saveStatus 
-                ? "bg-emerald-500 text-white shadow-emerald-500/20 px-6 py-2.5 rounded-xl font-bold uppercase tracking-[0.2em] text-[10px] flex items-center gap-2" 
-                : "btn-primary w-auto py-2.5 px-6 tracking-[0.2em] text-[10px]"
+              ${
+                saveStatus
+                  ? "bg-emerald-500 text-white shadow-emerald-500/20 px-6 py-2.5 rounded-xl font-bold uppercase tracking-[0.2em] text-[10px] flex items-center gap-2"
+                  : "btn-primary w-auto py-2.5 px-6 tracking-[0.2em] text-[10px]"
               }
             `}
           >

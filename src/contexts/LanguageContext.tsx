@@ -62,8 +62,7 @@ const translations = {
     restore_desc: "Import categories and links from a JSON file.",
     select_import: "Select File to Import",
     import_success: "Configuration loaded successfully!",
-    import_error:
-      "Failed to import. Please check if the file is a valid JSON backup.",
+    import_error: "Failed to import. Please check if the file is a valid JSON backup.",
     data_risk_title: "Cloud Persistence",
     data_risk_desc:
       "Changes are securely stored in Cloudflare D1. Use local backups for extra peace of mind.",
@@ -130,11 +129,12 @@ const translations = {
     desc_placeholder: "Optional description",
     add_link_card: "Save Link",
     update_link_card: "Update Link",
-    
+
     // General Tab
     label_site_title: "Site Title",
     label_favicon_api: "Favicon API",
-    label_favicon_api_desc: "The API used to fetch website icons. Use {domain} as a placeholder for the URL domain. Example: https://favicon.im/{domain}",
+    label_favicon_api_desc:
+      "The API used to fetch website icons. Use {domain} as a placeholder for the URL domain. Example: https://favicon.im/{domain}",
     label_github_link: "GitHub Link",
     label_friendship_links: "Friendly Links",
     btn_add_link: "Add Link",
@@ -199,8 +199,7 @@ const translations = {
     import_success: "配置加载成功！",
     import_error: "导入失败。请检查文件是否为有效的 JSON 备份。",
     data_risk_title: "云端持久化",
-    data_risk_desc:
-      "更改已安全存储在 Cloudflare D1 中。使用本地备份以获得额外保障。",
+    data_risk_desc: "更改已安全存储在 Cloudflare D1 中。使用本地备份以获得额外保障。",
     last_backup: "上次备份: {time}",
     never_backup: "从未备份",
 
@@ -268,7 +267,8 @@ const translations = {
     // General Tab
     label_site_title: "站点标题",
     label_favicon_api: "图标 API 模板",
-    label_favicon_api_desc: "用于自动抓取网站图标的地址。使用 {domain} 作为目标域名的占位符。例如：https://favicon.im/{domain}",
+    label_favicon_api_desc:
+      "用于自动抓取网站图标的地址。使用 {domain} 作为目标域名的占位符。例如：https://favicon.im/{domain}",
     label_github_link: "GitHub 链接",
     label_friendship_links: "友情链接",
     btn_add_link: "添加链接",
@@ -280,21 +280,14 @@ const translations = {
   },
 };
 
-const LanguageContext = createContext<LanguageContextType | undefined>(
-  undefined
-);
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [language, setLanguage] = useState<Language>("en");
-
-  useEffect(() => {
+export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window === "undefined") return "en";
     const savedLang = localStorage.getItem("modernNavLanguage") as Language;
-    if (savedLang && (savedLang === "en" || savedLang === "zh")) {
-      setLanguage(savedLang);
-    }
-  }, []);
+    return savedLang === "en" || savedLang === "zh" ? savedLang : "en";
+  });
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);
@@ -312,9 +305,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   return (
-    <LanguageContext.Provider
-      value={{ language, setLanguage: handleSetLanguage, t }}
-    >
+    <LanguageContext.Provider value={{ language, setLanguage: handleSetLanguage, t }}>
       {children}
     </LanguageContext.Provider>
   );

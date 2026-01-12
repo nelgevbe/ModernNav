@@ -11,11 +11,12 @@ import {
   Pencil,
   X,
   Link as LinkIcon,
+  Search,
 } from "lucide-react";
-import * as Icons from "lucide-react";
 import { Category, LinkItem, SubCategory } from "../../types";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { IconPicker } from "../IconPicker";
+import { SmartIcon } from "../SmartIcon";
 import { useCategoryDragDrop } from "../../hooks/useCategoryDragDrop";
 import { getFaviconUrl } from "../../utils/favicon";
 
@@ -37,15 +38,11 @@ export const ContentTab: React.FC<ContentTabProps> = ({
   // --- UI State ---
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [collapsedSubMenus, setCollapsedSubMenus] = useState<Set<string>>(
-    new Set()
-  );
+  const [collapsedSubMenus, setCollapsedSubMenus] = useState<Set<string>>(new Set());
 
   // --- Category States ---
   const [newCategoryTitle, setNewCategoryTitle] = useState("");
-  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
-    null
-  );
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editCategoryTitle, setEditCategoryTitle] = useState("");
 
   // --- SubMenu States ---
@@ -69,6 +66,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [iconSearch, setIconSearch] = useState("");
   const iconPickerRef = useRef<HTMLDivElement>(null);
+  const iconGroupRef = useRef<HTMLDivElement>(null);
 
   // Computed State
   const isAnyEditing =
@@ -110,8 +108,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
   useEffect(() => {
     if (
       categories.length > 0 &&
-      (!selectedCategoryId ||
-        !categories.find((c) => c.id === selectedCategoryId))
+      (!selectedCategoryId || !categories.find((c) => c.id === selectedCategoryId))
     ) {
       setSelectedCategoryId(categories[0].id);
     }
@@ -120,10 +117,10 @@ export const ContentTab: React.FC<ContentTabProps> = ({
   // Click Outside Listener for Icon Picker
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        iconPickerRef.current &&
-        !iconPickerRef.current.contains(event.target as Node)
-      ) {
+      const isOutsidePicker = iconPickerRef.current && !iconPickerRef.current.contains(event.target as Node);
+      const isOutsideGroup = iconGroupRef.current && !iconGroupRef.current.contains(event.target as Node);
+      
+      if (isOutsidePicker && isOutsideGroup) {
         setShowIconPicker(false);
       }
     };
@@ -137,9 +134,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
     const newCat: Category = {
       id: Date.now().toString(),
       title: newCategoryTitle,
-      subCategories: [
-        { id: Date.now().toString() + "-gen", title: "Default", items: [] },
-      ],
+      subCategories: [{ id: Date.now().toString() + "-gen", title: "Default", items: [] }],
     };
     onUpdateCategories([...categories, newCat]);
     setNewCategoryTitle("");
@@ -152,9 +147,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
       return;
     }
     onUpdateCategories(
-      categories.map((c) =>
-        c.id === id ? { ...c, title: editCategoryTitle } : c
-      )
+      categories.map((c) => (c.id === id ? { ...c, title: editCategoryTitle } : c))
     );
     setEditingCategoryId(null);
   };
@@ -163,8 +156,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
     if (window.confirm(t("delete_cat_confirm", { name }))) {
       const updated = categories.filter((c) => c.id !== id);
       onUpdateCategories(updated);
-      if (selectedCategoryId === id && updated.length > 0)
-        setSelectedCategoryId(updated[0].id);
+      if (selectedCategoryId === id && updated.length > 0) setSelectedCategoryId(updated[0].id);
     }
   };
 
@@ -178,9 +170,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
     };
     onUpdateCategories(
       categories.map((c) =>
-        c.id === selectedCategoryId
-          ? { ...c, subCategories: [...c.subCategories, newSub] }
-          : c
+        c.id === selectedCategoryId ? { ...c, subCategories: [...c.subCategories, newSub] } : c
       )
     );
     setNewSubMenuTitle("");
@@ -193,9 +183,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
     const newSub: SubCategory = { id: newSubId, title: "Default", items: [] };
     onUpdateCategories(
       categories.map((c) =>
-        c.id === selectedCategoryId
-          ? { ...c, subCategories: [...c.subCategories, newSub] }
-          : c
+        c.id === selectedCategoryId ? { ...c, subCategories: [...c.subCategories, newSub] } : c
       )
     );
     setTargetSubMenuId(newSubId);
@@ -285,21 +273,18 @@ export const ContentTab: React.FC<ContentTabProps> = ({
   };
 
   const handleSaveLink = () => {
-    if (
-      !linkFormData.title ||
-      !linkFormData.url ||
-      !selectedCategoryId ||
-      !targetSubMenuId
-    )
-      return;
+    if (!linkFormData.title || !linkFormData.url || !selectedCategoryId || !targetSubMenuId) return;
 
     let finalIcon = linkFormData.icon;
     if (!finalIcon && linkFormData.url) {
       finalIcon = getFaviconUrl(linkFormData.url, faviconApi) || "Link";
     }
 
+    // Generate ID only if not editing
+    // eslint-disable-next-line react-hooks/purity
+    const id = editingLinkId || `${Date.now()}`;
     const newItem: LinkItem = {
-      id: editingLinkId || Date.now().toString(),
+      id,
       title: linkFormData.title,
       url: linkFormData.url,
       description: linkFormData.description || "",
@@ -316,9 +301,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                   return editingLinkId
                     ? {
                         ...sub,
-                        items: sub.items.map((i) =>
-                          i.id === editingLinkId ? newItem : i
-                        ),
+                        items: sub.items.map((i) => (i.id === editingLinkId ? newItem : i)),
                       }
                     : { ...sub, items: [...sub.items, newItem] };
                 }
@@ -368,55 +351,29 @@ export const ContentTab: React.FC<ContentTabProps> = ({
 
   // --- Rendering Helpers ---
   const renderIcon = (iconValue: string | undefined, size = 16) => {
-    const defaultIcon = <Icons.Link size={size} className="text-slate-400" />;
-    if (!iconValue) return defaultIcon;
-    if (iconValue.startsWith("http") || iconValue.startsWith("data:")) {
-      return (
-        <img
-          src={iconValue}
-          alt=""
-          className="object-contain rounded-sm"
-          style={{ width: size, height: size }}
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = "none";
-          }}
-        />
-      );
-    }
-    // @ts-ignore
-    const IconComponent = Icons[iconValue];
-    if (IconComponent)
-      return <IconComponent size={size} className="text-slate-400" />;
-    return (
-      <span className="leading-none" style={{ fontSize: size }}>
-        {iconValue}
-      </span>
-    );
+    return <SmartIcon icon={iconValue} size={size} />;
   };
 
   const renderLinkForm = () => (
-    <div className="bg-slate-950/40 border-t border-white/[0.08] p-4 animate-fade-in backdrop-blur-md relative z-20">
+    <div
+      className="bg-slate-950/40 border-t border-white/[0.08] p-4 animate-fade-in backdrop-blur-md relative z-20"
+      onClick={(e) => e.stopPropagation()}
+    >
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 sm:col-span-1">
-          <label className="label-xs">
-            {t("label_title")}
-          </label>
+          <label className="label-xs">{t("label_title")}</label>
           <input
             type="text"
             value={linkFormData.title}
-            onChange={(e) =>
-              setLinkFormData({ ...linkFormData, title: e.target.value })
-            }
+            onChange={(e) => setLinkFormData({ ...linkFormData, title: e.target.value })}
             placeholder={t("title_placeholder")}
             className="input-primary"
             autoFocus
           />
         </div>
-        <div className="col-span-2 sm:col-span-1 relative" ref={iconPickerRef}>
-          <label className="label-xs">
-            {t("label_icon")}
-          </label>
-          <div className="relative group/icon">
+        <div className="col-span-2 sm:col-span-1 relative">
+          <label className="label-xs">{t("label_icon")}</label>
+          <div className="relative group/icon" ref={iconGroupRef}>
             <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
               {renderIcon(linkFormData.icon, 18)}
             </div>
@@ -432,7 +389,10 @@ export const ContentTab: React.FC<ContentTabProps> = ({
               className="input-primary pl-10 pr-10"
             />
             <button
-              onClick={() => setShowIconPicker(!showIconPicker)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowIconPicker(!showIconPicker);
+              }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
             >
               <Smile size={18} />
@@ -449,44 +409,30 @@ export const ContentTab: React.FC<ContentTabProps> = ({
           />
         </div>
         <div className="col-span-2 sm:col-span-1">
-          <label className="label-xs">
-            {t("label_url")}
-          </label>
+          <label className="label-xs">{t("label_url")}</label>
           <input
             type="text"
             value={linkFormData.url}
-            onChange={(e) =>
-              setLinkFormData({ ...linkFormData, url: e.target.value })
-            }
+            onChange={(e) => setLinkFormData({ ...linkFormData, url: e.target.value })}
             placeholder={t("url_placeholder")}
             className="input-primary"
           />
         </div>
         <div className="col-span-2 sm:col-span-1">
-          <label className="label-xs">
-            {t("label_desc")}
-          </label>
+          <label className="label-xs">{t("label_desc")}</label>
           <input
             type="text"
             value={linkFormData.description}
-            onChange={(e) =>
-              setLinkFormData({ ...linkFormData, description: e.target.value })
-            }
+            onChange={(e) => setLinkFormData({ ...linkFormData, description: e.target.value })}
             placeholder={t("desc_placeholder")}
             className="input-primary"
           />
         </div>
         <div className="col-span-2 flex gap-2 pt-1">
-          <button
-            onClick={closeLinkForm}
-            className="flex-1 btn-secondary"
-          >
+          <button onClick={closeLinkForm} className="flex-1 btn-secondary">
             {t("cancel")}
           </button>
-          <button
-            onClick={handleSaveLink}
-            className="flex-1 btn-primary"
-          >
+          <button onClick={handleSaveLink} className="flex-1 btn-primary">
             {editingLinkId ? <Save size={14} /> : <Plus size={14} />}
             {editingLinkId ? t("update_link_card") : t("add_link_card")}
           </button>
@@ -508,7 +454,13 @@ export const ContentTab: React.FC<ContentTabProps> = ({
           {categories.map((cat, index) => (
             <div
               key={cat.id}
-              onClick={() => setSelectedCategoryId(cat.id)}
+              onClick={() => {
+                setSelectedCategoryId(cat.id);
+                closeLinkForm();
+                setIsAddingSubMenu(false);
+                setEditingSubMenuId(null);
+                setEditingCategoryId(null);
+              }}
               draggable={!isAnyEditing}
               onDragStart={(e) => handleDragStartCategory(e, index)}
               onDragOver={(e) => handleDragOverCategory(e, index, cat.id)}
@@ -526,8 +478,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                     : "opacity-40 border-dashed border-white/20"
                   : ""
               } ${
-                dragOverCategoryIndex === index &&
-                draggedCategoryIndex !== index
+                dragOverCategoryIndex === index && draggedCategoryIndex !== index
                   ? "bg-[var(--theme-primary)]/20 border-[var(--theme-primary)] shadow-themed-light"
                   : ""
               }`}
@@ -548,15 +499,11 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                     value={editCategoryTitle}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => setEditCategoryTitle(e.target.value)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" && handleUpdateCategoryTitle(cat.id)
-                    }
+                    onKeyDown={(e) => e.key === "Enter" && handleUpdateCategoryTitle(cat.id)}
                     onBlur={() => handleUpdateCategoryTitle(cat.id)}
                   />
                 ) : (
-                  <span className="truncate text-sm font-semibold">
-                    {cat.title}
-                  </span>
+                  <span className="truncate text-sm font-semibold">{cat.title}</span>
                 )}
               </div>
               <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-1">
@@ -607,7 +554,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
       <div className="flex-1 flex flex-col bg-slate-900 relative">
         <div className="px-6 border-b border-white/[0.08] flex items-center gap-4 bg-white/[0.01] h-14 shrink-0 backdrop-blur-md">
           <div className="relative flex-1 max-w-md">
-            <Icons.Search
+            <Search
               size={14}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
             />
@@ -620,7 +567,14 @@ export const ContentTab: React.FC<ContentTabProps> = ({
             />
           </div>
           <button
-            onClick={() => setIsAddingSubMenu(!isAddingSubMenu)}
+            onClick={() => {
+              if (!isAddingSubMenu) {
+                closeLinkForm();
+                setEditingSubMenuId(null);
+                setEditingCategoryId(null);
+              }
+              setIsAddingSubMenu(!isAddingSubMenu);
+            }}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors border ${
               isAddingSubMenu
                 ? "bg-white/10 border-white/20 text-white"
@@ -654,8 +608,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
           )}
 
           <div className="space-y-6">
-            {categories.find((c) => c.id === selectedCategoryId)?.subCategories
-              .length === 0 ? (
+            {categories.find((c) => c.id === selectedCategoryId)?.subCategories.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-600 space-y-6">
                 <Folder size={48} strokeWidth={1} className="opacity-30" />
                 <p className="text-sm font-medium">{t("no_submenus")}</p>
@@ -680,9 +633,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                 ?.subCategories.map((sub) => {
                   const filteredItems = sub.items.filter(
                     (item) =>
-                      item.title
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase()) ||
+                      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                       item.url.toLowerCase().includes(searchQuery.toLowerCase())
                   );
                   if (searchQuery && filteredItems.length === 0) return null;
@@ -720,21 +671,15 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                               className="bg-slate-900 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none"
                               value={editSubMenuTitle}
                               onClick={(e) => e.stopPropagation()}
-                              onChange={(e) =>
-                                setEditSubMenuTitle(e.target.value)
-                              }
+                              onChange={(e) => setEditSubMenuTitle(e.target.value)}
                               onKeyDown={(e) =>
-                                e.key === "Enter" &&
-                                handleUpdateSubMenuTitle(sub.id)
+                                e.key === "Enter" && handleUpdateSubMenuTitle(sub.id)
                               }
                               onBlur={() => handleUpdateSubMenuTitle(sub.id)}
                             />
                           ) : (
                             <h4 className="font-bold text-white/90 text-sm flex items-center gap-2 tracking-tight">
-                              <Folder
-                                size={14}
-                                className="text-[var(--theme-light)]"
-                              />
+                              <Folder size={14} className="text-[var(--theme-light)]" />
                               {sub.title}
                             </h4>
                           )}
@@ -781,9 +726,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                           <div className="p-3">
                             {filteredItems.length === 0 ? (
                               <div className="p-6 text-center text-slate-600 text-xs italic tracking-wider">
-                                {searchQuery
-                                  ? t("no_links_search")
-                                  : t("no_links")}
+                                {searchQuery ? t("no_links_search") : t("no_links")}
                               </div>
                             ) : (
                               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -791,23 +734,16 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                                   <div
                                     key={item.id}
                                     draggable={!isAnyEditing}
-                                    onDragStart={(e) =>
-                                      handleDragStartLink(e, sub.id, index)
-                                    }
-                                    onDragEnter={() =>
-                                      handleDragEnterLink(sub.id, index)
-                                    }
+                                    onDragStart={(e) => handleDragStartLink(e, sub.id, index)}
+                                    onDragEnter={() => handleDragEnterLink(sub.id, index)}
                                     onDragOver={(e) => e.preventDefault()}
                                     onDragEnd={resetDragState}
-                                    onDrop={(e) =>
-                                      handleDropLink(e, sub.id, index)
-                                    }
+                                    onDrop={(e) => handleDropLink(e, sub.id, index)}
                                     className={`
                                     group relative flex flex-col items-center justify-center p-3 rounded-xl transition-all border
                                     aspect-[4/3]
                                     ${
-                                      draggedLink?.subId === sub.id &&
-                                      draggedLink?.index === index
+                                      draggedLink?.subId === sub.id && draggedLink?.index === index
                                         ? "opacity-40 border-dashed border-white/20"
                                         : "bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.06] hover:border-white/10"
                                     }
@@ -820,7 +756,11 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                                     }
                                   `}
                                   >
-                                    <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                    <div
+                                      className={`absolute top-1 right-1 flex gap-1 opacity-0 transition-opacity z-20 ${
+                                        showIconPicker ? "pointer-events-none" : "group-hover:opacity-100"
+                                      }`}
+                                    >
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();

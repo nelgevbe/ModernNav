@@ -95,11 +95,7 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
     setIsAuthenticated(false);
   };
 
-  const handleImport = (
-    newCategories: Category[],
-    newBg?: string,
-    newPrefs?: UserPreferences
-  ) => {
+  const handleImport = (newCategories: Category[], newBg?: string, newPrefs?: UserPreferences) => {
     syncCategories(newCategories);
     if (newBg || newPrefs) {
       const bg = newBg || background;
@@ -138,27 +134,21 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.08] bg-slate-900/50 shrink-0 h-16">
               <div className="flex items-center gap-6">
                 <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <Shield size={20} className="text-emerald-400" />{" "}
-                  {t("dashboard_manage")}
+                  <Shield size={20} className="text-emerald-400" /> {t("dashboard_manage")}
                 </h2>
                 <div className="flex bg-slate-950/50 rounded-lg p-1 border border-white/[0.05]">
                   <button
                     onClick={() => setActiveTab("content")}
                     className={`tab-pill ${
-                      activeTab === "content"
-                        ? "tab-pill-active"
-                        : "tab-pill-inactive"
+                      activeTab === "content" ? "tab-pill-active" : "tab-pill-inactive"
                     }`}
                   >
-                    <LayoutGrid size={14} className="inline mr-1 mb-0.5" />{" "}
-                    {t("tab_content")}
+                    <LayoutGrid size={14} className="inline mr-1 mb-0.5" /> {t("tab_content")}
                   </button>
                   <button
                     onClick={() => setActiveTab("general")}
                     className={`tab-pill ${
-                      activeTab === "general"
-                        ? "tab-pill-active"
-                        : "tab-pill-inactive"
+                      activeTab === "general" ? "tab-pill-active" : "tab-pill-inactive"
                     }`}
                   >
                     <Settings size={14} className="inline mr-1 mb-0.5" />{" "}
@@ -167,35 +157,26 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
                   <button
                     onClick={() => setActiveTab("appearance")}
                     className={`tab-pill ${
-                      activeTab === "appearance"
-                        ? "tab-pill-active"
-                        : "tab-pill-inactive"
+                      activeTab === "appearance" ? "tab-pill-active" : "tab-pill-inactive"
                     }`}
                   >
-                    <ImageIcon size={14} className="inline mr-1 mb-0.5" />{" "}
-                    {t("tab_appearance")}
+                    <ImageIcon size={14} className="inline mr-1 mb-0.5" /> {t("tab_appearance")}
                   </button>
                   <button
                     onClick={() => setActiveTab("data")}
                     className={`tab-pill ${
-                      activeTab === "data"
-                        ? "tab-pill-active"
-                        : "tab-pill-inactive"
+                      activeTab === "data" ? "tab-pill-active" : "tab-pill-inactive"
                     }`}
                   >
-                    <Database size={14} className="inline mr-1 mb-0.5" />{" "}
-                    {t("tab_data")}
+                    <Database size={14} className="inline mr-1 mb-0.5" /> {t("tab_data")}
                   </button>
                   <button
                     onClick={() => setActiveTab("security")}
                     className={`tab-pill ${
-                      activeTab === "security"
-                        ? "tab-pill-active"
-                        : "tab-pill-inactive"
+                      activeTab === "security" ? "tab-pill-active" : "tab-pill-inactive"
                     }`}
                   >
-                    <ShieldCheck size={14} className="inline mr-1 mb-0.5" />{" "}
-                    {t("tab_security")}
+                    <ShieldCheck size={14} className="inline mr-1 mb-0.5" /> {t("tab_security")}
                   </button>
                 </div>
               </div>
@@ -204,8 +185,7 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
                   onClick={handleLogout}
                   className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2 text-xs font-medium"
                 >
-                  <LogOut size={16} />{" "}
-                  <span className="hidden sm:inline">{t("logout")}</span>
+                  <LogOut size={16} /> <span className="hidden sm:inline">{t("logout")}</span>
                 </button>
                 <div className="w-px h-5 bg-white/[0.1]"></div>
                 <button
@@ -229,7 +209,16 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
               {activeTab === "general" && (
                 <GeneralTab
                   prefs={prefs}
-                  onUpdate={(newPrefs) => onUpdateAppearance(background, prefs.cardOpacity, prefs.themeColor, undefined, prefs.themeColorAuto, newPrefs)}
+                  onUpdate={(newPrefs) =>
+                    onUpdateAppearance(
+                      background,
+                      prefs.cardOpacity,
+                      prefs.themeColor,
+                      undefined,
+                      prefs.themeColorAuto,
+                      newPrefs
+                    )
+                  }
                 />
               )}
               {activeTab === "appearance" && (
@@ -245,15 +234,10 @@ export const LinkManagerModal: React.FC<LinkManagerModalProps> = ({
                     cardHeight: prefs.cardHeight ?? 96,
                     cols: prefs.gridColumns ?? 6,
                   }}
-
                 />
               )}
               {activeTab === "data" && (
-                <DataTab
-                  onImport={handleImport}
-                  background={background}
-                  prefs={prefs}
-                />
+                <DataTab onImport={handleImport} background={background} prefs={prefs} />
               )}
               {activeTab === "security" && <SecurityTab />}
             </div>

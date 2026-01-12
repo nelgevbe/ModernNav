@@ -58,9 +58,9 @@ const App: React.FC = () => {
       >
         <BackgroundLayer background={background} isDark={themeMode === ThemeMode.Dark} />
         <div className="w-full max-w-[1000px] relative z-10">
-          <SkeletonLoader 
-            cardOpacity={cardOpacity} 
-            themeMode={themeMode} 
+          <SkeletonLoader
+            cardOpacity={cardOpacity}
+            themeMode={themeMode}
             maxContainerWidth={maxContainerWidth}
             cardWidth={cardWidth}
             cardHeight={cardHeight}
@@ -114,7 +114,7 @@ const App: React.FC = () => {
         openSettings={() => setIsModalOpen(true)}
       />
 
-      <div 
+      <div
         className="container mx-auto px-4 flex-1 flex flex-col items-center pt-8 md:pt-12 relative z-[10]"
         style={{ maxWidth: `${maxContainerWidth}px` }}
       >
@@ -153,8 +153,7 @@ const App: React.FC = () => {
               >
                 {visibleSubCategory.items.map((link, index) => {
                   // Fallback icon logic: Use provided icon, or try to get favicon from URL
-                  const iconSource =
-                    link.icon || getFaviconUrl(link.url, faviconApi);
+                  const iconSource = link.icon || getFaviconUrl(link.url, faviconApi);
 
                   return (
                     <GlassCard
@@ -167,6 +166,7 @@ const App: React.FC = () => {
                       style={{
                         height: `${cardHeight}px`,
                         animationFillMode: "backwards",
+                        // Initial animation state handle
                       }}
                       title={
                         link.description
@@ -187,9 +187,7 @@ const App: React.FC = () => {
                       </div>
                       <span
                         className={`text-[12px] font-medium truncate w-full px-1 transition-colors duration-300 ${
-                          isDark
-                            ? "text-white/80 group-hover:text-white"
-                            : "text-slate-800"
+                          isDark ? "text-white/80 group-hover:text-white" : "text-slate-800"
                         }`}
                       >
                         {link.title}
@@ -211,11 +209,7 @@ const App: React.FC = () => {
               )}
             </div>
           ) : (
-            <div
-              className={`text-center py-12 ${
-                isDark ? "text-white/30" : "text-slate-400"
-              }`}
-            >
+            <div className={`text-center py-12 ${isDark ? "text-white/30" : "text-slate-400"}`}>
               No sub-categories found. Click Settings to configure.
             </div>
           )}
@@ -224,11 +218,7 @@ const App: React.FC = () => {
 
       <SyncIndicator />
 
-      <Footer 
-        isDark={isDark} 
-        github={footerGithub} 
-        links={footerLinks} 
-      />
+      <Footer isDark={isDark} github={footerGithub} links={footerLinks} />
 
       <LinkManagerModal
         isOpen={isModalOpen}
@@ -236,10 +226,10 @@ const App: React.FC = () => {
         categories={categories}
         setCategories={actions.setCategories}
         background={background}
-        prefs={{ 
-          cardOpacity, 
-          themeColor, 
-          themeMode, 
+        prefs={{
+          cardOpacity,
+          themeColor,
+          themeMode,
           themeColorAuto,
           maxContainerWidth,
           cardWidth,
@@ -250,9 +240,14 @@ const App: React.FC = () => {
           footerGithub,
           footerLinks,
         }}
-        onUpdateAppearance={(url: string, opacity: number, color?: string, layout?: any, themeAuto?: boolean, extra?: any) => 
-          actions.handleUpdateAppearance(url, opacity, color, layout, themeAuto, extra)
-        }
+        onUpdateAppearance={(
+          url: string,
+          opacity: number,
+          color?: string,
+          layout?: any,
+          themeAuto?: boolean,
+          extra?: any
+        ) => actions.handleUpdateAppearance(url, opacity, color, layout, themeAuto, extra)}
         isDefaultCode={isDefaultCode}
       />
     </div>
@@ -260,4 +255,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-

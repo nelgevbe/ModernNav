@@ -4,6 +4,8 @@ const AUTH_KEYS = {
   USER_LOGGED_OUT: "modernNav_userLoggedOut",
 };
 
+import { ApiResponse } from "../types";
+
 /**
  * 统一 API 客户端
  * 处理带认证的请求、无感刷新 (Silent Refresh) 以及 Token 管理
@@ -24,7 +26,7 @@ class ApiClient {
     if (typeof window === "undefined") return;
     const token = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
     const expiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
-    
+
     if (token && expiry && parseInt(expiry, 10) > Date.now()) {
       this._accessToken = token;
     }
@@ -63,7 +65,7 @@ class ApiClient {
         return this._accessToken;
       }
     }
-    
+
     // 如果 Token 已过期或不存在，尝试刷新
     if (localStorage.getItem(AUTH_KEYS.USER_LOGGED_OUT) === "true") return null;
     return await this.refreshAccessToken();
@@ -117,12 +119,10 @@ class ApiClient {
   /**
    * 基础请求封装
    */
-  async request<T = any>(
-    path: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async request<T = any>(path: string, options: RequestInit = {}): Promise<T> {
     const url = path.startsWith("http") ? path : path;
-    
+
     // 自动附加 Authorization 头（除非明确指定不附加）
     const headers = new Headers(options.headers || {});
     if (!headers.has("Authorization")) {
@@ -145,11 +145,11 @@ class ApiClient {
         // 重试原始请求
         headers.set("Authorization", `Bearer ${newToken}`);
         const retryResponse = await fetch(url, { ...options, headers });
+        const data = await retryResponse.json();
         if (!retryResponse.ok) {
-          const errorData = await retryResponse.json().catch(() => ({}));
-          throw new Error(errorData.error || `HTTP error! status: ${retryResponse.status}`);
+          throw new Error((data as ApiResponse).error || `HTTP error! status: ${retryResponse.status}`);
         }
-        return await retryResponse.json();
+        return data as T;
       } else {
         throw new Error("Unauthorized: Session expired");
       }

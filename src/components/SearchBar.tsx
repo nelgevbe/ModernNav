@@ -11,14 +11,9 @@ interface SearchBarProps {
   faviconApi?: string;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({
-  themeMode,
-  faviconApi,
-}) => {
+export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) => {
   const [query, setQuery] = useState("");
-  const [selectedEngine, setSelectedEngine] = useState<SearchEngine>(
-    SEARCH_ENGINES[0]
-  );
+  const [selectedEngine, setSelectedEngine] = useState<SearchEngine>(SEARCH_ENGINES[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [hoveredEngine, setHoveredEngine] = useState<string | null>(null);
@@ -71,18 +66,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   const itemBase =
     "flex-shrink-0 flex items-center gap-2 px-2.5 h-6 rounded-md text-[11px] whitespace-nowrap";
-  const itemHover = isDark
-    ? "bg-white/10 text-white"
-    : "bg-black/10 text-slate-900";
-  const itemActive =
-    "bg-[var(--theme-primary)] text-white font-medium shadow-lg";
+  const itemHover = isDark ? "bg-white/10 text-white" : "bg-black/10 text-slate-900";
+  const itemActive = "bg-[var(--theme-primary)] text-white font-medium shadow-lg";
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     };
@@ -96,10 +85,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
-    window.open(
-      `${selectedEngine.urlTemplate}${encodeURIComponent(query)}`,
-      "_blank"
-    );
+    window.open(`${selectedEngine.urlTemplate}${encodeURIComponent(query)}`, "_blank");
     setQuery("");
   };
 
@@ -111,11 +97,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   // NOTE: Width reduced to max-w-[450px]
   return (
     <div className="w-full max-w-[450px] mx-auto relative z-[70] transition-all duration-300">
-      <form
-        onSubmit={handleSearch}
-        className="relative w-full group"
-        ref={dropdownRef}
-      >
+      <form onSubmit={handleSearch} className="relative w-full group" ref={dropdownRef}>
         <div
           className={`relative flex items-center rounded-2xl transition-all duration-300 h-12 border ${stateClasses} ${shadowClasses}`}
           style={containerStyle}
@@ -175,9 +157,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         {/* Dropdown Menu */}
         {isDropdownOpen && (
           <div className="absolute top-full left-0 right-0 mt-2 z-[80]">
-            <div
-              className={`px-1 ${dropdownClasses} rounded-xl overflow-hidden shadow-2xl`}
-            >
+            <div className={`px-1 ${dropdownClasses} rounded-xl overflow-hidden shadow-2xl`}>
               <div className="h-10 flex flex-row overflow-x-auto no-scrollbar gap-1.5 px-1 items-center">
                 {SEARCH_ENGINES.map((engine) => (
                   <button
@@ -190,8 +170,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                       selectedEngine.id === engine.id
                         ? itemActive
                         : hoveredEngine === engine.id
-                        ? itemHover
-                        : "opacity-90"
+                          ? itemHover
+                          : "opacity-90"
                     }`}
                   >
                     <span className="w-3.5 h-3.5 flex items-center justify-center rounded-sm overflow-hidden shadow-sm">
@@ -201,9 +181,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                         imgClassName="w-3.5 h-3.5 object-contain"
                       />
                     </span>
-                    <span className="font-medium tracking-tight">
-                      {engine.name}
-                    </span>
+                    <span className="font-medium tracking-tight">{engine.name}</span>
                   </button>
                 ))}
               </div>
