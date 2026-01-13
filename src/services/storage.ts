@@ -43,7 +43,6 @@ interface BackupData {
 
 // --- HELPERS ---
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const safeJsonParse = <T>(jsonString: string | null, fallback: T): T => {
   if (!jsonString) return fallback;
   try {

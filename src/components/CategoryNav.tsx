@@ -197,13 +197,13 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
       </nav>
 
       {/* Mobile Drawer Overlay */}
-      <div 
+      <div
         className={`md:hidden fixed inset-0 z-[2000] transition-all duration-300 ${
           isExpanded ? "visible" : "invisible"
         }`}
       >
         {/* Backdrop */}
-        <div 
+        <div
           onClick={() => setIsExpanded(false)}
           className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
             isExpanded ? "opacity-100" : "opacity-0"
@@ -211,23 +211,25 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
         />
 
         {/* Drawer Panel */}
-        <div 
+        <div
           className={`absolute top-0 left-0 bottom-0 w-[280px] shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex flex-col ${
             isExpanded ? "translate-x-0" : "-translate-x-full"
           } ${isDark ? "bg-slate-900/95 border-r border-white/10" : "bg-white/95 border-r border-slate-200"}`}
-          style={{ backdropFilter: 'blur(20px)' }}
+          style={{ backdropFilter: "blur(20px)" }}
         >
           {/* Drawer Header */}
           <div className="p-6 border-b border-white/5 flex items-center justify-between">
-             <h2 className={`text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                {t('sidebar_categories')}
-             </h2>
-             <button 
-               onClick={() => setIsExpanded(false)}
-               className={`p-2 rounded-full ${isDark ? 'hover:bg-white/5 text-white/40' : 'hover:bg-black/5 text-slate-400'}`}
-             >
-               <X size={20} />
-             </button>
+            <h2
+              className={`text-lg font-black tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}
+            >
+              {t("sidebar_categories")}
+            </h2>
+            <button
+              onClick={() => setIsExpanded(false)}
+              className={`p-2 rounded-full ${isDark ? "hover:bg-white/5 text-white/40" : "hover:bg-black/5 text-slate-400"}`}
+            >
+              <X size={20} />
+            </button>
           </div>
 
           {/* Drawer Links */}
@@ -250,7 +252,10 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                   >
                     <span className="text-sm">{cat.title}</span>
                     {cat.subCategories.length > 1 && (
-                      <ChevronDown size={14} className={`transition-transform duration-300 ${isActive ? 'rotate-180' : '-rotate-90 opacity-40'}`} />
+                      <ChevronDown
+                        size={14}
+                        className={`transition-transform duration-300 ${isActive ? "rotate-180" : "-rotate-90 opacity-40"}`}
+                      />
                     )}
                   </button>
 
