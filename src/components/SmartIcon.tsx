@@ -63,10 +63,10 @@ export const SmartIcon: React.FC<SmartIconProps> = ({
 
   // Case 2: Lucide Icon
   const iconKey = icon.trim().toLowerCase();
-  
+
   // Exhaustive search (case-insensitive)
   let IconComponent: any = null;
-  
+
   // 1. Precise match (should be most common)
   const exactKey = icon.trim();
   IconComponent = (LucideIcons as any)[exactKey];
@@ -74,7 +74,7 @@ export const SmartIcon: React.FC<SmartIconProps> = ({
   // 2. Case-insensitive search
   if (!IconComponent) {
     const allKeys = Object.keys(LucideIcons);
-    const matchedKey = allKeys.find(k => k.toLowerCase() === iconKey);
+    const matchedKey = allKeys.find((k) => k.toLowerCase() === iconKey);
     if (matchedKey) {
       IconComponent = (LucideIcons as any)[matchedKey];
     }
@@ -84,7 +84,7 @@ export const SmartIcon: React.FC<SmartIconProps> = ({
   if (!IconComponent && (LucideIcons as any).default) {
     const defaultExport = (LucideIcons as any).default;
     const defaultKeys = Object.keys(defaultExport);
-    const matchedKey = defaultKeys.find(k => k.toLowerCase() === iconKey);
+    const matchedKey = defaultKeys.find((k) => k.toLowerCase() === iconKey);
     if (matchedKey) {
       IconComponent = defaultExport[matchedKey];
     }
@@ -98,7 +98,7 @@ export const SmartIcon: React.FC<SmartIconProps> = ({
   // Case 3: Emoji or Fallback
   // If it's a short string (likely emoji) or starts with a typical emoji character range
   const isLikelyEmoji = icon.length <= 4 || /[\u1F600-\u1F64F]/.test(icon);
-  
+
   if (isLikelyEmoji) {
     return (
       <span

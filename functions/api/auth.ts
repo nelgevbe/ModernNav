@@ -22,7 +22,6 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
   try {
     const clientIP = getClientIP(request);
 
-
     const body = (await request.json()) as any;
     const { action, code, currentCode, newCode } = body;
 

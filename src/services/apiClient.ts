@@ -147,7 +147,9 @@ class ApiClient {
         const retryResponse = await fetch(url, { ...options, headers });
         const data = await retryResponse.json();
         if (!retryResponse.ok) {
-          throw new Error((data as ApiResponse).error || `HTTP error! status: ${retryResponse.status}`);
+          throw new Error(
+            (data as ApiResponse).error || `HTTP error! status: ${retryResponse.status}`
+          );
         }
         return data as T;
       } else {

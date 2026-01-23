@@ -117,9 +117,11 @@ export const ContentTab: React.FC<ContentTabProps> = ({
   // Click Outside Listener for Icon Picker
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const isOutsidePicker = iconPickerRef.current && !iconPickerRef.current.contains(event.target as Node);
-      const isOutsideGroup = iconGroupRef.current && !iconGroupRef.current.contains(event.target as Node);
-      
+      const isOutsidePicker =
+        iconPickerRef.current && !iconPickerRef.current.contains(event.target as Node);
+      const isOutsideGroup =
+        iconGroupRef.current && !iconGroupRef.current.contains(event.target as Node);
+
       if (isOutsidePicker && isOutsideGroup) {
         setShowIconPicker(false);
       }
@@ -554,10 +556,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
       <div className="flex-1 flex flex-col bg-slate-900 relative">
         <div className="px-6 border-b border-white/[0.08] flex items-center gap-4 bg-white/[0.01] h-14 shrink-0 backdrop-blur-md">
           <div className="relative flex-1 max-w-md">
-            <Search
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-            />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               placeholder={t("search_links_placeholder")}
@@ -758,7 +757,9 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                                   >
                                     <div
                                       className={`absolute top-1 right-1 flex gap-1 opacity-0 transition-opacity z-20 ${
-                                        showIconPicker ? "pointer-events-none" : "group-hover:opacity-100"
+                                        showIconPicker
+                                          ? "pointer-events-none"
+                                          : "group-hover:opacity-100"
                                       }`}
                                     >
                                       <button
