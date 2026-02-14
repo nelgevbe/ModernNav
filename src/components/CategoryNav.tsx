@@ -333,7 +333,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                       )}
                     </button>
                     {!hasSingleDefault && (
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 hidden group-hover:block z-[100] w-34 animate-fade-in origin-top">
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 hidden group-hover:block z-[100] min-w-[100px] animate-fade-in origin-top">
                         <div
                           className={`${dropdownClasses} rounded-xl p-1 flex flex-col gap-0.5 overflow-hidden ring-1 ring-white/5 shadow-2xl`}
                         >
