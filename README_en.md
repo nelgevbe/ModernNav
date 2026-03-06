@@ -8,13 +8,15 @@ Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + D1
 
 ## ✨ Features
 
-- **🎨 Modern Card UI (v3.0):** Supports background preview and real-time configuration preview with frosted glass effects.
+- **🎨 Modern Card UI (v3.2):** Supports background preview and real-time configuration preview with frosted glass effects. Optimized for 2K/4K high-res displays with dynamic viewport scaling.
+- **🖱️ Enhanced Interaction (v3.2):** Cards use native `<a>` tags, providing full support for middle-click opening, native context menus, and text selection.
 - **⚙️ Global Configuration (v3.1):** "General" tab to manage site title, Favicon API, and footer links.
 - **🧩 Dynamic Footer System (v3.1):** Supports custom GitHub links and multiple friendship links.
 - **🌐 Custom Favicon API (v3.1):** Configure Favicon fetching services (e.g., Google, favicon.im) with `{domain}` placeholder.
 - **📐 Flexible Layout Settings (v3.0):** Adjust card dimensions, canvas width, grid columns, and card opacity.
 - **🔌 Logical Hook Management (v3.0):** Business logic managed via the `useDashboardLogic` hook.
 - **🌓 Intelligent Color Extraction:** Supports automatic theme switching and extracts dominant colors from backgrounds.
+- **📏 Viewport-Aware Scaling (New):** Automatically adjusts sizes for search bars, icons, and text based on viewport width to ensure consistency on high-res screens.
 - **🖱️ Drag & Drop:** Reorder categories and links via drag-and-drop.
 - **🖼️ High Personalization:** Customize card specifications, background styles, and theme details.
 - **🌍 I18n & Copy Support:** Built-in support for English and Chinese copy across all settings.
@@ -140,7 +142,7 @@ Push this code to your GitHub or GitLab repository.
 │   │   │   ├── AuthScreen.tsx      # Auth/Login Screen
 │   │   │   ├── ContentTab.tsx      # Content Management Tab
 │   │   │   ├── DataTab.tsx         # Data Backup/Restore Tab
-│   │   │   ├── GeneralTab.tsx      # General Settings Tab (New)
+│   │   │   ├── GeneralTab.tsx      # General Settings Tab
 │   │   │   └── SecurityTab.tsx     # Security Settings Tab
 │   │   ├── BackgroundLayer.tsx # Immersive Background Rendering
 │   │   ├── CategoryNav.tsx     # Navigation Bar
@@ -157,7 +159,9 @@ Push this code to your GitHub or GitLab repository.
 │   │   └── LanguageContext.tsx # i18n Context
 │   ├── hooks/                  # Custom Hooks
 │   │   ├── useDashboardLogic.ts # Core Business Logic (State/Sync/Updates)
-│   │   └── useCategoryDragDrop.ts # Drag & Drop Logic
+│   │   ├── useCategoryDragDrop.ts # Drag & Drop Logic
+│   │   ├── useViewportScale.ts # Viewport adaptive scaling
+│   │   └── useResponsiveColumns.ts # Responsive grid columns calculation
 │   ├── services/               # Services layer
 │   │   ├── apiClient.ts        # Unified API Client (Auth/Intercept/Retry)
 │   │   └── storage.ts          # Storage & Sync Service (Core logic)
@@ -165,7 +169,7 @@ Push this code to your GitHub or GitLab repository.
 │   │   └── index.ts            # Type Definitions
 │   ├── utils/                  # Frontend Utilities
 │   │   ├── color.ts            # Color Extraction
-│   │   └── favicon.ts          # Favicon Generation (New)
+│   │   └── favicon.ts          # Favicon Generation
 │   ├── App.tsx                 # Root Component
 │   ├── constants.tsx           # App Constants
 │   ├── index.tsx               # Entry Point

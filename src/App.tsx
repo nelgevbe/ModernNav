@@ -12,6 +12,7 @@ import { Footer } from "./components/Footer";
 import { SkeletonLoader } from "./components/SkeletonLoader";
 import { useDashboardLogic } from "./hooks/useDashboardLogic";
 import { useResponsiveColumns } from "./hooks/useResponsiveColumns";
+import { useViewportScale } from "./hooks/useViewportScale";
 import { useLanguage } from "./contexts/LanguageContext";
 import { ThemeMode } from "./types";
 import { getFaviconUrl } from "./utils/favicon";
@@ -42,8 +43,17 @@ const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { t } = useLanguage();
 
-  // Dynamic Column Calculation
-  const effectiveColumns = useResponsiveColumns(gridColumns, maxContainerWidth, cardWidth);
+  // Viewport scale factor: 1.0 at 1080p, ~1.33 at 2K, ~1.75 at 4K
+  const viewportScale = useViewportScale();
+
+  // Apply scale to JS-driven px values so they match the CSS rem scaling system.
+  // User-saved values remain at their 1080p baseline; we scale at render time.
+  const scaledCardHeight = Math.round(cardHeight * viewportScale);
+  const scaledCardWidth = Math.round(cardWidth * viewportScale);
+  const scaledMaxContainerWidth = Math.round(maxContainerWidth * viewportScale);
+
+  // Dynamic Column Calculation (uses scaled values for accurate 2K/4K layout)
+  const effectiveColumns = useResponsiveColumns(gridColumns, scaledMaxContainerWidth, scaledCardWidth);
 
   useEffect(() => {
     document.title = siteTitle || "ModernNav";
@@ -61,9 +71,9 @@ const App: React.FC = () => {
           <SkeletonLoader
             cardOpacity={cardOpacity}
             themeMode={themeMode}
-            maxContainerWidth={maxContainerWidth}
-            cardWidth={cardWidth}
-            cardHeight={cardHeight}
+            maxContainerWidth={scaledMaxContainerWidth}
+            cardWidth={scaledCardWidth}
+            cardHeight={scaledCardHeight}
             gridColumns={effectiveColumns} // Use effective columns for Skeleton
           />
         </div>
@@ -115,45 +125,29 @@ const App: React.FC = () => {
       />
 
       <div
-        className="container mx-auto px-4 flex-1 flex flex-col items-center pt-20 md:pt-12 relative z-[10]"
-        style={{ maxWidth: `${maxContainerWidth}px` }}
+        className="container mx-auto px-4 3xl:px-8 flex-1 flex flex-col items-center pt-20 md:pt-12 3xl:pt-16 4xl:pt-20 relative z-[10]"
+        style={{ maxWidth: `${scaledMaxContainerWidth}px` }}
       >
-        <section className="w-full mb-14 animate-fade-in-down relative z-[70] isolation-isolate">
-          <SearchBar themeMode={themeMode} faviconApi={faviconApi} />
+        <section className="w-full mb-14 3xl:mb-20 4xl:mb-24 animate-fade-in-down relative z-[70] isolation-isolate">
+          <SearchBar 
+            themeMode={themeMode} 
+            faviconApi={faviconApi} 
+            viewportScale={viewportScale}
+          />
         </section>
 
         <main className="w-full pb-20 relative z-[10] space-y-8">
           {visibleSubCategory ? (
             <div key={visibleSubCategory.id} className="">
-              <div className="flex items-center gap-4 mb-6">
-                <div
-                  className={`h-[1px] flex-1 bg-gradient-to-r from-transparent ${
-                    isDark ? "to-white/20" : "to-slate-400/30"
-                  }`}
-                ></div>
-                <h3
-                  className={`text-[10px] font-bold uppercase tracking-[0.2em] px-2 ${
-                    isDark ? "text-white/50" : "text-slate-400"
-                  }`}
-                >
-                  {visibleSubCategory.title === "Default"
-                    ? visibleCategory?.title
-                    : visibleSubCategory.title}
-                </h3>
-                <div
-                  className={`h-[1px] flex-1 bg-gradient-to-l from-transparent ${
-                    isDark ? "to-white/20" : "to-slate-400/30"
-                  }`}
-                ></div>
-              </div>
-
+              {/* ... category header ... */}
               <div
                 key={visibleSubCategory.id}
-                className="grid gap-3 sm:gap-4 w-full responsive-grid"
+                className="grid gap-3 sm:gap-4 3xl:gap-5 4xl:gap-6 w-full responsive-grid"
               >
                 {visibleSubCategory.items.map((link, index) => {
-                  // Fallback icon logic: Use provided icon, or try to get favicon from URL
                   const iconSource = link.icon || getFaviconUrl(link.url, faviconApi);
+                  const scaledIconSize = Math.round(24 * viewportScale);
+                  const scaledTitleSize = Math.max(12, Math.round(12 * viewportScale));
 
                   return (
                     <GlassCard
@@ -161,12 +155,13 @@ const App: React.FC = () => {
                       hoverEffect={true}
                       opacity={cardOpacity}
                       themeMode={themeMode}
-                      onClick={() => window.open(link.url, "_blank")}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex flex-col items-center justify-center text-center p-2 relative group animate-card-enter"
                       style={{
-                        height: `${cardHeight}px`,
+                        height: `${scaledCardHeight}px`,
                         animationFillMode: "backwards",
-                        // Initial animation state handle
                       }}
                       title={
                         link.description
@@ -175,20 +170,21 @@ const App: React.FC = () => {
                       }
                     >
                       <div
-                        className={`mb-2 transition-transform duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] flex items-center justify-center h-6 w-6 ${
-                          isDark ? "text-white/90" : "text-slate-700"
-                        }`}
+                        className={`mb-2 transition-transform duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] flex items-center justify-center`}
+                        style={{ height: `${scaledIconSize}px`, width: `${scaledIconSize}px` }}
                       >
                         <SmartIcon
                           icon={iconSource}
-                          imgClassName="w-6 h-6 object-contain drop-shadow-md rounded-md"
-                          size={24}
+                          imgClassName="object-contain drop-shadow-md rounded-md"
+                          size={scaledIconSize}
+                          style={{ width: `${scaledIconSize}px`, height: `${scaledIconSize}px` }}
                         />
                       </div>
                       <span
-                        className={`text-[12px] font-medium truncate w-full px-1 transition-colors duration-300 ${
+                        className={`font-medium truncate w-full px-1 transition-colors duration-300 ${
                           isDark ? "text-white/80 group-hover:text-white" : "text-slate-800"
                         }`}
+                        style={{ fontSize: `${scaledTitleSize}px` }}
                       >
                         {link.title}
                       </span>

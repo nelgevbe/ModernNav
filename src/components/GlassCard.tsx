@@ -1,12 +1,15 @@
 import React from "react";
 import { ThemeMode } from "../types";
 
-interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
+interface GlassCardProps extends React.HTMLAttributes<HTMLElement> {
   children: React.ReactNode;
   className?: string;
   hoverEffect?: boolean;
   opacity?: number; // Tint Density (0.0 - 1.0)
   themeMode?: ThemeMode;
+  href?: string;
+  target?: string;
+  rel?: string;
 }
 
 export const GlassCard: React.FC<GlassCardProps> = ({
@@ -17,9 +20,13 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   opacity = 0.1,
   themeMode = ThemeMode.Dark,
   style, // Destructure style from props
+  href,
+  target,
+  rel,
   ...props
 }) => {
   const isDark = themeMode === ThemeMode.Dark;
+  const Component = href ? "a" : "div";
 
   // --- MATERIAL PHYSICS ENGINE ---
 
@@ -45,9 +52,9 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     : "shadow-[0_4px_24px_-1px_rgba(0,0,0,0.05)]";
 
   const containerClasses = `
-    relative overflow-hidden rounded-2xl border
+    relative block overflow-hidden rounded-2xl border
     transition-all duration-300 ease-out
-    group
+    group no-underline
     ${borderColor}
     ${shadowClass}
     ${
@@ -71,16 +78,19 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   const blurAmount = isDark ? 50 : 25;
 
   return (
-    <div
+    <Component
       className={containerClasses}
       onClick={onClick}
+      href={href}
+      target={target}
+      rel={rel}
       style={{
         backgroundColor: baseColor,
         backdropFilter: `blur(${blurAmount}px) saturate(${saturation}%)`,
         WebkitBackdropFilter: `blur(${blurAmount}px) saturate(${saturation}%)`,
         ...style, // Merge external styles (e.g. animationDelay)
       }}
-      {...props}
+      {...(props as any)}
     >
       {/* LAYER 0: NOISE TEXTURE */}
       <div className="absolute inset-0 z-0 glass-noise pointer-events-none opacity-40" />
@@ -117,12 +127,12 @@ export const GlassCard: React.FC<GlassCardProps> = ({
 
       {/* LAYER 4: CONTENT */}
       <div
-        className={`relative z-10 w-full h-full flex flex-col items-center justify-center pointer-events-none ${
+        className={`relative z-10 w-full h-full flex flex-col items-center justify-center ${
           isDark ? "text-white" : "text-slate-800"
         }`}
       >
         {children}
       </div>
-    </div>
+    </Component>
   );
 };

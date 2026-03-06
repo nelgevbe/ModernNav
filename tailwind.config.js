@@ -11,6 +11,10 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        "3xl": "2560px", // 2K (2560×1440)
+        "4xl": "3840px", // 4K (3840×2160)
+      },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
       },

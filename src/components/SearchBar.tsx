@@ -9,9 +9,14 @@ import { SmartIcon } from "./SmartIcon";
 interface SearchBarProps {
   themeMode: ThemeMode;
   faviconApi?: string;
+  viewportScale?: number;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) => {
+export const SearchBar: React.FC<SearchBarProps> = ({
+  themeMode,
+  faviconApi,
+  viewportScale = 1,
+}) => {
   const [query, setQuery] = useState("");
   const [selectedEngine, setSelectedEngine] = useState<SearchEngine>(SEARCH_ENGINES[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -94,13 +99,22 @@ export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) =
     setIsDropdownOpen(false);
   };
 
+  const scaledHeight = Math.round(48 * viewportScale);
+  const scaledIconSize = Math.round(20 * viewportScale);
+  const scaledChevronSize = Math.round(14 * viewportScale);
+  const scaledSearchIconSize = Math.round(18 * viewportScale);
+  const scaledFontSize = Math.max(14, Math.round(14 * viewportScale));
+
   // NOTE: Width reduced to max-w-[450px]
   return (
-    <div className="w-full max-w-[450px] mx-auto relative z-[70] transition-all duration-300">
+    <div className="w-full max-w-[30rem] mx-auto relative z-[70] transition-all duration-300">
       <form onSubmit={handleSearch} className="relative w-full group" ref={dropdownRef}>
         <div
-          className={`relative flex items-center rounded-2xl transition-all duration-300 h-12 border ${stateClasses} ${shadowClasses}`}
-          style={containerStyle}
+          className={`relative flex items-center rounded-2xl transition-all duration-300 border ${stateClasses} ${shadowClasses}`}
+          style={{
+            ...containerStyle,
+            height: `${scaledHeight}px`,
+          }}
         >
           <div className="relative h-full">
             <button
@@ -112,15 +126,19 @@ export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) =
                   : "text-slate-500 hover:text-slate-900 hover:bg-black/10"
               }`}
             >
-              <span className="flex items-center justify-center w-5 h-5 rounded-md overflow-hidden shadow-sm transition-opacity">
+              <span
+                className="flex items-center justify-center rounded-md overflow-hidden shadow-sm transition-opacity"
+                style={{ width: `${scaledIconSize}px`, height: `${scaledIconSize}px` }}
+              >
                 <SmartIcon
                   icon={getFaviconUrl(selectedEngine.icon, faviconApi)}
-                  size={20}
-                  imgClassName="w-5 h-5 object-contain"
+                  size={scaledIconSize}
+                  imgClassName="object-contain"
+                  style={{ width: `${scaledIconSize}px`, height: `${scaledIconSize}px` }}
                 />
               </span>
               <ChevronDown
-                size={14}
+                size={scaledChevronSize}
                 className={`transition-transform duration-200 opacity-40 group-hover:opacity-100 ${
                   isDropdownOpen ? "rotate-180" : ""
                 }`}
@@ -137,7 +155,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) =
             placeholder={t("search_placeholder", {
               engine: selectedEngine.name,
             })}
-            className={`flex-1 bg-transparent border-none outline-none text-sm px-4 h-full text-left transition-colors ${textColor} ${placeholderColor}`}
+            style={{ fontSize: `${scaledFontSize}px` }}
+            className={`flex-1 bg-transparent border-none outline-none px-4 h-full text-left transition-colors ${textColor} ${placeholderColor}`}
           />
 
           <button
@@ -150,7 +169,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) =
                 : "hover:bg-black/15 hover:text-slate-900"
             }`}
           >
-            <Search size={18} />
+            <Search size={scaledSearchIconSize} />
           </button>
         </div>
 
@@ -166,6 +185,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) =
                     onClick={() => handleEngineSelect(engine)}
                     onMouseEnter={() => setHoveredEngine(engine.id)}
                     onMouseLeave={() => setHoveredEngine(null)}
+                    style={{
+                      height: `${Math.round(24 * viewportScale)}px`,
+                      fontSize: `${Math.max(11, Math.round(11 * viewportScale))}px`,
+                    }}
                     className={`${itemBase} ${dropdownText} ${
                       selectedEngine.id === engine.id
                         ? itemActive
@@ -174,11 +197,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({ themeMode, faviconApi }) =
                           : "opacity-90"
                     }`}
                   >
-                    <span className="w-3.5 h-3.5 flex items-center justify-center rounded-sm overflow-hidden shadow-sm">
+                    <span
+                      className="flex items-center justify-center rounded-sm overflow-hidden shadow-sm"
+                      style={{
+                        width: `${Math.round(14 * viewportScale)}px`,
+                        height: `${Math.round(14 * viewportScale)}px`,
+                      }}
+                    >
                       <SmartIcon
                         icon={getFaviconUrl(engine.icon, faviconApi)}
-                        size={14}
-                        imgClassName="w-3.5 h-3.5 object-contain"
+                        size={Math.round(14 * viewportScale)}
+                        imgClassName="object-contain"
                       />
                     </span>
                     <span className="font-medium tracking-tight">{engine.name}</span>

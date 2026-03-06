@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Fluid Responsive Scaling System
+  Base: 1080p(1920px)=16px | 2K(2560px)≈21px | 4K(3840px)≈26px
+  Uses clamp() on html font-size with raw units to avoid rem circular dependency.
+*/
+html {
+  font-size: clamp(14px, 0.833vw, 26px);
+}
+
 /* Custom Scrollbar for Webkit */
 ::-webkit-scrollbar {
   width: 8px;

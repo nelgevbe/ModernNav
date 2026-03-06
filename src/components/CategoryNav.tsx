@@ -97,7 +97,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   }`;
 
   const categoryButtonBase = `
-    relative z-10 flex items-center gap-1.5 px-4 py-2 rounded-full transition-colors duration-300 cursor-pointer select-none
+    relative z-10 flex items-center gap-1.5 px-4 py-2 3xl:px-5 3xl:py-2.5 rounded-full transition-colors duration-300 cursor-pointer select-none
     active:scale-95 transition-transform ease-out
   `;
 
@@ -291,13 +291,13 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
           2. DESKTOP NAVIGATION: DYNAMIC ISLAND
           Visible only on screens 'md' and larger
       */}
-      <nav className="hidden md:flex justify-center items-center py-6 px-4 relative z-[100] isolation-isolate text-sm font-medium tracking-wide">
+      <nav className="hidden md:flex justify-center items-center py-6 3xl:py-8 px-4 relative z-[100] isolation-isolate text-sm font-medium tracking-wide">
         <div className={islandContainerClass} style={islandStyle}>
           {glassLayerNoise}
           {glassLayerRim}
           {glassLayerSheen}
 
-          <div className="relative z-10 flex items-center gap-1 flex-wrap justify-center max-w-full px-1">
+          <div className="relative z-10 flex items-center gap-1 3xl:gap-2 flex-wrap justify-center max-w-full px-1 3xl:px-2">
             {/* SECTION 1: Categories */}
             <div className="relative flex items-center" ref={navTrackRef}>
               <div

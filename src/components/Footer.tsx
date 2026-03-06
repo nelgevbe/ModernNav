@@ -14,7 +14,7 @@ export const Footer: React.FC<FooterProps> = ({ isDark, github, links }) => {
 
   return (
     <footer
-      className={`relative z-10 py-5 text-center text-[11px] flex flex-col md:flex-row justify-center items-center gap-4 border-t backdrop-blur-sm transition-colors duration-500 ${
+      className={`relative z-10 py-5 text-center text-sm flex flex-col md:flex-row justify-center items-center gap-4 border-t backdrop-blur-sm transition-colors duration-500 ${
         isDark
           ? "text-white/30 border-white/5 bg-black/10"
           : "text-slate-500 border-black/5 bg-white/20"
@@ -29,7 +29,7 @@ export const Footer: React.FC<FooterProps> = ({ isDark, github, links }) => {
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 hover:text-[var(--theme-primary)] cursor-pointer transition-colors"
           >
-            <LinkIcon size={12} /> {link.title}
+            <LinkIcon size={18} /> {link.title}
           </a>
         ))}
         {github && (
@@ -39,7 +39,7 @@ export const Footer: React.FC<FooterProps> = ({ isDark, github, links }) => {
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 hover:text-[var(--theme-primary)] cursor-pointer transition-colors"
           >
-            <Github size={12} /> {t("about_us") || "GitHub"}
+            <Github size={18} /> {t("about_us") || "GitHub"}
           </a>
         )}
       </div>

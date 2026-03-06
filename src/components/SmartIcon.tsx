@@ -6,6 +6,7 @@ interface SmartIconProps {
   className?: string; // Container class
   imgClassName?: string; // Specific image class
   size?: number;
+  style?: React.CSSProperties;
 }
 
 export const SmartIcon: React.FC<SmartIconProps> = ({
@@ -13,6 +14,7 @@ export const SmartIcon: React.FC<SmartIconProps> = ({
   className = "",
   imgClassName = "",
   size = 20,
+  style,
 }) => {
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
 
@@ -26,18 +28,22 @@ export const SmartIcon: React.FC<SmartIconProps> = ({
   }
 
   if (!icon) {
-    return <DefaultIcon size={size} className={className} strokeWidth={1.5} />;
+    return <DefaultIcon size={size} className={className} style={style} strokeWidth={1.5} />;
   }
 
   // Case 1: URL Image
   if (icon.startsWith("http") || icon.startsWith("data:")) {
     return (
-      <div className={`relative flex items-center justify-center ${className}`}>
+      <div
+        className={`relative flex items-center justify-center ${className}`}
+        style={style}
+      >
         {/* Placeholder / Fallback - Visible while loading or on error */}
         {(status === "loading" || status === "error") && (
           <DefaultIcon
             size={size}
             className={`absolute inset-0 m-auto text-slate-400/50 ${status === "loading" ? "animate-pulse" : ""}`}
+            style={style}
             strokeWidth={1.5}
           />
         )}
@@ -92,7 +98,7 @@ export const SmartIcon: React.FC<SmartIconProps> = ({
 
   if (IconComponent && (typeof IconComponent === "function" || typeof IconComponent === "object")) {
     const Component = IconComponent;
-    return <Component size={size} className={className} strokeWidth={1.5} />;
+    return <Component size={size} className={className} style={style} strokeWidth={1.5} />;
   }
 
   // Case 3: Emoji or Fallback
@@ -103,7 +109,7 @@ export const SmartIcon: React.FC<SmartIconProps> = ({
     return (
       <span
         className={`leading-none filter drop-shadow-md select-none ${className}`}
-        style={{ fontSize: size }}
+        style={{ fontSize: size, ...style }}
       >
         {icon}
       </span>
@@ -111,5 +117,5 @@ export const SmartIcon: React.FC<SmartIconProps> = ({
   }
 
   // Final fallback: Show default icon instead of the raw text name
-  return <DefaultIcon size={size} className={className} strokeWidth={1.5} />;
+  return <DefaultIcon size={size} className={className} style={style} strokeWidth={1.5} />;
 };
