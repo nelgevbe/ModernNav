@@ -3,28 +3,9 @@
 @tailwind utilities;
 
 /*
-  =========================================
-  FLUID RESPONSIVE SCALING SYSTEM
-  以 clamp() 为核心的流式分辨率适配
-  基准：1080p(1920px)=16px ↔ 2K(2560px)≈21px ↔ 4K(3840px)≈26px
-  
-  【关键修复】html font-size 直接使用 px/vw 绝对单位，
-  彻底避免在 :root 里用 rem 再赋给 html 产生的循环依赖问题。
-  循环依赖会导致浏览器回退到默认 16px 解算 rem，
-  使 clamp() 的实际上限被错误钉死在固定值。
-  =========================================
-*/
-
-/*
-  html 根字体大小 — 纯 px/vw，无循环依赖
-  0.833vw = 16px / 1920px * 100 → 在 1920px 视口时恰好 = 16px（Tailwind默认基准）
-  
-  视口宽度 → font-size:
-    ≤ 1344px  → 14px  (clamp 下限，保护移动/平板不过小)
-    1344px    → 14px  (0.833vw 开始大于14px)
-    1920px    → 16px  (标准 1080p，与原始 Tailwind 设计吻合)
-    2560px    → 21.3px (2K, 约 1.33x)
-    3840px    → 26px  (4K, clamp 上限, 约 1.625x)
+  Fluid Responsive Scaling System
+  Base: 1080p(1920px)=16px | 2K(2560px)≈21px | 4K(3840px)≈26px
+  Uses clamp() on html font-size with raw units to avoid rem circular dependency.
 */
 html {
   font-size: clamp(14px, 0.833vw, 26px);
