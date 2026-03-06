@@ -139,7 +139,35 @@ const App: React.FC = () => {
         <main className="w-full pb-20 relative z-[10] space-y-8">
           {visibleSubCategory ? (
             <div key={visibleSubCategory.id} className="">
-              {/* ... category header ... */}
+              {/* category header */}
+              <div 
+                className="flex items-center" 
+                style={{ 
+                  gap: `${Math.round(16 * viewportScale)}px`, 
+                  marginBottom: `${Math.round(24 * viewportScale)}px` 
+                }}
+              >
+                <div
+                  className={`h-[1px] flex-1 bg-gradient-to-r from-transparent ${
+                    isDark ? "to-white/20" : "to-slate-400/30"
+                  }`}
+                ></div>
+                <h3
+                  className={`font-bold uppercase tracking-[0.2em] px-2 ${
+                    isDark ? "text-white/50" : "text-slate-400"
+                  }`}
+                  style={{ fontSize: `${Math.max(10, Math.round(10 * viewportScale))}px` }}
+                >
+                  {visibleSubCategory.title === "Default"
+                    ? visibleCategory?.title
+                    : visibleSubCategory.title}
+                </h3>
+                <div
+                  className={`h-[1px] flex-1 bg-gradient-to-l from-transparent ${
+                    isDark ? "to-white/20" : "to-slate-400/30"
+                  }`}
+                ></div>
+              </div>
               <div
                 key={visibleSubCategory.id}
                 className="grid gap-3 sm:gap-4 3xl:gap-5 4xl:gap-6 w-full responsive-grid"
