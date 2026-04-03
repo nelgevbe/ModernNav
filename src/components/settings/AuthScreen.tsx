@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Lock, AlertCircle, Loader2, LogIn } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { storageService } from "../../services/storage";
+import { useViewportScale } from "../../hooks/useViewportScale";
+import { getIconSize } from "../../utils/favicon";
 
 interface AuthScreenProps {
   onAuthenticated: () => void;
@@ -15,6 +17,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   isDefaultCode,
 }) => {
   const { t } = useLanguage();
+  const viewportScale = useViewportScale();
+  const s = (n: number) => getIconSize(n, viewportScale);
   const [authInput, setAuthInput] = useState("");
   const [authError, setAuthError] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
@@ -43,13 +47,23 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   };
 
   return (
-    <div className="p-12 h-full flex flex-col items-center justify-center text-center space-y-6 bg-slate-900">
-      <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mb-2 border border-white/[0.08] shadow-inner">
-        <Lock size={40} className="text-slate-400" />
+    <div
+      className="p-12 h-full flex flex-col items-center justify-center text-center space-y-6"
+      style={{ backgroundColor: "var(--modal-surface)" }}
+    >
+      <div
+        className="w-20 h-20 rounded-full flex items-center justify-center mb-2 border shadow-inner"
+        style={{ backgroundColor: "var(--modal-surface-alt)", borderColor: "var(--modal-border)" }}
+      >
+        <Lock size={s(40)} style={{ color: "var(--modal-text-secondary)" }} />
       </div>
       <div>
-        <h2 className="text-2xl font-bold text-white mb-2">{t("admin_access")}</h2>
-        <p className="text-slate-400 text-sm">{t("enter_code_msg")}</p>
+        <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--modal-text)" }}>
+          {t("admin_access")}
+        </h2>
+        <p className="text-sm" style={{ color: "var(--modal-text-secondary)" }}>
+          {t("enter_code_msg")}
+        </p>
         {isDefaultCode && (
           <p className="text-emerald-400/90 text-xs mt-3 font-mono bg-emerald-500/10 border border-emerald-500/20 py-1.5 px-3 rounded-md inline-block">
             {t("default_code")}
@@ -67,11 +81,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         />
         {authError && (
           <div className="text-red-400 text-sm animate-pulse flex items-center justify-center gap-1">
-            <AlertCircle size={14} /> {authError}
+            <AlertCircle size={s(14)} /> {authError}
           </div>
         )}
         <button type="submit" className="btn-primary w-full py-3 rounded-xl text-base">
-          {isVerifying ? <Loader2 className="animate-spin" size={18} /> : <LogIn size={18} />}{" "}
+          {isVerifying ? <Loader2 className="animate-spin" size={s(18)} /> : <LogIn size={s(18)} />}{" "}
           {t("unlock_btn")}
         </button>
       </form>

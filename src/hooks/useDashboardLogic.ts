@@ -3,6 +3,13 @@ import { storageService } from "../services/storage";
 import { getDominantColor } from "../utils/color";
 import { Category, ThemeMode, UserPreferences } from "../types";
 import { useLanguage } from "../contexts/LanguageContext";
+import {
+  DEFAULT_THEME_COLOR,
+  DEFAULT_FAVICON_API,
+  DEFAULT_SITE_TITLE,
+  DEFAULT_FOOTER_GITHUB,
+  DEFAULT_LAYOUT,
+} from "../constants/defaults";
 
 export const useDashboardLogic = () => {
   // State
@@ -15,7 +22,9 @@ export const useDashboardLogic = () => {
   const [categories, setCategories] = useState<Category[]>(localData.categories);
   const [background, setBackground] = useState<string>(localData.background);
   const [cardOpacity, setCardOpacity] = useState<number>(localData.prefs.cardOpacity);
-  const [themeColor, setThemeColor] = useState<string>(localData.prefs.themeColor || "#6280a3");
+  const [themeColor, setThemeColor] = useState<string>(
+    localData.prefs.themeColor || DEFAULT_THEME_COLOR
+  );
   const [themeColorAuto, setThemeColorAuto] = useState<boolean>(
     localData.prefs.themeColorAuto ?? true
   );
@@ -41,18 +50,26 @@ export const useDashboardLogic = () => {
 
   // New Layout Preferences
   const [maxContainerWidth, setMaxContainerWidth] = useState<number>(
-    localData.prefs.maxContainerWidth ?? 900
+    localData.prefs.maxContainerWidth ?? DEFAULT_LAYOUT.maxContainerWidth
   );
-  const [cardWidth, setCardWidth] = useState<number>(localData.prefs.cardWidth ?? 96);
-  const [cardHeight, setCardHeight] = useState<number>(localData.prefs.cardHeight ?? 96);
-  const [gridColumns, setGridColumns] = useState<number>(localData.prefs.gridColumns ?? 6);
+  const [cardWidth, setCardWidth] = useState<number>(
+    localData.prefs.cardWidth ?? DEFAULT_LAYOUT.cardWidth
+  );
+  const [cardHeight, setCardHeight] = useState<number>(
+    localData.prefs.cardHeight ?? DEFAULT_LAYOUT.cardHeight
+  );
+  const [gridColumns, setGridColumns] = useState<number>(
+    localData.prefs.gridColumns ?? DEFAULT_LAYOUT.gridColumns
+  );
   // New Global Preferences
-  const [siteTitle, setSiteTitle] = useState<string>(localData.prefs.siteTitle ?? "ModernNav");
+  const [siteTitle, setSiteTitle] = useState<string>(
+    localData.prefs.siteTitle ?? DEFAULT_SITE_TITLE
+  );
   const [faviconApi, setFaviconApi] = useState<string>(
-    localData.prefs.faviconApi ?? "https://favicon.im/{domain}?larger=true"
+    localData.prefs.faviconApi ?? DEFAULT_FAVICON_API
   );
   const [footerGithub, setFooterGithub] = useState<string>(
-    localData.prefs.footerGithub ?? "https://github.com/lyan0220"
+    localData.prefs.footerGithub ?? DEFAULT_FOOTER_GITHUB
   );
   const [footerLinks, setFooterLinks] = useState<{ title: string; url: string }[]>(
     localData.prefs.footerLinks ?? []
@@ -77,16 +94,16 @@ export const useDashboardLogic = () => {
         setThemeColorAuto(data.prefs.themeColorAuto ?? true);
 
         // Load new preferences
-        setMaxContainerWidth(data.prefs.maxContainerWidth ?? 900);
-        setCardWidth(data.prefs.cardWidth ?? 96);
-        setCardHeight(data.prefs.cardHeight ?? 96);
-        setGridColumns(data.prefs.gridColumns ?? 6);
-        setSiteTitle(data.prefs.siteTitle ?? "ModernNav");
-        setFaviconApi(data.prefs.faviconApi ?? "https://favicon.im/{domain}?larger=true");
-        setFooterGithub(data.prefs.footerGithub ?? "https://github.com/lyan0220");
+        setMaxContainerWidth(data.prefs.maxContainerWidth ?? DEFAULT_LAYOUT.maxContainerWidth);
+        setCardWidth(data.prefs.cardWidth ?? DEFAULT_LAYOUT.cardWidth);
+        setCardHeight(data.prefs.cardHeight ?? DEFAULT_LAYOUT.cardHeight);
+        setGridColumns(data.prefs.gridColumns ?? DEFAULT_LAYOUT.gridColumns);
+        setSiteTitle(data.prefs.siteTitle ?? DEFAULT_SITE_TITLE);
+        setFaviconApi(data.prefs.faviconApi ?? DEFAULT_FAVICON_API);
+        setFooterGithub(data.prefs.footerGithub ?? DEFAULT_FOOTER_GITHUB);
         setFooterLinks(data.prefs.footerLinks ?? []);
 
-        let finalColor = data.prefs.themeColor || "#6280a3";
+        let finalColor = data.prefs.themeColor || DEFAULT_THEME_COLOR;
 
         if ((data.prefs.themeColorAuto ?? true) && data.background.startsWith("http")) {
           finalColor = await getDominantColor(data.background);

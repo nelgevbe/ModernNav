@@ -1,6 +1,8 @@
 import { Category, ThemeMode, UserPreferences, BootstrapResponse } from "../types";
 import { INITIAL_CATEGORIES } from "../constants";
+import { DEFAULT_PREFS } from "../constants/defaults";
 import { apiClient } from "./apiClient";
+import { handleApiError } from "../utils/errorHandler";
 
 // --- EVENT LISTENERS ---
 type NotifyType = "success" | "error" | "info";
@@ -20,17 +22,6 @@ const LS_KEYS = {
 
 export const DEFAULT_BACKGROUND = "radial-gradient(circle at 50% -20%, #334155, #0f172a, #020617)";
 const CURRENT_BACKUP_VERSION = 1;
-
-const DEFAULT_PREFS: UserPreferences = {
-  cardOpacity: 0.1,
-  themeColor: "#6280a3",
-  themeMode: ThemeMode.Dark,
-  themeColorAuto: true,
-  faviconApi: "https://favicon.im/{domain}?larger=true",
-  siteTitle: "ModernNav",
-  footerGithub: "https://github.com/lyan0220",
-  footerLinks: [{ title: "Friendly Links", url: "https://coyoo.ggff.net/" }],
-};
 
 // Backup Data Structure
 interface BackupData {
@@ -204,7 +195,7 @@ export const storageService = {
     try {
       cloudData = await apiClient.request<BootstrapResponse>(`/api/bootstrap?_=${Date.now()}`);
     } catch (e) {
-      console.warn("Fetch failed");
+      console.warn("Fetch failed:", handleApiError(e, "Using local data"));
     }
 
     let finalCategories = safeJsonParse(
@@ -324,10 +315,7 @@ export const storageService = {
     } catch (e) {
       storageService._isSynced = false;
       storageService._pendingSync = true;
-      storageService.notify(
-        "error",
-        `Cloud sync failed: ${(e as Error).message || "Unknown error"}. Saved locally.`
-      );
+      storageService.notify("error", handleApiError(e, "Sync failed. Changes saved locally."));
     } finally {
       storageService.notifySyncStatus(false);
     }
@@ -404,7 +392,10 @@ export const storageService = {
       storageService._pendingSync = true;
       storageService.notify(
         "error",
-        "Sync failed. Your changes are saved locally and will be synced later."
+        handleApiError(
+          error,
+          "Sync failed. Your changes are saved locally and will be synced later."
+        )
       );
     } finally {
       storageService.notifySyncStatus(false);

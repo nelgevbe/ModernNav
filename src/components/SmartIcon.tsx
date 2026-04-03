@@ -1,12 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import * as LucideIcons from "lucide-react";
+import { getFallbackFaviconUrls, isFaviconApiUrl } from "../utils/favicon";
+import { useViewportScale } from "../hooks/useViewportScale";
 
 interface SmartIconProps {
   icon: string | undefined;
-  className?: string; // Container class
-  imgClassName?: string; // Specific image class
+  className?: string;
+  imgClassName?: string;
   size?: number;
   style?: React.CSSProperties;
+  faviconApi?: string;
+  sourceUrl?: string;
 }
 
 export const SmartIcon: React.FC<SmartIconProps> = ({
@@ -15,80 +19,115 @@ export const SmartIcon: React.FC<SmartIconProps> = ({
   imgClassName = "",
   size = 20,
   style,
+  faviconApi,
+  sourceUrl,
 }) => {
+  const scale = useViewportScale();
+  const scaledSize = Math.round(size * scale);
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const [fallbackIndex, setFallbackIndex] = useState(0);
 
-  // Default fallback icon
   const DefaultIcon = LucideIcons.Globe;
 
-  const [prevIcon, setPrevIcon] = useState(icon);
-  if (icon !== prevIcon) {
-    setPrevIcon(icon);
-    setStatus("loading");
-  }
+  const fallbackUrls = useMemo(() => {
+    if (icon && (icon.startsWith("http") || icon.startsWith("data:"))) {
+      if (icon.startsWith("data:")) return [icon];
+
+      if (isFaviconApiUrl(icon) && sourceUrl && faviconApi) {
+        return getFallbackFaviconUrls(sourceUrl, faviconApi);
+      }
+
+      return [icon];
+    }
+    return [];
+  }, [icon, sourceUrl, faviconApi]);
+
+  const currentSrc = useMemo(() => {
+    if (!icon) return "";
+    if (icon.startsWith("data:")) return icon;
+    if (fallbackUrls.length > 0) {
+      return fallbackUrls[Math.min(fallbackIndex, fallbackUrls.length - 1)];
+    }
+    return icon;
+  }, [icon, fallbackUrls, fallbackIndex]);
+
+  const handleFallback = useCallback(() => {
+    const nextIndex = fallbackIndex + 1;
+    if (nextIndex < fallbackUrls.length) {
+      setFallbackIndex(nextIndex);
+      setStatus("loading");
+    } else {
+      setStatus("error");
+    }
+  }, [fallbackIndex, fallbackUrls.length]);
 
   if (!icon) {
-    return <DefaultIcon size={size} className={className} style={style} strokeWidth={1.5} />;
+    return <DefaultIcon size={scaledSize} className={className} style={style} strokeWidth={1.5} />;
   }
 
-  // Case 1: URL Image
   if (icon.startsWith("http") || icon.startsWith("data:")) {
+    if (icon.startsWith("data:")) {
+      return (
+        <div className={`relative flex items-center justify-center ${className}`} style={style}>
+          <img
+            src={icon}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className={`object-contain ${imgClassName}`}
+            style={{ width: scaledSize, height: scaledSize }}
+          />
+        </div>
+      );
+    }
+
     return (
-      <div
-        className={`relative flex items-center justify-center ${className}`}
-        style={style}
-      >
-        {/* Placeholder / Fallback - Visible while loading or on error */}
+      <div className={`relative flex items-center justify-center ${className}`} style={style}>
         {(status === "loading" || status === "error") && (
           <DefaultIcon
-            size={size}
+            size={scaledSize}
             className={`absolute inset-0 m-auto text-slate-400/50 ${status === "loading" ? "animate-pulse" : ""}`}
             style={style}
             strokeWidth={1.5}
           />
         )}
 
-        {/* Actual Image */}
         {status !== "error" && (
           <img
-            src={icon}
-            alt={icon}
+            key={currentSrc}
+            src={currentSrc}
+            alt=""
             loading="lazy"
             decoding="async"
             className={`transition-opacity duration-300 ease-out object-contain ${imgClassName} ${
               status === "loaded" ? "opacity-100" : "opacity-0"
             }`}
-            style={{ width: size, height: size }}
+            style={{ width: scaledSize, height: scaledSize }}
             onLoad={() => setStatus("loaded")}
-            onError={() => setStatus("error")}
+            onError={handleFallback}
           />
         )}
       </div>
     );
   }
 
-  // Case 2: Lucide Icon
   const iconKey = icon.trim().toLowerCase();
 
-  // Exhaustive search (case-insensitive)
-  let IconComponent: any = null;
+  let IconComponent: React.ComponentType<any> | null = null;
 
-  // 1. Precise match (should be most common)
   const exactKey = icon.trim();
-  IconComponent = (LucideIcons as any)[exactKey];
+  IconComponent = (LucideIcons as Record<string, any>)[exactKey];
 
-  // 2. Case-insensitive search
   if (!IconComponent) {
     const allKeys = Object.keys(LucideIcons);
     const matchedKey = allKeys.find((k) => k.toLowerCase() === iconKey);
     if (matchedKey) {
-      IconComponent = (LucideIcons as any)[matchedKey];
+      IconComponent = (LucideIcons as Record<string, any>)[matchedKey];
     }
   }
 
-  // 3. Fallback to default namespace property if exists (compatibility)
-  if (!IconComponent && (LucideIcons as any).default) {
-    const defaultExport = (LucideIcons as any).default;
+  if (!IconComponent && (LucideIcons as Record<string, any>).default) {
+    const defaultExport = (LucideIcons as Record<string, any>).default;
     const defaultKeys = Object.keys(defaultExport);
     const matchedKey = defaultKeys.find((k) => k.toLowerCase() === iconKey);
     if (matchedKey) {
@@ -98,24 +137,21 @@ export const SmartIcon: React.FC<SmartIconProps> = ({
 
   if (IconComponent && (typeof IconComponent === "function" || typeof IconComponent === "object")) {
     const Component = IconComponent;
-    return <Component size={size} className={className} style={style} strokeWidth={1.5} />;
+    return <Component size={scaledSize} className={className} style={style} strokeWidth={1.5} />;
   }
 
-  // Case 3: Emoji or Fallback
-  // If it's a short string (likely emoji) or starts with a typical emoji character range
   const isLikelyEmoji = icon.length <= 4 || /[\u1F600-\u1F64F]/.test(icon);
 
   if (isLikelyEmoji) {
     return (
       <span
         className={`leading-none filter drop-shadow-md select-none ${className}`}
-        style={{ fontSize: size, ...style }}
+        style={{ fontSize: scaledSize, ...style }}
       >
         {icon}
       </span>
     );
   }
 
-  // Final fallback: Show default icon instead of the raw text name
-  return <DefaultIcon size={size} className={className} style={style} strokeWidth={1.5} />;
+  return <DefaultIcon size={scaledSize} className={className} style={style} strokeWidth={1.5} />;
 };

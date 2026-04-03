@@ -8,21 +8,23 @@ Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + D1
 
 ## ✨ Features
 
-- **🎨 Modern Card UI (v3.2):** Supports background preview and real-time configuration preview with frosted glass effects. Optimized for 2K/4K high-res displays with dynamic viewport scaling.
-- **🖱️ Enhanced Interaction (v3.2):** Cards use native `<a>` tags, providing full support for middle-click opening, native context menus, and text selection.
-- **⚙️ Global Configuration (v3.1):** "General" tab to manage site title, Favicon API, and footer links.
-- **🧩 Dynamic Footer System (v3.1):** Supports custom GitHub links and multiple friendship links.
-- **🌐 Custom Favicon API (v3.1):** Configure Favicon fetching services (e.g., Google, favicon.im) with `{domain}` placeholder.
-- **📐 Flexible Layout Settings (v3.0):** Adjust card dimensions, canvas width, grid columns, and card opacity.
-- **🔌 Logical Hook Management (v3.0):** Business logic managed via the `useDashboardLogic` hook.
+- **🎨 Modern Card UI:** Supports background preview and real-time configuration preview with frosted glass effects. Optimized for 2K/4K high-res displays with dynamic viewport scaling.
+- **🖱️ Enhanced Interaction:** Cards use native `<a>` tags, providing full support for middle-click opening, native context menus, and text selection.
+- **⚙️ Global Configuration:** "General" tab to manage site title, Favicon API, and footer links.
+- **🧩 Dynamic Footer System:** Supports custom GitHub links and multiple friendship links.
+- **🌐 Custom Favicon API:** Configure Favicon fetching services (e.g., Google, favicon.im) with `{domain}` placeholder.
+- **📐 Flexible Layout Settings:** Adjust card dimensions, canvas width, grid columns, and card opacity.
+- **🔌 Logical Hook Management:** Business logic managed via the `useDashboardLogic` hook.
 - **🌓 Intelligent Color Extraction:** Supports automatic theme switching and extracts dominant colors from backgrounds.
-- **📏 Viewport-Aware Scaling (New):** Automatically adjusts sizes for search bars, icons, and text based on viewport width to ensure consistency on high-res screens.
+- **📏 Viewport-Aware Scaling:** Dynamic root `font-size` based responsive scaling system, automatically adapting both frontend and modal components for high-resolution displays.
+- **🔄 Smart Icon Fallback:** Automatically falls back to alternative APIs (vemetric.com, Google, DuckDuckGo) when the default favicon API fails, ensuring icons always load.
+- **⚡ PWA Runtime Caching:** Intelligent caching for favicons, images, and API responses for faster repeat visits.
 - **🖱️ Drag & Drop:** Reorder categories and links via drag-and-drop.
 - **🖼️ High Personalization:** Customize card specifications, background styles, and theme details.
 - **🌍 I18n & Copy Support:** Built-in support for English and Chinese copy across all settings.
 - **⚡ Lightweight Status Indicators:** Text-only floating notifications to reduce visual noise.
-- **🔐 Enhanced Security (v2.1):** Unified API client with HttpOnly Cookie silent refresh and CSRF protection.
-- **☁️ Smart Hybrid Storage (v2.0):** Features a "Dirty-First" strategy and state persistence to prevent data loss.
+- **🔐 Enhanced Security:** Unified API client with HttpOnly Cookie silent refresh and CSRF protection.
+- **☁️ Smart Hybrid Storage:** Features a "Dirty-First" strategy and state persistence to prevent data loss.
 - **💾 Full Backup:** One-click data export and restore for total control.
 
 ## 🛠️ Tech Stack
@@ -150,9 +152,10 @@ Push this code to your GitHub or GitLab repository.
 │   │   ├── GlassCard.tsx       # Glass Effect Card
 │   │   ├── IconPicker.tsx      # Icon Selector
 │   │   ├── LinkManagerModal.tsx # Settings Modal Container
+│   │   ├── ModalSkeleton.tsx   # Modal Loading Skeleton
 │   │   ├── SearchBar.tsx       # Search Bar
 │   │   ├── SkeletonLoader.tsx  # Semantic Skeleton Loader
-│   │   ├── SmartIcon.tsx       # Intelligent Icon Capture
+│   │   ├── SmartIcon.tsx       # Intelligent Icon (Auto-scale/Fallback)
 │   │   ├── SyncIndicator.tsx   # Sync Status Indicator
 │   │   └── Toast.tsx           # Toast Notification
 │   ├── contexts/               # Global State
@@ -169,11 +172,13 @@ Push this code to your GitHub or GitLab repository.
 │   │   └── index.ts            # Type Definitions
 │   ├── utils/                  # Frontend Utilities
 │   │   ├── color.ts            # Color Extraction
-│   │   └── favicon.ts          # Favicon Generation
+│   │   └── favicon.ts          # Favicon Generation & Fallback
+│   ├── constants/              # Constants
+│   │   └── defaults.ts         # Unified Default Values
 │   ├── App.tsx                 # Root Component
-│   ├── constants.tsx           # App Constants
+│   ├── constants.tsx           # Constants Entry
 │   ├── index.tsx               # Entry Point
-│   └── index.css               # Global Styles (Tailwind)
+│   └── index.css               # Global Styles (Tailwind + Modal Variables)
 ├── index.html                  # HTML Entry
 ├── vite.config.ts              # Vite Configuration
 ├── tsconfig.json               # TypeScript Configuration

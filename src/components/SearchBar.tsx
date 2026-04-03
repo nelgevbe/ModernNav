@@ -135,6 +135,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                   size={scaledIconSize}
                   imgClassName="object-contain"
                   style={{ width: `${scaledIconSize}px`, height: `${scaledIconSize}px` }}
+                  faviconApi={faviconApi}
                 />
               </span>
               <ChevronDown
@@ -208,6 +209,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                         icon={getFaviconUrl(engine.icon, faviconApi)}
                         size={Math.round(14 * viewportScale)}
                         imgClassName="object-contain"
+                        faviconApi={faviconApi}
                       />
                     </span>
                     <span className="font-medium tracking-tight">{engine.name}</span>

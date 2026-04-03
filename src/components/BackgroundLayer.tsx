@@ -12,7 +12,6 @@ export const BackgroundLayer: React.FC<BackgroundLayerProps> = ({ background, is
     <div className="fixed inset-0 z-0">
       {isBackgroundUrl ? (
         <img
-          key={background}
           src={background}
           alt="Background"
           className="w-full h-full object-cover transition-opacity duration-700"

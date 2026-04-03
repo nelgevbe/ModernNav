@@ -2,7 +2,10 @@ import React, { useState } from "react";
 import { Sliders, RotateCcw, Save, Wand2, Loader2, Image as ImageIcon } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { DEFAULT_BACKGROUND } from "../../services/storage";
+import { DEFAULT_LAYOUT_UI } from "../../constants/defaults";
 import { getDominantColor } from "../../utils/color";
+import { useViewportScale } from "../../hooks/useViewportScale";
+import { getIconSize } from "../../utils/favicon";
 
 interface AppearanceTabProps {
   currentBackground: string;
@@ -25,9 +28,11 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
   currentThemeColor,
   currentThemeAuto,
   onUpdate,
-  currentLayout = { width: 900, cardWidth: 96, cardHeight: 96, cols: 6 },
+  currentLayout = DEFAULT_LAYOUT_UI,
 }) => {
   const { t } = useLanguage();
+  const viewportScale = useViewportScale();
+  const s = (n) => getIconSize(n, viewportScale);
 
   // Local state for inputs (UI Preview)
   const [bgInput, setBgInput] = useState(currentBackground);
@@ -97,12 +102,12 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
 
   // Dynamic Styles: Overrides global CSS variables strictly within this tab
   // This enables real-time preview of buttons/accents without re-rendering the whole app
-  const previewStyles = {
+  const previewStyles: Record<string, string | number> = {
     "--theme-primary": themeColorInput,
     "--theme-hover": `color-mix(in srgb, ${themeColorInput}, black 10%)`,
     "--theme-active": `color-mix(in srgb, ${themeColorInput}, black 20%)`,
     "--theme-light": `color-mix(in srgb, ${themeColorInput}, white 30%)`,
-  } as React.CSSProperties;
+  };
 
   return (
     <div
@@ -145,7 +150,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                 <label className="label-xs pl-1">{t("bg_url_label")}</label>
                 <div className="relative group/input text-sm">
                   <ImageIcon
-                    size={14}
+                    size={s(16)}
                     className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
                   />
                   <input
@@ -181,10 +186,10 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                     title={t("btn_auto_extract")}
                   >
                     {isExtracting ? (
-                      <Loader2 size={14} className="animate-spin" />
+                      <Loader2 size={s(16)} className="animate-spin" />
                     ) : (
                       <Wand2
-                        size={14}
+                        size={s(16)}
                         className="group-hover:text-[var(--theme-primary)] transition-colors"
                       />
                     )}
@@ -203,7 +208,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
           <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-slate-700/30 rounded-lg text-slate-300">
-                <Sliders size={18} />
+                <Sliders size={s(18)} />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white tracking-tight">
@@ -343,14 +348,14 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
             onClick={handleResetBackground}
             className="btn-secondary flex-1 py-2.5 rounded-2xl tracking-[0.15em] font-bold uppercase group"
           >
-            <RotateCcw size={16} className="group-active:rotate-[-90deg] transition-transform" />
+            <RotateCcw size={s(14)} className="group-active:rotate-[-90deg] transition-transform" />
             <span className="text-[10px]">{t("reset_bg_btn")}</span>
           </button>
           <button
             onClick={handleUpdateSettings}
             className="btn-primary flex-1 py-2.5 rounded-2xl tracking-[0.2em] text-[11px]"
           >
-            <Save size={16} />
+            <Save size={s(14)} />
             <span>{t("update_bg_btn")}</span>
           </button>
         </div>

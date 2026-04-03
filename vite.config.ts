@@ -31,6 +31,11 @@ export default defineConfig({
           },
         ],
       },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        cleanupOutdatedCaches: true,
+      },
     }),
   ],
   css: {
@@ -50,6 +55,9 @@ export default defineConfig({
     minify: "terser",
     rollupOptions: {
       output: {
+        chunkFileNames: "assets/js/[name]-[hash].js",
+        entryFileNames: "assets/js/[name]-[hash].js",
+        assetFileNames: "assets/[ext]/[name]-[hash].[ext]",
         manualChunks(id) {
           if (id.includes("node_modules")) {
             if (id.includes("lucide-react")) {

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   Globe,
   Type,
-  Terminal,
   Save,
   CheckCircle2,
   Github,
@@ -13,6 +12,14 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { UserPreferences, FooterLink } from "../../types";
+import {
+  DEFAULT_SITE_TITLE,
+  DEFAULT_FAVICON_API,
+  DEFAULT_FOOTER_GITHUB,
+  DEFAULT_FOOTER_LINKS,
+} from "../../constants/defaults";
+import { useViewportScale } from "../../hooks/useViewportScale";
+import { getIconSize } from "../../utils/favicon";
 
 interface GeneralTabProps {
   prefs: UserPreferences;
@@ -21,11 +28,13 @@ interface GeneralTabProps {
 
 export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
   const { t } = useLanguage();
+  const viewportScale = useViewportScale();
+  const s = (n) => getIconSize(n, viewportScale);
   const [formData, setFormData] = useState({
-    siteTitle: prefs.siteTitle || "ModernNav",
-    faviconApi: prefs.faviconApi || "https://favicon.im/{domain}?larger=true",
-    footerGithub: prefs.footerGithub || "https://github.com/lyan0220",
-    footerLinks: prefs.footerLinks || [],
+    siteTitle: prefs.siteTitle || DEFAULT_SITE_TITLE,
+    faviconApi: prefs.faviconApi || DEFAULT_FAVICON_API,
+    footerGithub: prefs.footerGithub || DEFAULT_FOOTER_GITHUB,
+    footerLinks: prefs.footerLinks || DEFAULT_FOOTER_LINKS,
   });
   const [saveStatus, setSaveStatus] = useState(false);
 
@@ -62,7 +71,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
           {/* Site Title */}
           <div className="panel-base space-y-3">
             <div className="flex items-center gap-2">
-              <Type size={14} className="text-slate-400" />
+              <Type size={s(14)} className="text-slate-400" />
               <h4 className="label-xs mb-0">{t("label_site_title")}</h4>
             </div>
             <input
@@ -76,7 +85,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
           {/* GitHub Link */}
           <div className="panel-base space-y-3">
             <div className="flex items-center gap-2">
-              <Github size={14} className="text-slate-400" />
+              <Github size={s(14)} className="text-slate-400" />
               <h4 className="label-xs mb-0">{t("label_github_link")}</h4>
             </div>
             <input
@@ -91,7 +100,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
         {/* Row 2: Favicon API */}
         <div className="panel-base space-y-2">
           <div className="flex items-center gap-2">
-            <Globe size={14} className="text-slate-400" />
+            <Globe size={s(14)} className="text-slate-400" />
             <h4 className="label-xs mb-0">{t("label_favicon_api")}</h4>
           </div>
           <div className="space-y-1.5">
@@ -103,7 +112,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
               placeholder="https://favicon.im/{domain}"
             />
             <div className="flex gap-1.5 items-start px-1">
-              <Info size={12} className="text-slate-500 mt-0.5 shrink-0" />
+              <Info size={s(12)} className="text-slate-500 mt-0.5 shrink-0" />
               <p className="text-[10px] text-slate-500 leading-relaxed">
                 {t("label_favicon_api_desc")}
               </p>
@@ -115,7 +124,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
         <div className="bg-slate-800/40 p-4 rounded-xl border border-white/[0.08] space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <LinkIcon size={14} className="text-slate-400" />
+              <LinkIcon size={s(14)} className="text-slate-400" />
               <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                 {t("label_friendship_links")}
               </h4>
@@ -124,7 +133,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
               onClick={addFooterLink}
               className="flex items-center gap-1 px-3 py-1.5 bg-[var(--theme-primary)]/10 hover:bg-[var(--theme-primary)]/20 text-[var(--theme-primary)] rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all"
             >
-              <Plus size={12} /> {t("btn_add_link")}
+              <Plus size={s(12)} /> {t("btn_add_link")}
             </button>
           </div>
 
@@ -149,7 +158,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
                   onClick={() => removeFooterLink(index)}
                   className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={s(14)} />
                 </button>
               </div>
             ))}
@@ -173,7 +182,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
               }
             `}
           >
-            {saveStatus ? <CheckCircle2 size={14} /> : <Save size={14} />}
+            {saveStatus ? <CheckCircle2 size={s(14)} /> : <Save size={s(14)} />}
             <span>{saveStatus ? t("msg_saved") : t("btn_update_settings")}</span>
           </button>
         </div>

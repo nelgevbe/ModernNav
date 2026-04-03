@@ -1,4 +1,5 @@
 import { ApiResponse } from "../types";
+import { ApiError } from "../types/errors";
 
 const AUTH_KEYS = {
   ACCESS_TOKEN: "modernNav_token",
@@ -6,10 +7,10 @@ const AUTH_KEYS = {
   USER_LOGGED_OUT: "modernNav_userLoggedOut",
 };
 
-/**
- * 统一 API 客户端
- * 处理带认证的请求、无感刷新 (Silent Refresh) 以及 Token 管理
- */
+const REQUEST_TIMEOUT_MS = 10000;
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1000;
+
 class ApiClient {
   private _accessToken: string | null = null;
   private _isRefreshing = false;
@@ -19,9 +20,6 @@ class ApiClient {
     this._loadTokenFromStorage();
   }
 
-  /**
-   * 从本地存储加载 Token 信息
-   */
   private _loadTokenFromStorage() {
     if (typeof window === "undefined") return;
     const token = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
@@ -32,9 +30,6 @@ class ApiClient {
     }
   }
 
-  /**
-   * 保存 Token 到本地存储
-   */
   private _saveTokenToStorage(token: string, expiresInMs: number = 60 * 60 * 1000) {
     this._accessToken = token;
     if (typeof window === "undefined") return;
@@ -44,9 +39,6 @@ class ApiClient {
     localStorage.removeItem(AUTH_KEYS.USER_LOGGED_OUT);
   }
 
-  /**
-   * 清除本地 Token 状态
-   */
   private _clearTokenStorage() {
     this._accessToken = null;
     if (typeof window === "undefined") return;
@@ -55,9 +47,6 @@ class ApiClient {
     localStorage.setItem(AUTH_KEYS.USER_LOGGED_OUT, "true");
   }
 
-  /**
-   * 获取当前有效 Access Token
-   */
   async getAccessToken(): Promise<string | null> {
     if (this._accessToken) {
       const expiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
@@ -66,14 +55,10 @@ class ApiClient {
       }
     }
 
-    // 如果 Token 已过期或不存在，尝试刷新
     if (localStorage.getItem(AUTH_KEYS.USER_LOGGED_OUT) === "true") return null;
     return await this.refreshAccessToken();
   }
 
-  /**
-   * 刷新 Access Token (无感刷新逻辑)
-   */
   async refreshAccessToken(): Promise<string | null> {
     if (this._isRefreshing) {
       return new Promise((resolve) => {
@@ -84,7 +69,7 @@ class ApiClient {
     this._isRefreshing = true;
 
     try {
-      const response = await fetch("/api/auth", {
+      const response = await this._fetchWithTimeout("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "refresh" }),
@@ -97,7 +82,6 @@ class ApiClient {
         this._onTokenRefreshed(newToken);
         return newToken;
       } else {
-        // 刷新失败（例如 Refresh Token 过期）
         this._clearTokenStorage();
         this._onTokenRefreshed(null);
         return null;
@@ -116,14 +100,41 @@ class ApiClient {
     this._refreshSubscribers = [];
   }
 
-  /**
-   * 基础请求封装
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async request<T = any>(path: string, options: RequestInit = {}): Promise<T> {
-    const url = path.startsWith("http") ? path : path;
+  private _fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-    // 自动附加 Authorization 头（除非明确指定不附加）
+    return fetch(url, {
+      ...options,
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
+  }
+
+  private async _fetchWithRetry(
+    url: string,
+    options: RequestInit,
+    maxRetries = MAX_RETRIES
+  ): Promise<Response> {
+    let lastError: Error;
+
+    for (let i = 0; i <= maxRetries; i++) {
+      try {
+        const response = await this._fetchWithTimeout(url, options);
+        if (response.ok || response.status === 401) return response;
+        lastError = new ApiError(`HTTP ${response.status}`, response.status);
+      } catch (error) {
+        lastError = error as Error;
+        if (i < maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * (i + 1)));
+        }
+      }
+    }
+    throw lastError!;
+  }
+
+  async request<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+    const url = path.startsWith("http") ? path : `${window.location.origin}${path}`;
+
     const headers = new Headers(options.headers || {});
     if (!headers.has("Authorization")) {
       const token = await this.getAccessToken();
@@ -136,41 +147,40 @@ class ApiClient {
       headers.set("Content-Type", "application/json");
     }
 
-    const response = await fetch(url, { ...options, headers });
+    const response = await this._fetchWithRetry(url, { ...options, headers });
 
-    // 处理 401 响应（Token 可能在请求发送间隙过期）
     if (response.status === 401) {
       const newToken = await this.refreshAccessToken();
       if (newToken) {
-        // 重试原始请求
         headers.set("Authorization", `Bearer ${newToken}`);
-        const retryResponse = await fetch(url, { ...options, headers });
+        const retryResponse = await this._fetchWithTimeout(url, { ...options, headers });
         const data = await retryResponse.json();
         if (!retryResponse.ok) {
-          throw new Error(
-            (data as ApiResponse).error || `HTTP error! status: ${retryResponse.status}`
+          throw new ApiError(
+            (data as ApiResponse).error || `HTTP error! status: ${retryResponse.status}`,
+            retryResponse.status
           );
         }
         return data as T;
       } else {
-        throw new Error("Unauthorized: Session expired");
+        throw new ApiError("Unauthorized: Session expired", 401);
       }
     }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      throw new ApiError(
+        errorData.error || `HTTP error! status: ${response.status}`,
+        response.status
+      );
     }
 
     return await response.json();
   }
 
-  /**
-   * 登录
-   */
   async login(code: string): Promise<boolean> {
     try {
-      const response = await fetch("/api/auth", {
+      const response = await this._fetchWithTimeout("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "login", code }),
@@ -182,27 +192,21 @@ class ApiClient {
         return true;
       }
 
-      // 处理 429 错误
       if (response.status === 429) {
-        const error = new Error("RATE_LIMITED");
-        (error as any).status = 429;
+        const error = new ApiError("RATE_LIMITED", 429);
         throw error;
       }
 
       return false;
     } catch (error) {
       console.error("Login failed:", error);
-      // 重新抛出错误以便上层处理
       throw error;
     }
   }
 
-  /**
-   * 登出
-   */
   async logout(): Promise<void> {
     try {
-      await fetch("/api/auth", {
+      await this._fetchWithTimeout("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "logout" }),
@@ -212,9 +216,6 @@ class ApiClient {
     }
   }
 
-  /**
-   * 检查是否已验证
-   */
   async isAuthenticated(): Promise<boolean> {
     const token = await this.getAccessToken();
     return !!token;

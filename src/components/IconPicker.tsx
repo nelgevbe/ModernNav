@@ -1,5 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
+import { useViewportScale } from "../hooks/useViewportScale";
+import { getIconSize } from "../utils/favicon";
 
 // Cache for dynamically loaded icon modules
 let iconsModuleCache: any = null;
@@ -10,7 +12,6 @@ async function loadIconsModule() {
   return iconsModuleCache;
 }
 
-// Categorized Suggestions
 const SUGGESTED_ICONS = [
   "Link",
   "ExternalLink",
@@ -113,9 +114,10 @@ export const IconPicker: React.FC<IconPickerProps> = ({
   pickerRef,
 }) => {
   const { t } = useLanguage();
+  const viewportScale = useViewportScale();
+  const s = (n) => getIconSize(n, viewportScale);
   const [iconsModule, setIconsModule] = useState<any | null>(null);
 
-  // Load icons module once
   useEffect(() => {
     let mounted = true;
     if (show && !iconsModule) {
@@ -131,9 +133,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
   const filteredIconNames = useMemo(() => {
     if (!searchTerm.trim()) return SUGGESTED_ICONS;
     const search = searchTerm.toLowerCase();
-
     if (!iconsModule) return SUGGESTED_ICONS;
-
     return Object.keys(iconsModule)
       .filter(
         (name) =>
@@ -204,7 +204,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
                       : ""
                   }`}
                 >
-                  {IconComp && <IconComp size={16} />}
+                  {IconComp && <IconComp size={s(16)} />}
                 </button>
               );
             })}

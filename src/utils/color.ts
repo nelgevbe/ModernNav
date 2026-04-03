@@ -1,5 +1,13 @@
+// Cache for dominant color extraction to avoid re-downloading images
+const colorCache = new Map<string, string>();
+
 // Helper to extract dominant color from an image URL
 export const getDominantColor = (imageSrc: string): Promise<string> => {
+  // Return cached result if available
+  if (colorCache.has(imageSrc)) {
+    return Promise.resolve(colorCache.get(imageSrc)!);
+  }
+
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = "Anonymous";
@@ -47,7 +55,9 @@ export const getDominantColor = (imageSrc: string): Promise<string> => {
         if (newL < 0.55) newL = 0.55;
         if (newL > 0.75) newL = 0.75;
 
-        resolve(hslToHex(Math.round(h * 360), Math.round(newS * 100), Math.round(newL * 100)));
+        const hex = hslToHex(Math.round(h * 360), Math.round(newS * 100), Math.round(newL * 100));
+        colorCache.set(imageSrc, hex);
+        resolve(hex);
       } catch (e) {
         // Fallback for CORS issues (tainted canvas)
         console.warn("Could not extract color due to CORS:", e);

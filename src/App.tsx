@@ -3,13 +3,16 @@ import { FolderOpen } from "lucide-react";
 import { SmartIcon } from "./components/SmartIcon";
 import { SearchBar } from "./components/SearchBar";
 import { GlassCard } from "./components/GlassCard";
-import { LinkManagerModal } from "./components/LinkManagerModal";
+const LinkManagerModal = React.lazy(() =>
+  import("./components/LinkManagerModal").then((module) => ({ default: module.LinkManagerModal }))
+);
 import { ToastContainer } from "./components/Toast";
 import { SyncIndicator } from "./components/SyncIndicator";
 import { BackgroundLayer } from "./components/BackgroundLayer";
 import { CategoryNav } from "./components/CategoryNav";
 import { Footer } from "./components/Footer";
 import { SkeletonLoader } from "./components/SkeletonLoader";
+import { ModalSkeleton } from "./components/ModalSkeleton";
 import { useDashboardLogic } from "./hooks/useDashboardLogic";
 import { useResponsiveColumns } from "./hooks/useResponsiveColumns";
 import { useViewportScale } from "./hooks/useViewportScale";
@@ -48,12 +51,17 @@ const App: React.FC = () => {
 
   // Apply scale to JS-driven px values so they match the CSS rem scaling system.
   // User-saved values remain at their 1080p baseline; we scale at render time.
+  // CSS clamp() in index.css handles text/padding scaling automatically via rem units.
   const scaledCardHeight = Math.round(cardHeight * viewportScale);
   const scaledCardWidth = Math.round(cardWidth * viewportScale);
   const scaledMaxContainerWidth = Math.round(maxContainerWidth * viewportScale);
 
   // Dynamic Column Calculation (uses scaled values for accurate 2K/4K layout)
-  const effectiveColumns = useResponsiveColumns(gridColumns, scaledMaxContainerWidth, scaledCardWidth);
+  const effectiveColumns = useResponsiveColumns(
+    gridColumns,
+    scaledMaxContainerWidth,
+    scaledCardWidth
+  );
 
   useEffect(() => {
     document.title = siteTitle || "ModernNav";
@@ -129,22 +137,18 @@ const App: React.FC = () => {
         style={{ maxWidth: `${scaledMaxContainerWidth}px` }}
       >
         <section className="w-full mb-14 3xl:mb-20 4xl:mb-24 animate-fade-in-down relative z-[70] isolation-isolate">
-          <SearchBar 
-            themeMode={themeMode} 
-            faviconApi={faviconApi} 
-            viewportScale={viewportScale}
-          />
+          <SearchBar themeMode={themeMode} faviconApi={faviconApi} viewportScale={viewportScale} />
         </section>
 
         <main className="w-full pb-20 relative z-[10] space-y-8">
           {visibleSubCategory ? (
             <div key={visibleSubCategory.id} className="">
               {/* category header */}
-              <div 
-                className="flex items-center" 
-                style={{ 
-                  gap: `${Math.round(16 * viewportScale)}px`, 
-                  marginBottom: `${Math.round(24 * viewportScale)}px` 
+              <div
+                className="flex items-center"
+                style={{
+                  gap: `${Math.round(16 * viewportScale)}px`,
+                  marginBottom: `${Math.round(24 * viewportScale)}px`,
                 }}
               >
                 <div
@@ -206,6 +210,8 @@ const App: React.FC = () => {
                           imgClassName="object-contain drop-shadow-md rounded-md"
                           size={scaledIconSize}
                           style={{ width: `${scaledIconSize}px`, height: `${scaledIconSize}px` }}
+                          faviconApi={faviconApi}
+                          sourceUrl={link.icon ? undefined : link.url}
                         />
                       </div>
                       <span
@@ -244,36 +250,40 @@ const App: React.FC = () => {
 
       <Footer isDark={isDark} github={footerGithub} links={footerLinks} />
 
-      <LinkManagerModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        categories={categories}
-        setCategories={actions.setCategories}
-        background={background}
-        prefs={{
-          cardOpacity,
-          themeColor,
-          themeMode,
-          themeColorAuto,
-          maxContainerWidth,
-          cardWidth,
-          cardHeight,
-          gridColumns,
-          siteTitle,
-          faviconApi,
-          footerGithub,
-          footerLinks,
-        }}
-        onUpdateAppearance={(
-          url: string,
-          opacity: number,
-          color?: string,
-          layout?: any,
-          themeAuto?: boolean,
-          extra?: any
-        ) => actions.handleUpdateAppearance(url, opacity, color, layout, themeAuto, extra)}
-        isDefaultCode={isDefaultCode}
-      />
+      {isModalOpen && (
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <LinkManagerModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            categories={categories}
+            setCategories={actions.setCategories}
+            background={background}
+            prefs={{
+              cardOpacity,
+              themeColor,
+              themeMode,
+              themeColorAuto,
+              maxContainerWidth,
+              cardWidth,
+              cardHeight,
+              gridColumns,
+              siteTitle,
+              faviconApi,
+              footerGithub,
+              footerLinks,
+            }}
+            onUpdateAppearance={(
+              url: string,
+              opacity: number,
+              color?: string,
+              layout?: any,
+              themeAuto?: boolean,
+              extra?: any
+            ) => actions.handleUpdateAppearance(url, opacity, color, layout, themeAuto, extra)}
+            isDefaultCode={isDefaultCode}
+          />
+        </React.Suspense>
+      )}
     </div>
   );
 };

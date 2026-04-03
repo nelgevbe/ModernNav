@@ -3,6 +3,8 @@ import { Database, Download, Upload, AlertCircle } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { storageService } from "../../services/storage";
 import { Category, UserPreferences } from "../../types";
+import { useViewportScale } from "../../hooks/useViewportScale";
+import { getIconSize } from "../../utils/favicon";
 
 interface DataTabProps {
   onImport: (categories: Category[], background?: string, prefs?: UserPreferences) => void;
@@ -12,6 +14,8 @@ interface DataTabProps {
 
 export const DataTab: React.FC<DataTabProps> = ({ onImport, background, prefs }) => {
   const { t } = useLanguage();
+  const viewportScale = useViewportScale();
+  const s = (n: number) => getIconSize(n, viewportScale);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<{
     type: "success" | "error" | null;
@@ -28,7 +32,6 @@ export const DataTab: React.FC<DataTabProps> = ({ onImport, background, prefs })
     try {
       const importedData = await storageService.importData(file);
 
-      // Callback to parent to update state
       onImport(importedData.categories || [], importedData.background, importedData.prefs);
 
       setImportStatus({ type: "success", message: t("import_success") });
@@ -47,7 +50,7 @@ export const DataTab: React.FC<DataTabProps> = ({ onImport, background, prefs })
       <div className="space-y-6">
         <div className="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-6 flex gap-5 items-start">
           <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400 shrink-0">
-            <Database size={24} />
+            <Database size={s(24)} />
           </div>
           <div>
             <h3 className="text-blue-400 font-bold tracking-tight mb-1">{t("data_risk_title")}</h3>
@@ -62,7 +65,7 @@ export const DataTab: React.FC<DataTabProps> = ({ onImport, background, prefs })
             className="btn-secondary w-full py-3 font-bold uppercase tracking-widest group"
           >
             <Download
-              size={18}
+              size={s(18)}
               className="text-blue-400 group-hover:translate-y-0.5 transition-transform"
             />{" "}
             {t("download_backup")}
@@ -83,7 +86,7 @@ export const DataTab: React.FC<DataTabProps> = ({ onImport, background, prefs })
             className="btn-secondary w-full py-3 font-bold uppercase tracking-widest group"
           >
             <Upload
-              size={18}
+              size={s(18)}
               className="text-emerald-400 group-hover:-translate-y-0.5 transition-transform"
             />{" "}
             {t("select_import")}
@@ -96,7 +99,7 @@ export const DataTab: React.FC<DataTabProps> = ({ onImport, background, prefs })
                   : "bg-red-500/10 border-red-500/20 text-red-400"
               }`}
             >
-              <AlertCircle size={18} /> {importStatus.message}
+              <AlertCircle size={s(18)} /> {importStatus.message}
             </div>
           )}
         </div>

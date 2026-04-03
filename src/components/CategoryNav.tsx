@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useState } from "react";
 import { ChevronDown, Globe, Moon, Sun, Settings, Menu, X } from "lucide-react";
 import { Category, ThemeMode } from "../types";
 import { useLanguage } from "../contexts/LanguageContext";
+import { useViewportScale } from "../hooks/useViewportScale";
+import { getIconSize } from "../utils/favicon";
 
 interface CategoryNavProps {
   categories: Category[];
@@ -27,6 +29,8 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   openSettings,
 }) => {
   const { t, language } = useLanguage();
+  const viewportScale = useViewportScale();
+  const s = (n: number) => getIconSize(n, viewportScale);
   const isDark = themeMode === ThemeMode.Dark;
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -163,7 +167,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
               isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"
             }`}
           >
-            <Menu size={20} />
+            <Menu size={s(20)} />
           </button>
 
           {/* Right: Quick Actions */}
@@ -174,7 +178,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                 isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"
               }`}
             >
-              <Globe size={18} />
+              <Globe size={s(18)} />
             </button>
             <button
               onClick={toggleTheme}
@@ -182,7 +186,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                 isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"
               }`}
             >
-              {isDark ? <Moon size={18} /> : <Sun size={18} />}
+              {isDark ? <Moon size={s(18)} /> : <Sun size={s(18)} />}
             </button>
             <button
               onClick={openSettings}
@@ -190,7 +194,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                 isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"
               }`}
             >
-              <Settings size={18} />
+              <Settings size={s(18)} />
             </button>
           </div>
         </div>
@@ -228,7 +232,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
               onClick={() => setIsExpanded(false)}
               className={`p-2 rounded-full ${isDark ? "hover:bg-white/5 text-white/40" : "hover:bg-black/5 text-slate-400"}`}
             >
-              <X size={20} />
+              <X size={s(20)} />
             </button>
           </div>
 
@@ -253,7 +257,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                     <span className="text-sm">{cat.title}</span>
                     {cat.subCategories.length > 1 && (
                       <ChevronDown
-                        size={14}
+                        size={s(14)}
                         className={`transition-transform duration-300 ${isActive ? "rotate-180" : "-rotate-90 opacity-40"}`}
                       />
                     )}
@@ -325,7 +329,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                       <span className="truncate max-w-[120px] relative z-10">{cat.title}</span>
                       {!hasSingleDefault && (
                         <ChevronDown
-                          size={14}
+                          size={s(14)}
                           className={`relative z-10 transition-transform duration-300 group-hover:rotate-180 ${
                             isActive ? "text-current" : "opacity-50"
                           }`}
@@ -381,13 +385,13 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
 
             {/* SECTION 3: Actions */}
             <button onClick={toggleLanguage} className={actionButtonClass} title="Switch Language">
-              <Globe size={18} />
+              <Globe size={s(18)} />
             </button>
             <button onClick={toggleTheme} className={actionButtonClass} title="Toggle Theme">
-              {isDark ? <Moon size={18} /> : <Sun size={18} />}
+              {isDark ? <Moon size={s(18)} /> : <Sun size={s(18)} />}
             </button>
             <button onClick={openSettings} className={actionButtonClass} title={t("settings")}>
-              <Settings size={18} />
+              <Settings size={s(18)} />
             </button>
           </div>
         </div>

@@ -2,9 +2,13 @@ import React, { useState } from "react";
 import { Shield, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { storageService } from "../../services/storage";
+import { useViewportScale } from "../../hooks/useViewportScale";
+import { getIconSize } from "../../utils/favicon";
 
 export const SecurityTab: React.FC = () => {
   const { t } = useLanguage();
+  const viewportScale = useViewportScale();
+  const s = (n: number) => getIconSize(n, viewportScale);
   const [passwordForm, setPasswordForm] = useState({
     current: "",
     new: "",
@@ -44,10 +48,16 @@ export const SecurityTab: React.FC = () => {
 
   return (
     <div className="p-8 w-full max-w-2xl mx-auto overflow-y-auto animate-fade-in custom-scrollbar">
-      <div className="bg-slate-800/40 p-8 rounded-2xl border border-white/[0.08]">
+      <div
+        className="p-8 rounded-2xl border"
+        style={{ backgroundColor: "var(--modal-surface-alt)", borderColor: "var(--modal-border)" }}
+      >
         <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-red-500/10 rounded-xl text-red-400">
-            <Shield size={24} />
+          <div
+            className="p-3 rounded-xl"
+            style={{ backgroundColor: "rgba(239,68,68,0.1)", color: "#f87171" }}
+          >
+            <Shield size={s(24)} />
           </div>
           <div>
             <h3 className="text-lg font-bold text-white tracking-tight">{t("access_control")}</h3>
@@ -88,7 +98,7 @@ export const SecurityTab: React.FC = () => {
               onClick={() => setShowPassword(!showPassword)}
               className="text-[10px] font-bold text-slate-500 flex items-center gap-2 hover:text-white transition-colors uppercase tracking-widest"
             >
-              {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}{" "}
+              {showPassword ? <EyeOff size={s(14)} /> : <Eye size={s(14)} />}{" "}
               {showPassword ? t("hide_codes") : t("show_codes")}
             </button>
             <button
@@ -106,7 +116,7 @@ export const SecurityTab: React.FC = () => {
                   : "bg-red-500/10 border-red-500/20 text-red-400"
               }`}
             >
-              <AlertCircle size={18} />
+              <AlertCircle size={s(18)} />
               {passwordStatus.message}
             </div>
           )}

@@ -2,6 +2,8 @@ import React from "react";
 import { Link as LinkIcon, Github } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { FooterLink } from "../types";
+import { useViewportScale } from "../hooks/useViewportScale";
+import { getIconSize } from "../utils/favicon";
 
 interface FooterProps {
   isDark: boolean;
@@ -11,6 +13,8 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ isDark, github, links }) => {
   const { t } = useLanguage();
+  const viewportScale = useViewportScale();
+  const s = (n: number) => getIconSize(n, viewportScale);
 
   return (
     <footer
@@ -29,7 +33,7 @@ export const Footer: React.FC<FooterProps> = ({ isDark, github, links }) => {
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 hover:text-[var(--theme-primary)] cursor-pointer transition-colors"
           >
-            <LinkIcon size={18} /> {link.title}
+            <LinkIcon size={s(18)} /> {link.title}
           </a>
         ))}
         {github && (
@@ -39,7 +43,7 @@ export const Footer: React.FC<FooterProps> = ({ isDark, github, links }) => {
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 hover:text-[var(--theme-primary)] cursor-pointer transition-colors"
           >
-            <Github size={18} /> {t("about_us") || "GitHub"}
+            <Github size={s(18)} /> {t("about_us") || "GitHub"}
           </a>
         )}
       </div>

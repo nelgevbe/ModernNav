@@ -19,6 +19,8 @@ import { IconPicker } from "../IconPicker";
 import { SmartIcon } from "../SmartIcon";
 import { useCategoryDragDrop } from "../../hooks/useCategoryDragDrop";
 import { getFaviconUrl } from "../../utils/favicon";
+import { useViewportScale } from "../../hooks/useViewportScale";
+import { getIconSize } from "../../utils/favicon";
 
 interface ContentTabProps {
   categories: Category[];
@@ -34,6 +36,8 @@ export const ContentTab: React.FC<ContentTabProps> = ({
   faviconApi,
 }) => {
   const { t } = useLanguage();
+  const viewportScale = useViewportScale();
+  const s = (n: number) => getIconSize(n, viewportScale);
 
   // --- UI State ---
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
@@ -446,9 +450,9 @@ export const ContentTab: React.FC<ContentTabProps> = ({
   return (
     <div className="flex w-full h-full animate-fade-in">
       {/* Sidebar - Categories */}
-      <div className="w-64 border-r border-white/[0.08] flex flex-col bg-slate-950/30">
-        <div className="p-4 border-b border-white/[0.08] h-14 flex items-center">
-          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+      <div className="w-64 border-r modal-border flex flex-col modal-sidebar">
+        <div className="p-4 border-b modal-border h-14 flex items-center">
+          <h3 className="text-[10px] font-black modal-text-muted uppercase tracking-[0.2em]">
             {t("sidebar_categories")}
           </h3>
         </div>
@@ -472,7 +476,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
               className={`group flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-all border ${
                 selectedCategoryId === cat.id
                   ? "bg-[var(--theme-primary)]/10 border-[var(--theme-primary)] text-[var(--theme-primary)]"
-                  : "text-slate-400 border-transparent hover:bg-white/[0.03] hover:text-[var(--theme-primary)]"
+                  : "modal-text-secondary border-transparent hover:bg-white/[0.03] hover:text-[var(--theme-primary)]"
               } ${
                 draggedCategoryIndex === index
                   ? draggedCategoryIndex === index
@@ -532,7 +536,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
             </div>
           ))}
         </div>
-        <div className="p-3 border-t border-white/[0.08] bg-slate-950/50">
+        <div className="p-3 border-t modal-border modal-sidebar-footer">
           <div className="flex gap-2">
             <input
               type="text"
@@ -553,10 +557,13 @@ export const ContentTab: React.FC<ContentTabProps> = ({
       </div>
 
       {/* Main Content - Submenus and Links */}
-      <div className="flex-1 flex flex-col bg-slate-900 relative">
-        <div className="px-6 border-b border-white/[0.08] flex items-center gap-4 bg-white/[0.01] h-14 shrink-0 backdrop-blur-md">
+      <div className="flex-1 flex flex-col modal-content relative">
+        <div className="px-6 border-b modal-border flex items-center gap-4 modal-toolbar-bg h-14 shrink-0 backdrop-blur-md">
           <div className="relative flex-1 max-w-md">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search
+              size={s(14)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 modal-text-muted"
+            />
             <input
               type="text"
               placeholder={t("search_links_placeholder")}
@@ -580,14 +587,14 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                 : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
             }`}
           >
-            {isAddingSubMenu ? <X size={14} /> : <FolderPlus size={14} />}{" "}
+            {isAddingSubMenu ? <X size={s(14)} /> : <FolderPlus size={s(14)} />}{" "}
             {isAddingSubMenu ? t("cancel") : t("add_submenu")}
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
           {isAddingSubMenu && (
-            <div className="mb-6 bg-slate-800/40 border border-white/[0.08] p-4 rounded-xl animate-fade-in-down flex gap-3 items-center">
+            <div className="mb-6 modal-card-bg border modal-border p-4 rounded-xl animate-fade-in-down flex gap-3 items-center">
               <input
                 autoFocus
                 type="text"
@@ -608,15 +615,15 @@ export const ContentTab: React.FC<ContentTabProps> = ({
 
           <div className="space-y-6">
             {categories.find((c) => c.id === selectedCategoryId)?.subCategories.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-600 space-y-6">
-                <Folder size={48} strokeWidth={1} className="opacity-30" />
+              <div className="flex flex-col items-center justify-center py-20 modal-text-dim space-y-6">
+                <Folder size={s(48)} strokeWidth={1} className="opacity-30" />
                 <p className="text-sm font-medium">{t("no_submenus")}</p>
                 <div className="flex gap-4">
                   <button
                     onClick={() => setIsAddingSubMenu(true)}
-                    className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs font-bold uppercase tracking-widest border border-white/5 flex items-center gap-2"
+                    className="px-4 py-2 rounded-lg modal-card-bg modal-text-light text-xs font-bold uppercase tracking-widest border modal-border-light flex items-center gap-2"
                   >
-                    <FolderPlus size={14} /> {t("add_submenu")}
+                    <FolderPlus size={s(14)} /> {t("add_submenu")}
                   </button>
                   <button
                     onClick={handleAddLinkDirectly}
