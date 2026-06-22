@@ -25,12 +25,31 @@ class ApiClient {
     const token = localStorage.getItem(AUTH_KEYS.ACCESS_TOKEN);
     const expiry = localStorage.getItem(AUTH_KEYS.TOKEN_EXPIRY);
 
-    if (token && expiry && parseInt(expiry, 10) > Date.now()) {
-      this._accessToken = token;
+    if (!this._isValidStoredToken(token) || !expiry || parseInt(expiry, 10) <= Date.now()) {
+      if (token !== null || expiry !== null) {
+        localStorage.removeItem(AUTH_KEYS.ACCESS_TOKEN);
+        localStorage.removeItem(AUTH_KEYS.TOKEN_EXPIRY);
+      }
+      return;
     }
+    this._accessToken = token;
+  }
+
+  private _isValidStoredToken(token: string | null): token is string {
+    return (
+      typeof token === "string" &&
+      token.length > 0 &&
+      token !== "undefined" &&
+      token !== "null" &&
+      token.includes(".")
+    );
   }
 
   private _saveTokenToStorage(token: string, expiresInMs: number = 60 * 60 * 1000) {
+    if (typeof token !== "string" || token.length === 0) {
+      this._clearTokenStorage();
+      return;
+    }
     this._accessToken = token;
     if (typeof window === "undefined") return;
     const expiryTime = Date.now() + expiresInMs;
@@ -77,10 +96,15 @@ class ApiClient {
 
       if (response.ok) {
         const data = await response.json();
-        const newToken = data.accessToken;
-        this._saveTokenToStorage(newToken);
-        this._onTokenRefreshed(newToken);
-        return newToken;
+        const newToken = data?.accessToken;
+        if (typeof newToken === "string" && newToken.length > 0) {
+          this._saveTokenToStorage(newToken);
+          this._onTokenRefreshed(newToken);
+          return newToken;
+        }
+        this._clearTokenStorage();
+        this._onTokenRefreshed(null);
+        return null;
       } else {
         this._clearTokenStorage();
         this._onTokenRefreshed(null);

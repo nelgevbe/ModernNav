@@ -153,7 +153,7 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
       const rfToken = request.headers.get("Cookie")?.match(/refresh_token=([^;]+)/)?.[1];
 
       if (!rfToken) {
-        return respondWithCookie({ error: ERROR_MESSAGES.INVALID_TOKEN }, "", true);
+        return respondWithCookie({ error: ERROR_MESSAGES.INVALID_TOKEN }, "", true, 401);
       }
 
       try {
@@ -161,11 +161,11 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
         const isValid = await verify(rfToken, storedCode);
         if (!isValid) {
           console.log("Refresh token invalid or expired");
-          return respondWithCookie({ error: ERROR_MESSAGES.INVALID_TOKEN }, "", true);
+          return respondWithCookie({ error: ERROR_MESSAGES.INVALID_TOKEN }, "", true, 401);
         }
       } catch (error) {
         console.error("Token verification error during refresh:", error);
-        return respondWithCookie({ error: ERROR_MESSAGES.INVALID_TOKEN }, "", true);
+        return respondWithCookie({ error: ERROR_MESSAGES.INVALID_TOKEN }, "", true, 401);
       }
 
       return respondWithCookie(
