@@ -1,14 +1,15 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { useLanguage } from "../contexts/LanguageContext";
 import { useViewportScale } from "../hooks/useViewportScale";
 import { getIconSize } from "../utils/favicon";
 
 // Cache for dynamically loaded icon modules
-let iconsModuleCache: any = null;
+type LucideIconComponent = React.ComponentType<{ size?: number; className?: string }>;
+type LucideModule = Record<string, LucideIconComponent | unknown>;
+let iconsModuleCache: LucideModule | null = null;
 
-async function loadIconsModule() {
+async function loadIconsModule(): Promise<LucideModule> {
   if (iconsModuleCache) return iconsModuleCache;
-  iconsModuleCache = await import("lucide-react");
+  iconsModuleCache = (await import("lucide-react")) as LucideModule;
   return iconsModuleCache;
 }
 
@@ -113,10 +114,9 @@ export const IconPicker: React.FC<IconPickerProps> = ({
   onSearchChange,
   pickerRef,
 }) => {
-  const { t } = useLanguage();
   const viewportScale = useViewportScale();
-  const s = (n) => getIconSize(n, viewportScale);
-  const [iconsModule, setIconsModule] = useState<any | null>(null);
+  const s = (n: number) => getIconSize(n, viewportScale);
+  const [iconsModule, setIconsModule] = useState<LucideModule | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -139,7 +139,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
         (name) =>
           name.toLowerCase().includes(search) &&
           name !== "createLucideIcon" &&
-          typeof (iconsModule as any)[name] === "function"
+          typeof (iconsModule as Record<string, unknown>)[name] === "function"
       )
       .slice(0, 48);
   }, [searchTerm, iconsModule]);
@@ -187,7 +187,11 @@ export const IconPicker: React.FC<IconPickerProps> = ({
           </div>
           <div className="grid grid-cols-6 gap-1.5">
             {filteredIconNames.map((name) => {
-              const IconComp = iconsModule ? (iconsModule as any)[name] : null;
+              const IconComp = iconsModule
+                ? ((iconsModule as Record<string, LucideIconComponent>)[name] as
+                    | LucideIconComponent
+                    | undefined)
+                : null;
               return (
                 <button
                   key={name}

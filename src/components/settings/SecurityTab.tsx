@@ -4,6 +4,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { storageService } from "../../services/storage";
 import { useViewportScale } from "../../hooks/useViewportScale";
 import { getIconSize } from "../../utils/favicon";
+import { SettingsContainer, SettingsSection, SettingsRow } from "./SettingsPrimitives";
 
 export const SecurityTab: React.FC = () => {
   const { t } = useLanguage();
@@ -47,63 +48,45 @@ export const SecurityTab: React.FC = () => {
   };
 
   return (
-    <div className="p-8 w-full max-w-2xl mx-auto overflow-y-auto animate-fade-in custom-scrollbar">
-      <div
-        className="p-8 rounded-2xl border"
-        style={{ backgroundColor: "var(--modal-surface-alt)", borderColor: "var(--modal-border)" }}
-      >
-        <div className="flex items-center gap-4 mb-8">
-          <div
-            className="p-3 rounded-xl"
-            style={{ backgroundColor: "rgba(239,68,68,0.1)", color: "#f87171" }}
-          >
-            <Shield size={s(24)} />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-white tracking-tight">{t("access_control")}</h3>
-            <p className="text-sm text-slate-500">{t("access_desc")}</p>
-          </div>
-        </div>
-        <form onSubmit={handleUpdate} className="space-y-5 max-w-sm mx-auto">
-          <div>
-            <label className="label-xs mb-2 tracking-[0.2em]">{t("current_code")}</label>
+    <SettingsContainer>
+      <SettingsSection icon={Shield} title={t("access_control")} description={t("access_desc")}>
+        <form onSubmit={handleUpdate} className="space-y-4">
+          <SettingsRow label={t("current_code")}>
             <input
               type={showPassword ? "text" : "password"}
               value={passwordForm.current}
               onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
-              className="input-primary py-3 px-4 focus:border-red-500"
+              className="input-primary py-3 px-4"
             />
-          </div>
-          <div>
-            <label className="label-xs mb-2 tracking-[0.2em]">{t("new_code")}</label>
+          </SettingsRow>
+          <SettingsRow label={t("new_code")}>
             <input
               type={showPassword ? "text" : "password"}
               value={passwordForm.new}
               onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
-              className="input-primary py-3 px-4 focus:border-red-500"
+              className="input-primary py-3 px-4"
             />
-          </div>
-          <div>
-            <label className="label-xs mb-2 tracking-[0.2em]">{t("confirm_code")}</label>
+          </SettingsRow>
+          <SettingsRow label={t("confirm_code")}>
             <input
               type={showPassword ? "text" : "password"}
               value={passwordForm.confirm}
               onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
-              className="input-primary py-3 px-4 focus:border-red-500"
+              className="input-primary py-3 px-4"
             />
-          </div>
-          <div className="flex items-center justify-between pt-2">
+          </SettingsRow>
+          <div className="flex items-center justify-between pt-1">
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="text-[10px] font-bold text-slate-500 flex items-center gap-2 hover:text-white transition-colors uppercase tracking-widest"
+              className="text-[10px] font-bold text-muted flex items-center gap-2 hover:text-primary transition-colors uppercase tracking-widest"
             >
               {showPassword ? <EyeOff size={s(14)} /> : <Eye size={s(14)} />}{" "}
               {showPassword ? t("hide_codes") : t("show_codes")}
             </button>
             <button
               type="submit"
-              className="bg-red-500/80 hover:bg-red-500 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all shadow-lg shadow-red-500/20"
+              className="bg-red-500/90 hover:bg-red-500 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-colors shadow-lg shadow-red-500/20"
             >
               {t("update_code_btn")}
             </button>
@@ -121,7 +104,7 @@ export const SecurityTab: React.FC = () => {
             </div>
           )}
         </form>
-      </div>
-    </div>
+      </SettingsSection>
+    </SettingsContainer>
   );
 };

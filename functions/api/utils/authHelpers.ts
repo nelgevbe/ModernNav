@@ -55,7 +55,7 @@ export async function generateToken(type: "access" | "refresh", secret: string):
 }
 
 // Cookie 助手
-export function respondWithCookie(body: any, token: string, clear = false) {
+export function respondWithCookie(body: any, token: string, clear = false, status = 200) {
   const cookie =
     "refresh_token=" +
     (clear ? "" : token) +
@@ -63,6 +63,7 @@ export function respondWithCookie(body: any, token: string, clear = false) {
     (clear ? 0 : REFRESH_TTL / 1000);
 
   return new Response(JSON.stringify(body), {
+    status,
     headers: {
       "Content-Type": "application/json",
       "Set-Cookie": cookie,

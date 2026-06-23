@@ -52,6 +52,18 @@ body {
   color: white;
 }
 
+/*
+   Theme accent defaults — JS (useThemeColor) overrides --theme-primary etc.
+   on <html> at runtime. These defaults guarantee a sane accent on first paint
+   and on direct admin access before the bootstrap query resolves.
+*/
+:root {
+  --theme-primary: #6280a3;
+  --theme-hover: color-mix(in srgb, #6280a3, black 10%);
+  --theme-active: color-mix(in srgb, #6280a3, black 20%);
+  --theme-light: color-mix(in srgb, #6280a3, white 30%);
+}
+
 /* Theme-based shadow classes */
 .shadow-themed {
   box-shadow: 0 0 15px var(--theme-primary);
@@ -165,7 +177,13 @@ body {
 
 @layer components {
   .input-primary {
-    @apply w-full bg-slate-900/50 border border-white/[0.1] rounded-lg px-3 py-2 text-white placeholder-slate-600 outline-none transition-colors duration-200 text-sm;
+    @apply w-full rounded-lg px-3 py-2 outline-none transition-colors duration-200 text-sm;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .input-primary::placeholder {
+    color: var(--text-muted);
   }
   .input-primary:focus {
     border-color: var(--theme-primary);
@@ -181,21 +199,36 @@ body {
   }
 
   .btn-secondary {
-    @apply bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 px-4 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-2;
+    @apply px-4 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-2;
+    background-color: var(--surface-hover);
+    border: 1px solid var(--border-muted);
+    color: var(--text-secondary);
+  }
+  .btn-secondary:hover {
+    background-color: var(--surface-active);
   }
 
   .btn-icon {
-    @apply p-2 text-slate-500 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-transparent;
+    @apply p-2 rounded-lg transition-colors border border-transparent;
+    color: var(--text-muted);
+    background-color: var(--surface-hover);
+  }
+  .btn-icon:hover {
+    color: var(--text);
+    background-color: var(--surface-active);
   }
 
   /* --- Panels & Cards --- */
   .panel-base {
-    @apply bg-slate-800/40 p-4 rounded-xl border border-white/[0.08];
+    @apply p-4 rounded-xl;
+    background-color: var(--surface-elevated);
+    border: 1px solid var(--border);
   }
 
   /* --- Typography --- */
   .label-xs {
-    @apply block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5;
+    @apply block text-[10px] font-bold uppercase tracking-widest mb-1.5;
+    color: var(--text-muted);
   }
 
   .tab-pill {
@@ -208,65 +241,154 @@ body {
     @apply text-slate-400 hover:text-white hover:bg-white/5;
   }
 
-  /* --- Modal Colors --- */
+  /* --- Surface / Admin tokens (unified) --- */
+  .surface-base {
+    background-color: var(--surface);
+  }
+  .surface-elevated {
+    background-color: var(--surface-elevated);
+  }
+  .surface-sunken {
+    background-color: var(--surface-sunken);
+  }
+  .surface-hover {
+    background-color: var(--surface-hover);
+  }
+  .surface-active {
+    background-color: var(--surface-active);
+  }
+  .border-default {
+    border-color: var(--border);
+  }
+  .border-muted {
+    border-color: var(--border-muted);
+  }
+  .text-primary {
+    color: var(--text);
+  }
+  .text-secondary {
+    color: var(--text-secondary);
+  }
+  .text-muted {
+    color: var(--text-muted);
+  }
+
+  /* --- Legacy modal-* aliases (kept until all consumers migrate) --- */
   .modal-bg {
-    background-color: var(--modal-primary);
+    background-color: var(--surface);
   }
   .modal-header {
-    background-color: var(--modal-primary-alt);
+    background-color: var(--surface-elevated);
   }
   .modal-content {
-    background-color: var(--modal-surface);
+    background-color: var(--surface);
   }
   .modal-sidebar {
-    background-color: var(--modal-primary-alt);
+    background-color: var(--surface-elevated);
   }
   .modal-sidebar-footer {
-    background-color: var(--modal-overlay-light);
+    background-color: var(--surface-sunken);
   }
   .modal-form-bg {
-    background-color: var(--modal-overlay-light);
+    background-color: var(--surface-sunken);
   }
   .modal-toolbar-bg {
     background-color: rgba(255, 255, 255, 0.01);
   }
   .modal-card-bg {
-    background-color: var(--modal-surface-alt);
+    background-color: var(--surface-elevated);
   }
   .modal-card-header-bg {
     background-color: rgba(255, 255, 255, 0.02);
   }
   .modal-border {
-    border-color: var(--modal-border);
+    border-color: var(--border);
   }
   .modal-border-light {
-    border-color: var(--modal-border-light);
+    border-color: var(--border-muted);
   }
   .modal-text {
-    color: var(--modal-text);
+    color: var(--text);
   }
   .modal-text-secondary {
-    color: var(--modal-text-secondary);
+    color: var(--text-secondary);
   }
   .modal-text-muted {
-    color: var(--modal-text-muted);
+    color: var(--text-muted);
   }
 }
 
-/* Modal Color Custom Properties - Edit these to change modal theme globally */
+/*
+   Design tokens — single source of truth for admin/modal/dropdown chrome.
+   Edit these once; everything that needs a chrome color reads from here.
+   Legacy --modal-* names alias to these for backwards compat.
+*/
 :root {
-  --modal-primary: #0f172a;
-  --modal-primary-alt: rgba(15, 23, 42, 0.5);
-  --modal-surface: #0f172a;
-  --modal-surface-alt: rgba(15, 23, 42, 0.4);
-  --modal-surface-hover: rgba(255, 255, 255, 0.06);
-  --modal-surface-active: rgba(255, 255, 255, 0.1);
-  --modal-border: rgba(255, 255, 255, 0.08);
-  --modal-border-light: rgba(255, 255, 255, 0.05);
-  --modal-text: #ffffff;
-  --modal-text-secondary: rgba(148, 163, 184, 1);
-  --modal-text-muted: rgba(100, 116, 139, 1);
-  --modal-overlay: rgba(0, 0, 0, 0.8);
-  --modal-overlay-light: rgba(0, 10, 20, 0.5);
-  --modal-input-bg: rgba(4, 5, 5, 0.5);
+  --surface: #0f172a;
+  --surface-elevated: rgba(15, 23, 42, 0.5);
+  --surface-sunken: rgba(0, 10, 20, 0.5);
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-active: rgba(255, 255, 255, 0.1);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-muted: rgba(255, 255, 255, 0.05);
+  --text: #ffffff;
+  --text-secondary: rgba(148, 163, 184, 1);
+  --text-muted: rgba(100, 116, 139, 1);
+  --overlay: rgba(0, 0, 0, 0.8);
+  --overlay-light: rgba(0, 10, 20, 0.5);
+  --input-bg: rgba(4, 5, 5, 0.5);
+
+  /* Backwards-compat aliases — do not introduce new --modal-* references. */
+  --modal-primary: var(--surface);
+  --modal-primary-alt: var(--surface-elevated);
+  --modal-surface: var(--surface);
+  --modal-surface-alt: var(--surface-elevated);
+  --modal-surface-hover: var(--surface-hover);
+  --modal-surface-active: var(--surface-active);
+  --modal-border: var(--border);
+  --modal-border-light: var(--border-muted);
+  --modal-text: var(--text);
+  --modal-text-secondary: var(--text-secondary);
+  --modal-text-muted: var(--text-muted);
+  --modal-overlay: var(--overlay);
+  --modal-overlay-light: var(--overlay-light);
+  --modal-input-bg: var(--input-bg);
+}
+
+/*
+   Theme scopes — apply .theme-dark / .theme-light on any container to
+   override the shared surface/text tokens for that subtree. :root keeps
+   the dark values as the default so untagged consumers are unaffected.
+   This is the single source of truth for chrome colors per theme.
+*/
+.theme-dark {
+  --surface: #0f172a;
+  --surface-elevated: rgba(15, 23, 42, 0.5);
+  --surface-sunken: rgba(0, 10, 20, 0.5);
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-active: rgba(255, 255, 255, 0.1);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-muted: rgba(255, 255, 255, 0.05);
+  --text: #ffffff;
+  --text-secondary: rgba(148, 163, 184, 1);
+  --text-muted: rgba(100, 116, 139, 1);
+  --overlay: rgba(0, 0, 0, 0.8);
+  --overlay-light: rgba(0, 10, 20, 0.5);
+  --input-bg: rgba(4, 5, 5, 0.5);
+}
+
+.theme-light {
+  --surface: #f1f5f9;
+  --surface-elevated: #ffffff;
+  --surface-sunken: #e2e8f0;
+  --surface-hover: rgba(15, 23, 42, 0.05);
+  --surface-active: rgba(15, 23, 42, 0.08);
+  --border: rgba(15, 23, 42, 0.1);
+  --border-muted: rgba(15, 23, 42, 0.06);
+  --text: #0f172a;
+  --text-secondary: rgba(71, 85, 105, 1);
+  --text-muted: rgba(100, 116, 139, 1);
+  --overlay: rgba(15, 23, 42, 0.4);
+  --overlay-light: rgba(15, 23, 42, 0.15);
+  --input-bg: #ffffff;
 }

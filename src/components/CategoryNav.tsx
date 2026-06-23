@@ -28,7 +28,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   toggleLanguage,
   openSettings,
 }) => {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const viewportScale = useViewportScale();
   const s = (n: number) => getIconSize(n, viewportScale);
   const isDark = themeMode === ThemeMode.Dark;
@@ -145,8 +145,6 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
       } rounded-full`}
     />
   );
-
-  const currentCategoryObj = categories.find((c) => c.id === activeCategory);
 
   return (
     <>

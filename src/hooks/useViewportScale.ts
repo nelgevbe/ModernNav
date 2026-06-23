@@ -30,7 +30,6 @@ export const useViewportScale = (): number => {
     const handleResize = () => setScale(compute());
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return scale;

@@ -45,6 +45,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
   const [collapsedSubMenus, setCollapsedSubMenus] = useState<Set<string>>(new Set());
 
   // --- Category States ---
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryTitle, setNewCategoryTitle] = useState("");
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editCategoryTitle, setEditCategoryTitle] = useState("");
@@ -78,6 +79,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
     editingSubMenuId !== null ||
     targetSubMenuId !== null ||
     editingLinkId !== null ||
+    isAddingCategory ||
     isAddingSubMenu;
 
   // --- Drag and Drop Hook ---
@@ -144,6 +146,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
     };
     onUpdateCategories([...categories, newCat]);
     setNewCategoryTitle("");
+    setIsAddingCategory(false);
     setSelectedCategoryId(newCat.id);
   };
 
@@ -362,7 +365,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
 
   const renderLinkForm = () => (
     <div
-      className="bg-slate-950/40 border-t border-white/[0.08] p-4 animate-fade-in backdrop-blur-md relative z-20"
+      className="surface-sunken border-t border-default p-4 animate-fade-in backdrop-blur-md relative z-20"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="grid grid-cols-2 gap-4">
@@ -399,7 +402,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                 e.stopPropagation();
                 setShowIconPicker(!showIconPicker);
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors"
             >
               <Smile size={18} />
             </button>
@@ -448,15 +451,54 @@ export const ContentTab: React.FC<ContentTabProps> = ({
   );
 
   return (
-    <div className="flex w-full h-full animate-fade-in">
+    <div className="flex w-full h-[calc(100vh-12rem)] animate-fade-in surface-elevated border border-default rounded-2xl overflow-hidden shadow-sm">
       {/* Sidebar - Categories */}
-      <div className="w-64 border-r modal-border flex flex-col modal-sidebar">
-        <div className="p-4 border-b modal-border h-14 flex items-center">
-          <h3 className="text-[10px] font-black modal-text-muted uppercase tracking-[0.2em]">
+      <div className="w-60 border-r border-default flex flex-col surface-sunken shrink-0">
+        <div className="px-4 border-b border-default h-16 flex items-center justify-between shrink-0">
+          <h3 className="text-[12px] font-black text-muted uppercase tracking-[0.2em]">
             {t("sidebar_categories")}
           </h3>
+          <button
+            onClick={() => {
+              setIsAddingCategory((v) => !v);
+              setNewCategoryTitle("");
+              setEditingCategoryId(null);
+            }}
+            title={t("add_category_placeholder")}
+            className={`p-1.5 rounded-lg transition-colors ${
+              isAddingCategory
+                ? "bg-[var(--theme-primary)] text-white"
+                : "surface-hover text-secondary hover:text-primary hover:surface-active"
+            }`}
+          >
+            {isAddingCategory ? <X size={15} /> : <Plus size={15} />}
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+          {isAddingCategory && (
+            <div className="flex gap-1.5 p-1.5 mb-1 animate-fade-in-down">
+              <input
+                autoFocus
+                type="text"
+                value={newCategoryTitle}
+                onChange={(e) => setNewCategoryTitle(e.target.value)}
+                placeholder={t("add_category_placeholder")}
+                className="input-primary rounded-md px-2 py-1.5 text-xs"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAddCategory();
+                  if (e.key === "Escape") setIsAddingCategory(false);
+                }}
+              />
+              <button
+                onClick={handleAddCategory}
+                disabled={!newCategoryTitle.trim()}
+                className="shrink-0 bg-[var(--theme-primary)] hover:bg-[var(--theme-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-white px-2.5 rounded-md transition-colors flex items-center"
+                title={t("add_category_btn")}
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+          )}
           {categories.map((cat, index) => (
             <div
               key={cat.id}
@@ -476,12 +518,12 @@ export const ContentTab: React.FC<ContentTabProps> = ({
               className={`group flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-all border ${
                 selectedCategoryId === cat.id
                   ? "bg-[var(--theme-primary)]/10 border-[var(--theme-primary)] text-[var(--theme-primary)]"
-                  : "modal-text-secondary border-transparent hover:bg-white/[0.03] hover:text-[var(--theme-primary)]"
+                  : "modal-text-secondary border-transparent hover:surface-hover hover:text-[var(--theme-primary)]"
               } ${
                 draggedCategoryIndex === index
                   ? draggedCategoryIndex === index
                     ? "opacity-40 border-dashed border-[var(--theme-primary)]"
-                    : "opacity-40 border-dashed border-white/20"
+                    : "opacity-40 border-dashed border-default"
                   : ""
               } ${
                 dragOverCategoryIndex === index && draggedCategoryIndex !== index
@@ -494,14 +536,14 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                   size={14}
                   className={`shrink-0 ${
                     isAnyEditing
-                      ? "text-slate-800 cursor-not-allowed"
-                      : "text-slate-700 group-hover:text-slate-500 cursor-grab active:cursor-grabbing"
+                      ? "text-muted/50 cursor-not-allowed"
+                      : "text-muted group-hover:text-secondary cursor-grab active:cursor-grabbing"
                   }`}
                 />
                 {editingCategoryId === cat.id ? (
                   <input
                     autoFocus
-                    className="bg-slate-900 border border-[var(--theme-primary)] rounded px-1.5 py-0.5 text-xs text-white focus:outline-none w-full"
+                    className="surface-sunken border border-[var(--theme-primary)] rounded px-1.5 py-0.5 text-xs text-primary focus:outline-none w-full"
                     value={editCategoryTitle}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => setEditCategoryTitle(e.target.value)}
@@ -519,7 +561,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                     setEditingCategoryId(cat.id);
                     setEditCategoryTitle(cat.title);
                   }}
-                  className="p-1 text-slate-500 hover:text-white rounded"
+                  className="p-1 text-muted hover:text-primary rounded"
                 >
                   <Pencil size={12} />
                 </button>
@@ -528,7 +570,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                     e.stopPropagation();
                     handleDeleteCategory(cat.id, cat.title);
                   }}
-                  className="p-1 text-slate-500 hover:text-red-400 rounded"
+                  className="p-1 text-muted hover:text-red-400 rounded"
                 >
                   <Trash2 size={12} />
                 </button>
@@ -536,34 +578,13 @@ export const ContentTab: React.FC<ContentTabProps> = ({
             </div>
           ))}
         </div>
-        <div className="p-3 border-t modal-border modal-sidebar-footer">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newCategoryTitle}
-              onChange={(e) => setNewCategoryTitle(e.target.value)}
-              placeholder={t("add_category_placeholder")}
-              className="input-primary rounded-md px-2 py-1.5 text-xs"
-              onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
-            />
-            <button
-              onClick={handleAddCategory}
-              className="shrink-0 bg-white/5 border border-white/5 hover:bg-[var(--theme-primary)] text-white px-2 rounded-md transition-colors"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Main Content - Submenus and Links */}
-      <div className="flex-1 flex flex-col modal-content relative">
-        <div className="px-6 border-b modal-border flex items-center gap-4 modal-toolbar-bg h-14 shrink-0 backdrop-blur-md">
-          <div className="relative flex-1 max-w-md">
-            <Search
-              size={s(14)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 modal-text-muted"
-            />
+      <div className="flex-1 flex flex-col surface-elevated relative min-w-0">
+        <div className="px-6 border-b border-default flex items-center gap-4 h-16 shrink-0 surface-sunken">
+          <div className="relative flex-1 max-w-mxl">
+            <Search size={s(14)} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input
               type="text"
               placeholder={t("search_links_placeholder")}
@@ -581,10 +602,10 @@ export const ContentTab: React.FC<ContentTabProps> = ({
               }
               setIsAddingSubMenu(!isAddingSubMenu);
             }}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors border ${
+            className={`flex items-center justify-center gap-2 min-w-[8.5rem] px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors border ${
               isAddingSubMenu
-                ? "bg-white/10 border-white/20 text-white"
-                : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
+                ? "surface-hover border-transparent text-secondary hover:surface-active hover:text-primary"
+                : "bg-[var(--theme-primary)] border-[var(--theme-primary)] text-white hover:bg-[var(--theme-hover)] hover:border-[var(--theme-hover)]"
             }`}
           >
             {isAddingSubMenu ? <X size={s(14)} /> : <FolderPlus size={s(14)} />}{" "}
@@ -594,19 +615,23 @@ export const ContentTab: React.FC<ContentTabProps> = ({
 
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
           {isAddingSubMenu && (
-            <div className="mb-6 modal-card-bg border modal-border p-4 rounded-xl animate-fade-in-down flex gap-3 items-center">
+            <div className="mb-6 surface-sunken border border-default p-4 rounded-xl animate-fade-in-down flex gap-3 items-center">
               <input
                 autoFocus
                 type="text"
                 placeholder={t("new_submenu_placeholder")}
                 value={newSubMenuTitle}
                 onChange={(e) => setNewSubMenuTitle(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddSubMenu()}
-                className="input-primary focus:border-emerald-500 focus:ring-emerald-500"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAddSubMenu();
+                  if (e.key === "Escape") setIsAddingSubMenu(false);
+                }}
+                className="input-primary"
               />
               <button
                 onClick={handleAddSubMenu}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase shadow-lg shadow-emerald-500/20"
+                disabled={!newSubMenuTitle.trim()}
+                className="shrink-0 bg-[var(--theme-primary)] hover:bg-[var(--theme-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors"
               >
                 {t("add_category_btn")}
               </button>
@@ -615,19 +640,19 @@ export const ContentTab: React.FC<ContentTabProps> = ({
 
           <div className="space-y-6">
             {categories.find((c) => c.id === selectedCategoryId)?.subCategories.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 modal-text-dim space-y-6">
+              <div className="flex flex-col items-center justify-center py-20 text-muted space-y-6">
                 <Folder size={s(48)} strokeWidth={1} className="opacity-30" />
                 <p className="text-sm font-medium">{t("no_submenus")}</p>
                 <div className="flex gap-4">
                   <button
                     onClick={() => setIsAddingSubMenu(true)}
-                    className="px-4 py-2 rounded-lg modal-card-bg modal-text-light text-xs font-bold uppercase tracking-widest border modal-border-light flex items-center gap-2"
+                    className="px-4 py-2 rounded-lg bg-[var(--theme-primary)]/10 border border-[var(--theme-primary)]/20 text-[var(--theme-primary)] text-xs font-bold uppercase tracking-widest hover:bg-[var(--theme-primary)]/20 transition-colors flex items-center gap-2"
                   >
                     <FolderPlus size={s(14)} /> {t("add_submenu")}
                   </button>
                   <button
                     onClick={handleAddLinkDirectly}
-                    className="px-4 py-2 rounded-lg bg-[var(--theme-primary)] text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-[var(--theme-primary)]/20"
+                    className="px-4 py-2 rounded-lg bg-[var(--theme-primary)] hover:bg-[var(--theme-hover)] text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-[var(--theme-primary)]/20 transition-colors"
                   >
                     <LinkIcon size={14} /> {t("add_link_directly")}
                   </button>
@@ -649,11 +674,11 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                     <div
                       key={sub.id}
                       className={`
-                      bg-slate-800/40 border rounded-xl overflow-hidden shadow-sm transition-all duration-300
+                      rounded-xl overflow-hidden transition-all duration-300 border
                       ${
                         dragOverSubMenuId === sub.id
                           ? "border-[var(--theme-primary)] ring-1 ring-[var(--theme-primary)] bg-[var(--theme-primary)]/5"
-                          : "border-white/[0.08]"
+                          : "border-default"
                       }
                     `}
                       onDragOver={(e) => handleDragOverSubMenu(e, sub.id)}
@@ -661,20 +686,20 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                       onDrop={(e) => handleDropLinkToSubMenu(e, sub.id)}
                     >
                       <div
-                        className="flex items-center justify-between p-4 border-b border-white/[0.08] bg-white/[0.02] cursor-pointer hover:bg-white/[0.04] transition-colors group/header"
+                        className="flex items-center justify-between p-4 surface-sunken cursor-pointer hover:surface-hover transition-colors group/header"
                         onClick={() => toggleSubMenu(sub.id)}
                       >
                         <div className="flex items-center gap-3">
                           <ChevronDown
                             size={16}
-                            className={`text-slate-500 transition-transform duration-300 ${
+                            className={`text-muted transition-transform duration-300 ${
                               isCollapsed ? "-rotate-90" : "rotate-0"
                             }`}
                           />
                           {editingSubMenuId === sub.id ? (
                             <input
                               autoFocus
-                              className="bg-slate-900 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none"
+                              className="surface-sunken border border-default rounded px-2 py-1 text-sm text-primary focus:outline-none"
                               value={editSubMenuTitle}
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => setEditSubMenuTitle(e.target.value)}
@@ -684,7 +709,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                               onBlur={() => handleUpdateSubMenuTitle(sub.id)}
                             />
                           ) : (
-                            <h4 className="font-bold text-white/90 text-sm flex items-center gap-2 tracking-tight">
+                            <h4 className="font-bold text-primary text-sm flex items-center gap-2 tracking-tight">
                               <Folder size={14} className="text-[var(--theme-light)]" />
                               {sub.title}
                             </h4>
@@ -697,7 +722,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                               setEditingSubMenuId(sub.id);
                               setEditSubMenuTitle(sub.title);
                             }}
-                            className="p-1.5 text-slate-500 hover:text-white transition-colors bg-white/5 rounded-md hover:bg-white/10"
+                            className="p-1.5 text-muted hover:text-primary transition-colors surface-hover rounded-md hover:surface-active"
                           >
                             <Pencil size={13} />
                           </button>
@@ -706,11 +731,11 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                               e.stopPropagation();
                               handleDeleteSubMenu(sub.id, sub.title);
                             }}
-                            className="p-1.5 text-slate-500 hover:text-red-400 transition-colors bg-white/5 rounded-md hover:bg-white/10"
+                            className="p-1.5 text-muted hover:text-red-400 transition-colors surface-hover rounded-md hover:surface-active"
                           >
                             <Trash2 size={13} />
                           </button>
-                          <div className="w-px h-3 bg-white/[0.08] mx-1"></div>
+                          <div className="w-px h-3 bg-[var(--border)] mx-1"></div>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -719,7 +744,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-colors ${
                               targetSubMenuId === sub.id && !editingLinkId
                                 ? "bg-[var(--theme-primary)] text-white"
-                                : "bg-white/5 text-slate-400 hover:text-white"
+                                : "surface-hover text-secondary hover:text-primary"
                             }`}
                           >
                             <Plus size={12} /> {t("add_new_link")}
@@ -731,7 +756,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                           {targetSubMenuId === sub.id && renderLinkForm()}
                           <div className="p-3">
                             {filteredItems.length === 0 ? (
-                              <div className="p-6 text-center text-slate-600 text-xs italic tracking-wider">
+                              <div className="p-6 text-center text-muted text-xs italic tracking-wider">
                                 {searchQuery ? t("no_links_search") : t("no_links")}
                               </div>
                             ) : (
@@ -750,8 +775,8 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                                     aspect-[4/3]
                                     ${
                                       draggedLink?.subId === sub.id && draggedLink?.index === index
-                                        ? "opacity-40 border-dashed border-white/20"
-                                        : "bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.06] hover:border-white/10"
+                                        ? "opacity-40 border-dashed border-default"
+                                        : "surface-hover border-muted hover:surface-active hover:border-default"
                                     }
                                     ${
                                       dragOverLink?.subId === sub.id &&
@@ -762,50 +787,50 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                                     }
                                   `}
                                   >
-                                    <div
-                                      className={`absolute top-1 right-1 flex gap-1 opacity-0 transition-opacity z-20 ${
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openEditLink(sub.id, item);
+                                      }}
+                                      className={`absolute bottom-1 left-1 p-1.5 text-secondary hover:text-white surface-active hover:bg-[var(--theme-primary)] rounded-md backdrop-blur-sm transition-all opacity-0 z-20 ${
                                         showIconPicker
                                           ? "pointer-events-none"
                                           : "group-hover:opacity-100"
                                       }`}
                                     >
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openEditLink(sub.id, item);
-                                        }}
-                                        className="p-1.5 text-slate-400 hover:text-white bg-black/50 hover:bg-[var(--theme-primary)] rounded-md backdrop-blur-sm transition-colors"
-                                      >
-                                        <Pencil size={12} />
-                                      </button>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeleteLink(sub.id, item.id);
-                                        }}
-                                        className="p-1.5 text-slate-400 hover:text-red-400 bg-black/50 hover:bg-red-500/20 rounded-md backdrop-blur-sm transition-colors"
-                                      >
-                                        <Trash2 size={12} />
-                                      </button>
-                                    </div>
+                                      <Pencil size={12} />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteLink(sub.id, item.id);
+                                      }}
+                                      className={`absolute top-1 right-1 p-1.5 text-secondary hover:text-red-400 surface-active hover:bg-red-500/20 rounded-md backdrop-blur-sm transition-all opacity-0 z-20 ${
+                                        showIconPicker
+                                          ? "pointer-events-none"
+                                          : "group-hover:opacity-100"
+                                      }`}
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
 
                                     <div
-                                      className={`absolute top-2 left-2 text-slate-600 group-hover:text-slate-400 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity ${
+                                      className={`absolute top-2 left-2 text-muted group-hover:text-secondary cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity ${
                                         isAnyEditing ? "hidden" : ""
                                       }`}
                                     >
                                       <GripVertical size={14} />
                                     </div>
 
-                                    <div className="mb-2 w-8 h-8 flex items-center justify-center text-slate-300">
+                                    <div className="mb-2 w-8 h-8 flex items-center justify-center text-secondary">
                                       {renderIcon(item.icon, 24)}
                                     </div>
 
                                     <div className="w-full text-center px-1">
-                                      <div className="text-xs font-medium text-slate-200 truncate">
+                                      <div className="text-xs font-medium text-primary truncate">
                                         {item.title}
                                       </div>
-                                      <div className="text-[10px] text-slate-500 truncate opacity-60 mt-0.5">
+                                      <div className="text-[10px] text-muted truncate opacity-60 mt-0.5">
                                         {item.url
                                           ? (() => {
                                               try {

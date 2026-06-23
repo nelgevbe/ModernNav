@@ -50,7 +50,7 @@ export interface UserPreferences {
   footerLinks?: FooterLink[];
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
   success?: boolean;
@@ -66,5 +66,5 @@ export interface BootstrapResponse {
 
 export interface UpdatePayload {
   type: "categories" | "background" | "prefs" | "auth_code";
-  data: any;
+  data: unknown;
 }

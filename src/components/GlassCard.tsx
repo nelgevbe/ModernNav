@@ -90,7 +90,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
         WebkitBackdropFilter: `blur(${blurAmount}px) saturate(${saturation}%)`,
         ...style, // Merge external styles (e.g. animationDelay)
       }}
-      {...(props as any)}
+      {...(props as React.HTMLAttributes<HTMLAnchorElement> & React.HTMLAttributes<HTMLDivElement>)}
     >
       {/* LAYER 0: NOISE TEXTURE */}
       <div className="absolute inset-0 z-0 glass-noise pointer-events-none opacity-40" />

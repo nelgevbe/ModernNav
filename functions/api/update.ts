@@ -3,48 +3,28 @@ interface Env {
   DB?: D1Database;
 }
 
-// 导入共享工具
 import { verify, getClientIP, RateLimiter, ERROR_MESSAGES } from "./utils/authHelpers";
-import { UpdatePayload } from "../../src/types";
+import {
+  readAllCategories,
+  diffCategories,
+  applyCategoryDiff,
+  ensureSchema,
+} from "./utils/dbHelpers";
+import { UpdatePayload, Category } from "../../src/types";
+import { validateFullCategory, validatePreferences, validateBackground } from "./utils/validation";
 
-// 创建速率限制器实例
-const updateRateLimiter = new RateLimiter(20, 60 * 1000); // 1分钟内最多20次更新请求
+const updateRateLimiter = new RateLimiter(20, 60 * 1000);
 
 export const onRequestPost = async ({ request, env }: { request: Request; env: Env }) => {
   try {
     const clientIP = getClientIP(request);
-
-    // 检查速率限制
     if (!updateRateLimiter.isAllowed(clientIP)) {
-      const resetTime = updateRateLimiter.getResetTime(clientIP);
-      return new Response(
-        JSON.stringify({
-          error: ERROR_MESSAGES.RATE_LIMITED,
-          resetTime,
-        }),
-        {
-          status: 429,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return jsonError(ERROR_MESSAGES.RATE_LIMITED, 429);
     }
 
-    // 1. 鉴权
     const token = request.headers.get("Authorization")?.split(" ")[1];
-
-    if (!token) {
-      return new Response(JSON.stringify({ error: ERROR_MESSAGES.UNAUTHORIZED }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    if (!env.DB) {
-      return new Response(JSON.stringify({ error: "Database not available" }), {
-        status: 503,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    if (!token) return jsonError(ERROR_MESSAGES.UNAUTHORIZED, 401);
+    if (!env.DB) return jsonError("Database not available", 503);
 
     const codeRow = await env.DB.prepare("SELECT value FROM config WHERE key = 'auth_code'").first<{
       value: string;
@@ -52,92 +32,96 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
     const storedCode = codeRow?.value || "admin";
 
     if (!(await verify(token, storedCode))) {
-      return new Response(JSON.stringify({ error: ERROR_MESSAGES.UNAUTHORIZED }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonError(ERROR_MESSAGES.UNAUTHORIZED, 401);
     }
 
-    // 2. 验证请求数据
-    const requestBody = (await request.json()) as UpdatePayload;
-
-    if (!requestBody || typeof requestBody !== "object") {
-      return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+    const body = (await request.json()) as UpdatePayload;
+    if (!body || typeof body !== "object" || !body.type) {
+      return jsonError(ERROR_MESSAGES.INVALID_DATA, 400);
     }
 
-    const { type, data } = requestBody;
-
-    if (!type || typeof type !== "string") {
-      return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // 验证数据类型
+    const { type, data } = body;
     if (data === undefined || data === null) {
-      return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonError(ERROR_MESSAGES.INVALID_DATA, 400);
     }
 
-    // 限制可更新的配置项类型，防止恶意更新
     const allowedTypes = ["categories", "background", "prefs", "auth_code"];
     if (!allowedTypes.includes(type)) {
-      return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_DATA }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonError(ERROR_MESSAGES.INVALID_DATA, 400);
     }
 
-    // 3. 写入数据 (利用 UPSERT)
-    const value = typeof data === "string" ? data : JSON.stringify(data);
+    await ensureSchema(env.DB);
 
-    // 对于大型数据，进行大小限制
-    if (value.length > 100000) {
-      // 100KB限制
-      return new Response(
-        JSON.stringify({
-          error: "Data too large",
-          maxSize: "100KB",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+    // --- Categories: diff-based write ---
+    // Read current state, compute a minimal diff, and apply only the changed
+    // rows in one D1 batch. A single rename used to wipe + rewrite the whole
+    // tree (hundreds of rows); now it emits one UPDATE.
+    if (type === "categories") {
+      if (!Array.isArray(data)) return jsonError("Categories must be an array", 400);
+      if (data.length > 50) return jsonError("Too many categories (max 50)", 400);
+
+      for (const cat of data) {
+        const v = validateFullCategory(cat);
+        if (!v.valid) return jsonError(v.message || ERROR_MESSAGES.INVALID_DATA, 400);
+      }
+
+      const current = await readAllCategories(env.DB);
+      const diff = diffCategories(current, data as Category[]);
+      await applyCategoryDiff(env.DB, diff);
+      return jsonOk();
     }
 
-    if (!env.DB) {
-      return new Response(JSON.stringify({ error: "Database not available" }), {
-        status: 503,
-        headers: { "Content-Type": "application/json" },
-      });
+    // --- Background: KV ---
+    if (type === "background") {
+      const v = validateBackground(data);
+      if (!v.valid) return jsonError(v.message || ERROR_MESSAGES.INVALID_DATA, 400);
+      const value = typeof data === "string" ? data : JSON.stringify(data);
+      await upsertConfig(env.DB, "background", value);
+      return jsonOk();
     }
 
-    await env.DB.prepare(
-      "INSERT INTO config (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
-    )
-      .bind(type, value)
-      .run();
+    // --- Prefs: KV (JSON) ---
+    if (type === "prefs") {
+      const v = validatePreferences(data);
+      if (!v.valid) return jsonError(v.message || ERROR_MESSAGES.INVALID_DATA, 400);
+      const value = typeof data === "string" ? data : JSON.stringify(data);
+      if (value.length > 10_000) return jsonError("Preferences too large (max 10KB)", 400);
+      await upsertConfig(env.DB, "prefs", value);
+      return jsonOk();
+    }
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    // --- auth_code: KV ---
+    if (type === "auth_code") {
+      const value = typeof data === "string" ? data : JSON.stringify(data);
+      await upsertConfig(env.DB, "auth_code", value);
+      return jsonOk();
+    }
+
+    return jsonError(ERROR_MESSAGES.INVALID_DATA, 400);
   } catch (error) {
     console.error("Update API Error:", error);
-    return new Response(
-      JSON.stringify({
-        error: ERROR_MESSAGES.SERVER_ERROR,
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return jsonError(ERROR_MESSAGES.SERVER_ERROR, 500);
   }
 };
+
+async function upsertConfig(db: any, key: string, value: string) {
+  await db
+    .prepare(
+      "INSERT INTO config (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+    )
+    .bind(key, value)
+    .run();
+}
+
+function jsonOk() {
+  return new Response(JSON.stringify({ success: true }), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function jsonError(message: string, status: number) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}

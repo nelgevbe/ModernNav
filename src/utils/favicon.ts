@@ -1,25 +1,5 @@
 import { DEFAULT_FAVICON_API, FALLBACK_FAVICON_APIS } from "../constants/defaults";
 
-const FAVICON_API_DOMAINS = [
-  "favicon.im",
-  "favicon.vemetric.com",
-  "www.google.com",
-  "google.com",
-  "duckduckgo.com",
-];
-
-export const isFaviconApiUrl = (url: string): boolean => {
-  try {
-    const urlToParse = url.match(/^https?:\/\//) ? url : `https://${url}`;
-    const hostname = new URL(urlToParse).hostname.toLowerCase();
-    return FAVICON_API_DOMAINS.some(
-      (domain) => hostname === domain || hostname.endsWith("." + domain)
-    );
-  } catch {
-    return false;
-  }
-};
-
 export const getFaviconUrl = (url: string, template?: string): string => {
   if (!url) return "";
 

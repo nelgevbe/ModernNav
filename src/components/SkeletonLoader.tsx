@@ -1,5 +1,6 @@
 import React from "react";
 import { GlassCard } from "./GlassCard";
+import { ThemeMode } from "../types";
 
 interface SkeletonLoaderProps {
   cardOpacity: number;
@@ -14,12 +15,10 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
   cardOpacity,
   themeMode,
   maxContainerWidth = 900,
-  cardWidth = 124,
+  cardWidth: _cardWidth = 124,
   cardHeight = 96,
   gridColumns = 6,
 }) => {
-  const isDark = themeMode === "dark";
-
   return (
     <div className="w-full space-y-8 animate-pulse">
       {/* Search Bar Skeleton */}
@@ -45,7 +44,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
             <GlassCard
               key={i}
               opacity={cardOpacity}
-              themeMode={themeMode as any}
+              themeMode={themeMode === "dark" ? ThemeMode.Dark : ThemeMode.Light}
               className="flex flex-col items-center justify-center p-2"
               style={{ height: `${cardHeight}px` }}
             >

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState } from "react";
 
 type Language = "en" | "zh";
 
@@ -297,7 +297,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const t = (key: string, params?: Record<string, string>) => {
-    let text = (translations[language] as any)[key] || key;
+    let text = (translations[language] as Record<string, string>)[key] || key;
     if (params) {
       Object.entries(params).forEach(([k, v]) => {
         text = text.replace(`{${k}}`, v);

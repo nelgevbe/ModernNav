@@ -1,18 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { FolderOpen } from "lucide-react";
 import { SmartIcon } from "./components/SmartIcon";
 import { SearchBar } from "./components/SearchBar";
 import { GlassCard } from "./components/GlassCard";
-const LinkManagerModal = React.lazy(() =>
-  import("./components/LinkManagerModal").then((module) => ({ default: module.LinkManagerModal }))
-);
 import { ToastContainer } from "./components/Toast";
 import { SyncIndicator } from "./components/SyncIndicator";
 import { BackgroundLayer } from "./components/BackgroundLayer";
 import { CategoryNav } from "./components/CategoryNav";
 import { Footer } from "./components/Footer";
 import { SkeletonLoader } from "./components/SkeletonLoader";
-import { ModalSkeleton } from "./components/ModalSkeleton";
 import { useDashboardLogic } from "./hooks/useDashboardLogic";
 import { useResponsiveColumns } from "./hooks/useResponsiveColumns";
 import { useViewportScale } from "./hooks/useViewportScale";
@@ -27,10 +24,7 @@ const App: React.FC = () => {
     categories,
     background,
     cardOpacity,
-    themeColor,
-    themeColorAuto,
     themeMode,
-    isDefaultCode,
     activeCategory,
     activeSubCategoryId,
     maxContainerWidth,
@@ -43,7 +37,7 @@ const App: React.FC = () => {
     footerLinks,
   } = state;
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate();
   const { t } = useLanguage();
 
   // Viewport scale factor: 1.0 at 1080p, ~1.33 at 2K, ~1.75 at 4K
@@ -107,10 +101,6 @@ const App: React.FC = () => {
 
       <style>{`
         :root {
-          --theme-primary: ${themeColor};
-          --theme-hover: color-mix(in srgb, ${themeColor}, black 10%);
-          --theme-active: color-mix(in srgb, ${themeColor}, black 20%);
-          --theme-light: color-mix(in srgb, ${themeColor}, white 30%);
           --glass-blur: ${adaptiveGlassBlur}px;
           --grid-cols: ${effectiveColumns}; /* Bind effective columns to CSS var */
         }
@@ -129,7 +119,7 @@ const App: React.FC = () => {
         themeMode={themeMode}
         toggleTheme={actions.toggleTheme}
         toggleLanguage={actions.toggleLanguage}
-        openSettings={() => setIsModalOpen(true)}
+        openSettings={() => navigate("/admin")}
       />
 
       <div
@@ -176,7 +166,7 @@ const App: React.FC = () => {
                 key={visibleSubCategory.id}
                 className="grid gap-3 sm:gap-4 3xl:gap-5 4xl:gap-6 w-full responsive-grid"
               >
-                {visibleSubCategory.items.map((link, index) => {
+                {visibleSubCategory.items.map((link) => {
                   const iconSource = link.icon || getFaviconUrl(link.url, faviconApi);
                   const scaledIconSize = Math.round(24 * viewportScale);
                   const scaledTitleSize = Math.max(12, Math.round(12 * viewportScale));
@@ -249,41 +239,6 @@ const App: React.FC = () => {
       <SyncIndicator />
 
       <Footer isDark={isDark} github={footerGithub} links={footerLinks} />
-
-      {isModalOpen && (
-        <React.Suspense fallback={<ModalSkeleton />}>
-          <LinkManagerModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            categories={categories}
-            setCategories={actions.setCategories}
-            background={background}
-            prefs={{
-              cardOpacity,
-              themeColor,
-              themeMode,
-              themeColorAuto,
-              maxContainerWidth,
-              cardWidth,
-              cardHeight,
-              gridColumns,
-              siteTitle,
-              faviconApi,
-              footerGithub,
-              footerLinks,
-            }}
-            onUpdateAppearance={(
-              url: string,
-              opacity: number,
-              color?: string,
-              layout?: any,
-              themeAuto?: boolean,
-              extra?: any
-            ) => actions.handleUpdateAppearance(url, opacity, color, layout, themeAuto, extra)}
-            isDefaultCode={isDefaultCode}
-          />
-        </React.Suspense>
-      )}
     </div>
   );
 };
