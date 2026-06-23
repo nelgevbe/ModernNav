@@ -63,7 +63,6 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
         }
 
         if (code !== storedCode) {
-          console.log(`Login failed: provided="${code}", stored="${storedCode}"`);
           return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }), {
             status: 401,
             headers: { "Content-Type": "application/json" },
@@ -90,7 +89,6 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
       value: string;
     }>();
     const storedCode = codeRow?.value || "admin";
-    console.log(`Auth check: codeRow=${JSON.stringify(codeRow)}, storedCode="${storedCode}"`);
 
     // 1. 登录
     if (action === "login") {
@@ -117,7 +115,6 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
       }
 
       if (code !== storedCode) {
-        console.log(`Login failed: provided="${code}", stored="${storedCode}"`);
         return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }), {
           status: 401,
           headers: { "Content-Type": "application/json" },

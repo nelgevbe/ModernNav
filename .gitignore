@@ -30,6 +30,7 @@ dist-ssr
 node_modules/
 metadata.json
 scripts/
+docs/
 functions/_worker.ts
 .wrangler/
 wrangler.toml

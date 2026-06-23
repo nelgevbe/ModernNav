@@ -792,7 +792,7 @@ export const ContentTab: React.FC<ContentTabProps> = ({
                                         e.stopPropagation();
                                         openEditLink(sub.id, item);
                                       }}
-                                      className={`absolute bottom-1 left-1 p-1.5 text-secondary hover:text-white surface-active hover:bg-[var(--theme-primary)] rounded-md backdrop-blur-sm transition-all opacity-0 z-20 ${
+                                      className={`absolute top-8 right-1 p-1.5 text-secondary hover:text-white surface-active hover:bg-[var(--theme-primary)] rounded-md backdrop-blur-sm transition-all opacity-0 z-20 ${
                                         showIconPicker
                                           ? "pointer-events-none"
                                           : "group-hover:opacity-100"
