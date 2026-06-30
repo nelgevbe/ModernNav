@@ -134,3 +134,5 @@ export const AdminLayout: React.FC = () => {
     </div>
   );
 };
+
+export default AdminLayout;

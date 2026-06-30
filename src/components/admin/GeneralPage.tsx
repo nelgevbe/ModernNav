@@ -12,3 +12,5 @@ export const GeneralPage: React.FC = () => {
     <GeneralTab prefs={prefs} onUpdate={(patch) => updatePrefs.mutate({ ...prefs, ...patch })} />
   );
 };
+
+export default GeneralPage;
