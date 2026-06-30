@@ -45,3 +45,5 @@ export const AppearancePage: React.FC = () => {
     />
   );
 };
+
+export default AppearancePage;

@@ -24,7 +24,7 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
           responseTime: Date.now() - startTime,
         };
       } catch (error) {
-        checks.database = { status: "unhealthy", error: error.message };
+        checks.database = { status: "unhealthy", error: (error as Error).message };
         status = "degraded";
         statusCode = 503;
       }
@@ -94,7 +94,7 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
       JSON.stringify({
         status: "unhealthy",
         timestamp: new Date().toISOString(),
-        error: error.message,
+        error: (error as Error).message,
       }),
       {
         status: 503,

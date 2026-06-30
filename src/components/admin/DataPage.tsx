@@ -30,3 +30,5 @@ export const DataPage: React.FC = () => {
     />
   );
 };
+
+export default DataPage;

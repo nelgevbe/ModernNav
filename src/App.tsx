@@ -14,7 +14,6 @@ import { useDashboardLogic } from "./hooks/useDashboardLogic";
 import { useResponsiveColumns } from "./hooks/useResponsiveColumns";
 import { useViewportScale } from "./hooks/useViewportScale";
 import { useLanguage } from "./contexts/LanguageContext";
-import { ThemeMode } from "./types";
 import { getFaviconUrl } from "./utils/favicon";
 
 const App: React.FC = () => {
@@ -40,17 +39,12 @@ const App: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  // Viewport scale factor: 1.0 at 1080p, ~1.33 at 2K, ~1.75 at 4K
   const viewportScale = useViewportScale();
 
-  // Apply scale to JS-driven px values so they match the CSS rem scaling system.
-  // User-saved values remain at their 1080p baseline; we scale at render time.
-  // CSS clamp() in index.css handles text/padding scaling automatically via rem units.
   const scaledCardHeight = Math.round(cardHeight * viewportScale);
   const scaledCardWidth = Math.round(cardWidth * viewportScale);
   const scaledMaxContainerWidth = Math.round(maxContainerWidth * viewportScale);
 
-  // Dynamic Column Calculation (uses scaled values for accurate 2K/4K layout)
   const effectiveColumns = useResponsiveColumns(
     gridColumns,
     scaledMaxContainerWidth,
@@ -63,12 +57,8 @@ const App: React.FC = () => {
 
   if (loading) {
     return (
-      <div
-        className={`min-h-screen relative flex flex-col items-center pt-8 md:pt-12 px-4 ${
-          themeMode === ThemeMode.Dark ? "bg-slate-900" : "bg-slate-50"
-        }`}
-      >
-        <BackgroundLayer background={background} isDark={themeMode === ThemeMode.Dark} />
+      <div className="min-h-screen relative flex flex-col items-center pt-8 md:pt-12 px-4 bg-slate-50 dark:bg-slate-900">
+        <BackgroundLayer background={background} />
         <div className="w-full max-w-[1000px] relative z-10">
           <SkeletonLoader
             cardOpacity={cardOpacity}
@@ -76,15 +66,12 @@ const App: React.FC = () => {
             maxContainerWidth={scaledMaxContainerWidth}
             cardWidth={scaledCardWidth}
             cardHeight={scaledCardHeight}
-            gridColumns={effectiveColumns} // Use effective columns for Skeleton
+            gridColumns={effectiveColumns}
           />
         </div>
       </div>
     );
   }
-
-  const isDark = themeMode === ThemeMode.Dark;
-  const adaptiveGlassBlur = isDark ? 50 : 30;
 
   const visibleCategory = categories.find((c) => c.id === activeCategory);
   const visibleSubCategory = visibleCategory?.subCategories.find(
@@ -92,24 +79,17 @@ const App: React.FC = () => {
   );
 
   return (
-    <div
-      className={`min-h-screen relative overflow-x-hidden selection:bg-[var(--theme-primary)] selection:text-white font-sans flex flex-col ${
-        isDark ? "text-slate-100" : "text-slate-800"
-      }`}
-    >
+    <div className="min-h-screen relative overflow-x-hidden selection:bg-[var(--theme-primary)] selection:text-white font-sans flex flex-col text-slate-800 dark:text-slate-100">
       <ToastContainer />
 
       <style>{`
         :root {
-          --glass-blur: ${adaptiveGlassBlur}px;
-          --grid-cols: ${effectiveColumns}; /* Bind effective columns to CSS var */
+          --grid-cols: ${effectiveColumns};
         }
       `}</style>
 
-      {/* Background Layer */}
-      <BackgroundLayer background={background} isDark={isDark} />
+      <BackgroundLayer background={background} />
 
-      {/* Navigation - Dynamic Island */}
       <CategoryNav
         categories={categories}
         activeCategory={activeCategory}
@@ -133,7 +113,6 @@ const App: React.FC = () => {
         <main className="w-full pb-20 relative z-[10] space-y-8">
           {visibleSubCategory ? (
             <div key={visibleSubCategory.id} className="">
-              {/* category header */}
               <div
                 className="flex items-center"
                 style={{
@@ -141,26 +120,16 @@ const App: React.FC = () => {
                   marginBottom: `${Math.round(24 * viewportScale)}px`,
                 }}
               >
-                <div
-                  className={`h-[1px] flex-1 bg-gradient-to-r from-transparent ${
-                    isDark ? "to-white/20" : "to-slate-400/30"
-                  }`}
-                ></div>
+                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-slate-400/30 dark:to-white/20" />
                 <h3
-                  className={`font-bold uppercase tracking-[0.2em] px-2 ${
-                    isDark ? "text-white/50" : "text-slate-400"
-                  }`}
+                  className="font-bold uppercase tracking-[0.2em] px-2 text-slate-400 dark:text-white/50"
                   style={{ fontSize: `${Math.max(10, Math.round(10 * viewportScale))}px` }}
                 >
                   {visibleSubCategory.title === "Default"
                     ? visibleCategory?.title
                     : visibleSubCategory.title}
                 </h3>
-                <div
-                  className={`h-[1px] flex-1 bg-gradient-to-l from-transparent ${
-                    isDark ? "to-white/20" : "to-slate-400/30"
-                  }`}
-                ></div>
+                <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-slate-400/30 dark:to-white/20" />
               </div>
               <div
                 key={visibleSubCategory.id}
@@ -192,7 +161,7 @@ const App: React.FC = () => {
                       }
                     >
                       <div
-                        className={`mb-2 transition-transform duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] flex items-center justify-center`}
+                        className="mb-2 transition-transform duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] flex items-center justify-center"
                         style={{ height: `${scaledIconSize}px`, width: `${scaledIconSize}px` }}
                       >
                         <SmartIcon
@@ -205,9 +174,7 @@ const App: React.FC = () => {
                         />
                       </div>
                       <span
-                        className={`font-medium truncate w-full px-1 transition-colors duration-300 ${
-                          isDark ? "text-white/80 group-hover:text-white" : "text-slate-800"
-                        }`}
+                        className="font-medium truncate w-full px-1 transition-colors duration-300 text-slate-800 dark:text-white/80 dark:group-hover:text-white"
                         style={{ fontSize: `${scaledTitleSize}px` }}
                       >
                         {link.title}
@@ -218,18 +185,14 @@ const App: React.FC = () => {
               </div>
 
               {visibleSubCategory.items.length === 0 && (
-                <div
-                  className={`text-center py-16 flex flex-col items-center gap-3 ${
-                    isDark ? "text-white/20" : "text-slate-400"
-                  }`}
-                >
+                <div className="text-center py-16 flex flex-col items-center gap-3 text-slate-400 dark:text-white/20">
                   <FolderOpen size={40} strokeWidth={1} />
                   <p className="text-sm">{t("no_links")}</p>
                 </div>
               )}
             </div>
           ) : (
-            <div className={`text-center py-12 ${isDark ? "text-white/30" : "text-slate-400"}`}>
+            <div className="text-center py-12 text-slate-400 dark:text-white/30">
               No sub-categories found. Click Settings to configure.
             </div>
           )}
@@ -238,7 +201,7 @@ const App: React.FC = () => {
 
       <SyncIndicator />
 
-      <Footer isDark={isDark} github={footerGithub} links={footerLinks} />
+      <Footer github={footerGithub} links={footerLinks} />
     </div>
   );
 };

@@ -34,7 +34,6 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   const isDark = themeMode === ThemeMode.Dark;
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Navigation Animation State
   const [navPillStyle, setNavPillStyle] = useState({
     left: 0,
     width: 0,
@@ -67,8 +66,6 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
     };
   }, [activeCategory, categories]);
 
-  const adaptiveGlassBlur = isDark ? 50 : 30;
-
   const dropdownClasses = isDark ? "apple-glass-dark" : "apple-glass-light";
   const navDropdownItemBase = `text-left px-3 py-1.5 rounded-md text-xs transition-all duration-200 flex items-center justify-between group/item`;
 
@@ -76,29 +73,17 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
     if (isActive) {
       return `${navDropdownItemBase} bg-[var(--theme-primary)] text-white font-medium shadow-md`;
     }
-    return `${navDropdownItemBase} ${
-      isDark ? "text-white/90 hover:bg-white/10" : "text-slate-700 hover:bg-black/5"
-    } active:scale-[0.98]`;
+    return `${navDropdownItemBase} text-slate-700 dark:text-white/90 hover:bg-black/5 dark:hover:bg-white/10 active:scale-[0.98]`;
   };
 
-  const navIconColor = isDark ? "text-white/60" : "text-slate-600";
-
-  const islandContainerClass = `relative flex items-center justify-center p-1.5 rounded-full border transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-    isDark
-      ? "bg-slate-900/60 border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.6)]"
-      : "bg-white/60 border-white/40 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)]"
-  }`;
+  const islandContainerClass = `relative flex items-center justify-center p-1.5 rounded-full border transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] bg-white/60 dark:bg-slate-900/60 border-white/40 dark:border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.6)]`;
 
   const islandStyle = {
-    backdropFilter: `blur(${adaptiveGlassBlur}px) saturate(180%)`,
-    WebkitBackdropFilter: `blur(${adaptiveGlassBlur}px) saturate(180%)`,
+    backdropFilter: `blur(var(--glass-blur)) saturate(180%)`,
+    WebkitBackdropFilter: `blur(var(--glass-blur)) saturate(180%)`,
   };
 
-  const slidingPillClass = `absolute top-0 bottom-0 rounded-full transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] pointer-events-none ${
-    isDark
-      ? "bg-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] border border-white/5"
-      : "bg-[color-mix(in_srgb,var(--theme-primary),transparent_80%)] shadow-[inset_0_2px_8px_-2px_rgba(0,0,0,0.12)] border border-black/5"
-  }`;
+  const slidingPillClass = `absolute top-0 bottom-0 rounded-full transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] pointer-events-none bg-[color-mix(in_srgb,var(--theme-primary),transparent_80%)] dark:bg-white/10 shadow-[inset_0_2px_8px_-2px_rgba(0,0,0,0.12)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] border border-black/5 dark:border-white/5`;
 
   const categoryButtonBase = `
     relative z-10 flex items-center gap-1.5 px-4 py-2 3xl:px-5 3xl:py-2.5 rounded-full transition-colors duration-300 cursor-pointer select-none
@@ -107,9 +92,9 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
 
   const categoryButtonColors = (isActive: boolean) => {
     if (isActive) {
-      return isDark ? "text-white font-medium" : "text-slate-900 font-medium";
+      return "text-slate-900 dark:text-white font-medium";
     }
-    return isDark ? "text-white/50 hover:text-white/80" : "text-slate-500 hover:text-slate-800";
+    return "text-slate-500 dark:text-white/50 hover:text-slate-800 dark:hover:text-white/80";
   };
 
   const actionButtonClass = `
@@ -117,7 +102,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
     active:scale-90 active:shadow-inner
     hover:bg-[var(--theme-primary)]/20 hover:text-current hover:border-[var(--theme-primary)]/10
     border border-transparent
-    ${navIconColor}
+    text-slate-600 dark:text-white/60
     active:bg-[var(--theme-primary)]/30
   `;
 
@@ -137,74 +122,39 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   );
 
   const glassLayerSheen = (
-    <div
-      className={`absolute inset-0 pointer-events-none z-0 bg-gradient-to-br ${
-        isDark
-          ? "from-white/[0.02] via-transparent to-black/[0.1]"
-          : "from-white/[0.3] via-transparent to-transparent"
-      } rounded-full`}
-    />
+    <div className="absolute inset-0 pointer-events-none z-0 bg-gradient-to-br from-white/[0.3] dark:from-white/[0.02] via-transparent to-transparent dark:to-black/[0.1] rounded-full" />
   );
+
+  const mobileButtonClass =
+    "p-2 rounded-lg transition-colors text-slate-600 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5";
 
   return (
     <>
-      {/* 
-          1. MOBILE NAVIGATION: FIXED TOP BAR 
-          Visible only on screens smaller than 'md'
-      */}
-      <nav
-        className={`md:hidden fixed top-0 left-0 right-0 z-[1000] transition-all duration-300 ${
-          isDark ? "bg-slate-900/80" : "bg-white/80"
-        } border-b ${isDark ? "border-white/5" : "border-slate-200/50"} backdrop-blur-xl`}
-      >
+      <nav className="md:hidden fixed top-0 left-0 right-0 z-[1000] transition-all duration-300 bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/50 dark:border-white/5 backdrop-blur-xl">
         <div className="flex items-center justify-between h-14 px-4">
-          {/* Left: Burger Menu Trigger */}
-          <button
-            onClick={() => setIsExpanded(true)}
-            className={`p-2 rounded-lg transition-colors ${
-              isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"
-            }`}
-          >
+          <button onClick={() => setIsExpanded(true)} className={mobileButtonClass}>
             <Menu size={s(20)} />
           </button>
 
-          {/* Right: Quick Actions */}
           <div className="flex items-center gap-1">
-            <button
-              onClick={toggleLanguage}
-              className={`p-2 rounded-lg transition-colors ${
-                isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"
-              }`}
-            >
+            <button onClick={toggleLanguage} className={mobileButtonClass}>
               <Globe size={s(18)} />
             </button>
-            <button
-              onClick={toggleTheme}
-              className={`p-2 rounded-lg transition-colors ${
-                isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"
-              }`}
-            >
+            <button onClick={toggleTheme} className={mobileButtonClass}>
               {isDark ? <Moon size={s(18)} /> : <Sun size={s(18)} />}
             </button>
-            <button
-              onClick={openSettings}
-              className={`p-2 rounded-lg transition-colors ${
-                isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"
-              }`}
-            >
+            <button onClick={openSettings} className={mobileButtonClass}>
               <Settings size={s(18)} />
             </button>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Drawer Overlay */}
       <div
         className={`md:hidden fixed inset-0 z-[2000] transition-all duration-300 ${
           isExpanded ? "visible" : "invisible"
         }`}
       >
-        {/* Backdrop */}
         <div
           onClick={() => setIsExpanded(false)}
           className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
@@ -212,29 +162,24 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
           }`}
         />
 
-        {/* Drawer Panel */}
         <div
           className={`absolute top-0 left-0 bottom-0 w-[280px] shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex flex-col ${
             isExpanded ? "translate-x-0" : "-translate-x-full"
-          } ${isDark ? "bg-slate-900/95 border-r border-white/10" : "bg-white/95 border-r border-slate-200"}`}
+          } bg-white/95 dark:bg-slate-900/95 border-r border-slate-200 dark:border-white/10`}
           style={{ backdropFilter: "blur(20px)" }}
         >
-          {/* Drawer Header */}
           <div className="p-6 border-b border-white/5 flex items-center justify-between">
-            <h2
-              className={`text-lg font-black tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}
-            >
+            <h2 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
               {t("sidebar_categories")}
             </h2>
             <button
               onClick={() => setIsExpanded(false)}
-              className={`p-2 rounded-full ${isDark ? "hover:bg-white/5 text-white/40" : "hover:bg-black/5 text-slate-400"}`}
+              className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-slate-400 dark:text-white/40"
             >
               <X size={s(20)} />
             </button>
           </div>
 
-          {/* Drawer Links */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2">
             {categories.map((cat) => {
               const isActive = activeCategory === cat.id;
@@ -243,13 +188,12 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                   <button
                     onClick={() => {
                       onCategoryClick(cat);
-                      // If no subcategories or only default, close drawer on click
                       if (cat.subCategories.length <= 1) setIsExpanded(false);
                     }}
                     className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
                       isActive
                         ? "bg-[var(--theme-primary)] text-white shadow-md font-bold"
-                        : `${isDark ? "text-white/60 hover:bg-white/5" : "text-slate-600 hover:bg-black/5"}`
+                        : "text-slate-600 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/5"
                     }`}
                   >
                     <span className="text-sm">{cat.title}</span>
@@ -261,7 +205,6 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                     )}
                   </button>
 
-                  {/* Sub-categories in Drawer */}
                   {isActive && cat.subCategories.length > 1 && (
                     <div className="mt-1 space-y-1 ml-2 pl-4 border-l border-white/10">
                       {cat.subCategories.map((sub) => (
@@ -273,8 +216,8 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                           }}
                           className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all ${
                             activeSubCategoryId === sub.id
-                              ? `text-[var(--theme-primary)] font-bold bg-[var(--theme-primary)]/10`
-                              : `${isDark ? "text-white/40 hover:text-white/70" : "text-slate-500 hover:text-slate-900"}`
+                              ? "text-[var(--theme-primary)] font-bold bg-[var(--theme-primary)]/10"
+                              : "text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white/70"
                           }`}
                         >
                           {sub.title}
@@ -289,10 +232,6 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
         </div>
       </div>
 
-      {/* 
-          2. DESKTOP NAVIGATION: DYNAMIC ISLAND
-          Visible only on screens 'md' and larger
-      */}
       <nav className="hidden md:flex justify-center items-center py-6 3xl:py-8 px-4 relative z-[100] isolation-isolate text-sm font-medium tracking-wide">
         <div className={islandContainerClass} style={islandStyle}>
           {glassLayerNoise}
@@ -300,7 +239,6 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
           {glassLayerSheen}
 
           <div className="relative z-10 flex items-center gap-1 3xl:gap-2 flex-wrap justify-center max-w-full px-1 3xl:px-2">
-            {/* SECTION 1: Categories */}
             <div className="relative flex items-center" ref={navTrackRef}>
               <div
                 className={slidingPillClass}
@@ -358,11 +296,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                               </button>
                             ))
                           ) : (
-                            <div
-                              className={`px-3 py-2 text-[10px] text-center italic ${
-                                isDark ? "text-white/40" : "text-slate-400"
-                              }`}
-                            >
+                            <div className="px-3 py-2 text-[10px] text-center italic text-slate-400 dark:text-white/40">
                               {t("no_submenus")}
                             </div>
                           )}
@@ -374,14 +308,8 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
               })}
             </div>
 
-            {/* SECTION 2: Separator */}
-            <div
-              className={`w-[1px] h-5 mx-2 rounded-full ${
-                isDark ? "bg-white/10" : "bg-slate-400/20"
-              }`}
-            ></div>
+            <div className="w-[1px] h-5 mx-2 rounded-full bg-slate-400/20 dark:bg-white/10" />
 
-            {/* SECTION 3: Actions */}
             <button onClick={toggleLanguage} className={actionButtonClass} title="Switch Language">
               <Globe size={s(18)} />
             </button>

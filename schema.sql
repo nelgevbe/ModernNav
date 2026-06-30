@@ -37,5 +37,14 @@ CREATE TABLE IF NOT EXISTS links (
 CREATE INDEX IF NOT EXISTS idx_sub_cat ON subcategories(category_id, position);
 CREATE INDEX IF NOT EXISTS idx_link_sub ON links(subcategory_id, position);
 
+CREATE TABLE IF NOT EXISTS rate_limits (
+  identifier TEXT NOT NULL,
+  scope TEXT NOT NULL,
+  window_end INTEGER NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (identifier, scope)
+);
+CREATE INDEX IF NOT EXISTS idx_rl_window ON rate_limits(window_end);
+
 INSERT OR IGNORE INTO config (key, value) VALUES ('auth_code', 'admin');
 INSERT OR IGNORE INTO config (key, value) VALUES ('schema_version', '2');

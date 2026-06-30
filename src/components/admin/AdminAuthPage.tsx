@@ -91,3 +91,5 @@ export const AdminAuthPage: React.FC = () => {
     </div>
   );
 };
+
+export default AdminAuthPage;

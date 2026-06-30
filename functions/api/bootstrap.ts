@@ -1,15 +1,14 @@
 import { BootstrapResponse } from "../../src/types";
+import { migrateIfNeeded } from "./utils/migration";
 import {
-  migrateIfNeeded,
   readAllCategories,
   getBootstrapConfig,
   getDefaultCategories,
   getDefaultBackground,
   getDefaultPrefs,
-} from "./utils/dbHelpers";
+} from "./utils/reads";
 
 interface Env {
-  // @ts-expect-error - D1Database is provided by Cloudflare environment
   DB?: D1Database;
 }
 

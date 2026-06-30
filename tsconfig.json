@@ -15,10 +15,11 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
+    "types": ["vitest/globals"],
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "functions"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vitest.config.ts"],
+  "exclude": ["node_modules", "functions", "dist", "coverage"]
 }

@@ -33,24 +33,17 @@ export const AdminLayout: React.FC = () => {
   const background = data?.background ?? DEFAULT_BACKGROUND;
   const isDark = themeMode === ThemeMode.Dark;
   const themeClass = isDark ? "theme-dark" : "theme-light";
-  const adaptiveGlassBlur = isDark ? 50 : 30;
 
   const handleLogout = async () => {
     await storageService.logout();
     navigate("/admin/auth", { replace: true });
   };
 
-  const headerGlassClass = isDark
-    ? "bg-slate-900/60 border-white/10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]"
-    : "bg-white/60 border-white/40 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.12)]";
-
   return (
     <div className={`${themeClass} min-h-screen relative text-primary`}>
-      <BackgroundLayer background={background} isDark={isDark} />
+      <BackgroundLayer background={background} />
       <div
-        className={`fixed inset-0 z-0 pointer-events-none ${
-          isDark ? "bg-slate-900/40" : "bg-white/20"
-        }`}
+        className="fixed inset-0 z-0 pointer-events-none bg-white/20 dark:bg-slate-900/40"
         style={{
           backdropFilter: "blur(24px) saturate(140%)",
           WebkitBackdropFilter: "blur(24px) saturate(140%)",
@@ -59,10 +52,10 @@ export const AdminLayout: React.FC = () => {
 
       {/* ─── Top Navigation Bar (Apple-glass, matches dashboard CategoryNav) ─── */}
       <header
-        className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ${headerGlassClass}`}
+        className="sticky top-0 z-50 w-full border-b transition-all duration-300 bg-white/60 dark:bg-slate-900/60 border-white/40 dark:border-white/10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.12)] dark:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]"
         style={{
-          backdropFilter: `blur(${adaptiveGlassBlur}px) saturate(180%)`,
-          WebkitBackdropFilter: `blur(${adaptiveGlassBlur}px) saturate(180%)`,
+          backdropFilter: `blur(var(--glass-blur)) saturate(180%)`,
+          WebkitBackdropFilter: `blur(var(--glass-blur)) saturate(180%)`,
         }}
       >
         <div className="relative w-full px-6 h-16 flex items-center justify-between">
@@ -134,3 +127,5 @@ export const AdminLayout: React.FC = () => {
     </div>
   );
 };
+
+export default AdminLayout;

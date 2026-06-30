@@ -26,6 +26,8 @@ export const DEFAULT_LAYOUT_UI = {
   cols: DEFAULT_LAYOUT.gridColumns,
 };
 
+export const DEFAULT_BACKGROUND = "radial-gradient(circle at 50% -20%, #334155, #0f172a, #020617)";
+
 export const DEFAULT_PREFS: UserPreferences = {
   cardOpacity: 0.1,
   themeColor: DEFAULT_THEME_COLOR,

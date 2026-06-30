@@ -1,24 +1,23 @@
 interface Env {
-  // @ts-expect-error - D1Database is provided by Cloudflare environment
   DB?: D1Database;
 }
 
 import { verify, getClientIP, RateLimiter, ERROR_MESSAGES } from "./utils/authHelpers";
-import {
-  readAllCategories,
-  diffCategories,
-  applyCategoryDiff,
-  ensureSchema,
-} from "./utils/dbHelpers";
+import { ensureSchema } from "./utils/schema";
+import { readAllCategories } from "./utils/reads";
+import { diffCategories, applyCategoryDiff } from "./utils/diff";
 import { UpdatePayload, Category } from "../../src/types";
 import { validateFullCategory, validatePreferences, validateBackground } from "./utils/validation";
 
-const updateRateLimiter = new RateLimiter(20, 60 * 1000);
+const updateRateLimiter = new RateLimiter("data_update", 20, 60 * 1000);
 
 export const onRequestPost = async ({ request, env }: { request: Request; env: Env }) => {
   try {
     const clientIP = getClientIP(request);
-    if (!updateRateLimiter.isAllowed(clientIP)) {
+
+    if (env.DB) await ensureSchema(env.DB);
+
+    if (!(await updateRateLimiter.isAllowed(env.DB, clientIP))) {
       return jsonError(ERROR_MESSAGES.RATE_LIMITED, 429);
     }
 
@@ -49,8 +48,6 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
     if (!allowedTypes.includes(type)) {
       return jsonError(ERROR_MESSAGES.INVALID_DATA, 400);
     }
-
-    await ensureSchema(env.DB);
 
     // --- Categories: diff-based write ---
     // Read current state, compute a minimal diff, and apply only the changed
@@ -104,7 +101,7 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
   }
 };
 
-async function upsertConfig(db: any, key: string, value: string) {
+async function upsertConfig(db: D1Database, key: string, value: string) {
   await db
     .prepare(
       "INSERT INTO config (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"

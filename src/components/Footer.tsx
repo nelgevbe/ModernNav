@@ -6,24 +6,17 @@ import { useViewportScale } from "../hooks/useViewportScale";
 import { getIconSize } from "../utils/favicon";
 
 interface FooterProps {
-  isDark: boolean;
   github?: string;
   links?: FooterLink[];
 }
 
-export const Footer: React.FC<FooterProps> = ({ isDark, github, links }) => {
+export const Footer: React.FC<FooterProps> = ({ github, links }) => {
   const { t } = useLanguage();
   const viewportScale = useViewportScale();
   const s = (n: number) => getIconSize(n, viewportScale);
 
   return (
-    <footer
-      className={`relative z-10 py-5 text-center text-sm flex flex-col md:flex-row justify-center items-center gap-4 border-t backdrop-blur-sm transition-colors duration-500 ${
-        isDark
-          ? "text-white/30 border-white/5 bg-black/10"
-          : "text-slate-500 border-black/5 bg-white/20"
-      }`}
-    >
+    <footer className="relative z-10 py-5 text-center text-sm flex flex-col md:flex-row justify-center items-center gap-4 border-t backdrop-blur-sm transition-colors duration-500 text-slate-500 dark:text-white/30 border-black/5 dark:border-white/5 bg-white/20 dark:bg-black/10">
       <div className="flex flex-wrap justify-center gap-y-2 gap-x-6 px-4">
         {links?.map((link, idx) => (
           <a
