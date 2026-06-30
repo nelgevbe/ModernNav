@@ -3,12 +3,9 @@ interface Env {
 }
 
 import { verify, getClientIP, RateLimiter, ERROR_MESSAGES } from "./utils/authHelpers";
-import {
-  readAllCategories,
-  diffCategories,
-  applyCategoryDiff,
-  ensureSchema,
-} from "./utils/dbHelpers";
+import { ensureSchema } from "./utils/schema";
+import { readAllCategories } from "./utils/reads";
+import { diffCategories, applyCategoryDiff } from "./utils/diff";
 import { UpdatePayload, Category } from "../../src/types";
 import { validateFullCategory, validatePreferences, validateBackground } from "./utils/validation";
 

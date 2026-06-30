@@ -10,7 +10,7 @@ import {
   getClientIP,
   ERROR_MESSAGES,
 } from "./utils/authHelpers";
-import { ensureSchema } from "./utils/dbHelpers";
+import { ensureSchema } from "./utils/schema";
 
 // 创建速率限制器实例 - 为不同操作设置独立的限制
 const loginRateLimiter = new RateLimiter("auth_login", 10, 15 * 60 * 1000); // 登录：15分钟内最多10次

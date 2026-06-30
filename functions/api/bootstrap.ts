@@ -1,12 +1,12 @@
 import { BootstrapResponse } from "../../src/types";
+import { migrateIfNeeded } from "./utils/migration";
 import {
-  migrateIfNeeded,
   readAllCategories,
   getBootstrapConfig,
   getDefaultCategories,
   getDefaultBackground,
   getDefaultPrefs,
-} from "./utils/dbHelpers";
+} from "./utils/reads";
 
 interface Env {
   DB?: D1Database;
