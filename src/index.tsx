@@ -1,19 +1,20 @@
-import React from "react";
+import React, { Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { queryClient } from "./services/queries";
-import { AdminLayout } from "./components/admin/AdminLayout";
 import { AdminGuard } from "./components/admin/AdminGuard";
-import { AdminAuthPage } from "./components/admin/AdminAuthPage";
-import { ContentPage } from "./components/admin/ContentPage";
-import { GeneralPage } from "./components/admin/GeneralPage";
-import { AppearancePage } from "./components/admin/AppearancePage";
-import { DataPage } from "./components/admin/DataPage";
-import { SecurityPage } from "./components/admin/SecurityPage";
 import { useThemeColor } from "./hooks/useThemeColor";
+
+const AdminLayout = React.lazy(() => import("./components/admin/AdminLayout"));
+const AdminAuthPage = React.lazy(() => import("./components/admin/AdminAuthPage"));
+const ContentPage = React.lazy(() => import("./components/admin/ContentPage"));
+const GeneralPage = React.lazy(() => import("./components/admin/GeneralPage"));
+const AppearancePage = React.lazy(() => import("./components/admin/AppearancePage"));
+const DataPage = React.lazy(() => import("./components/admin/DataPage"));
+const SecurityPage = React.lazy(() => import("./components/admin/SecurityPage"));
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
@@ -38,21 +39,65 @@ root.render(
           <ThemeColorProvider>
             <Routes>
               <Route path="/" element={<App />} />
-              <Route path="/admin/auth" element={<AdminAuthPage />} />
+              <Route
+                path="/admin/auth"
+                element={
+                  <Suspense>
+                    <AdminAuthPage />
+                  </Suspense>
+                }
+              />
               <Route
                 path="/admin"
                 element={
                   <AdminGuard>
-                    <AdminLayout />
+                    <Suspense>
+                      <AdminLayout />
+                    </Suspense>
                   </AdminGuard>
                 }
               >
                 <Route index element={<Navigate to="content" replace />} />
-                <Route path="content" element={<ContentPage />} />
-                <Route path="general" element={<GeneralPage />} />
-                <Route path="appearance" element={<AppearancePage />} />
-                <Route path="data" element={<DataPage />} />
-                <Route path="security" element={<SecurityPage />} />
+                <Route
+                  path="content"
+                  element={
+                    <Suspense>
+                      <ContentPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="general"
+                  element={
+                    <Suspense>
+                      <GeneralPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="appearance"
+                  element={
+                    <Suspense>
+                      <AppearancePage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="data"
+                  element={
+                    <Suspense>
+                      <DataPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="security"
+                  element={
+                    <Suspense>
+                      <SecurityPage />
+                    </Suspense>
+                  }
+                />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

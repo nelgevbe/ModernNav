@@ -1,210 +1,198 @@
-# ModernNav - Personal Navigation Dashboard
+# ModernNav
 
-ModernNav is a modern, minimalist, card-based navigation dashboard featuring a frosted glass (Glassmorphism) aesthetic. It is designed to be a beautiful, customizable browser start page or bookmark manager.
+A personal navigation dashboard with a glassmorphism aesthetic. Built with React + Tailwind CSS + Cloudflare Pages (Functions + D1).
 
-Built with **React**, **Tailwind CSS**, and **Cloudflare Pages** (Functions + D1 Database).
+[中文](README.md) | English
 
-[中文文档](README.md) | [English Documentation](README_en.md)
+## Features
 
-## ✨ Features
+- **Glassmorphism cards** — real-time blur/saturation/rim-light physics engine, adaptive to light/dark theme
+- **Light/Dark theme** — Tailwind `dark:` variants + CSS variable tokens, instant site-wide toggle
+- **Global theme color** — one-click color change, all components respond instantly
+- **Viewport scaling** — auto-adapts to 1080p / 2K / 4K with proportional sizing
+- **Routed admin panel** — `/admin` with content / general / appearance / data / security tabs
+- **Relational storage** — D1 tables (categories / subcategories / links) + config KV, auto v1→v2 migration
+- **Diff-based writes** — only sends changes, single D1 batch transaction
+- **Secure auth** — JWT HMAC-SHA256 + HttpOnly cookie silent refresh + per-IP rate limiting
+- **Offline-first** — TanStack Query + LocalStorage placeholderData, works without network
+- **Search bar** — multi-engine aggregated search with dropdown switcher
+- **Drag & drop** — reorder categories and links
+- **PWA caching** — runtime cache for favicons, images, and API responses
+- **Icon fallback** — multi-level favicon API fallback (favicon.im → Google → DuckDuckGo)
+- **i18n** — English and Chinese via `locales/{en,zh}.json`, one-click switch
+- **Data backup** — one-click full import / export
 
-- **🎨 Modern Card UI:** Supports background preview and real-time configuration preview with frosted glass effects. Optimized for 2K/4K high-res displays with dynamic viewport scaling.
-- **🗂️ Routed Admin Panel:** Dedicated `/admin` routes with a unified shell + tab navigation. Every settings page is built on shared layout primitives (Container/Section/Row) for a consistent look.
-- **🌗 Site-wide Light/Dark Theme:** A design-token system scoped via `theme-light` / `theme-dark`, shared by both frontend and admin, so theme switching takes effect instantly everywhere.
-- **🎯 Global Theme Color:** The theme color is written to CSS variables via `useThemeColor`, so all frontend/admin components respond instantly once saved.
-- **🖱️ Enhanced Interaction:** Cards use native `<a>` tags, providing full support for middle-click opening, native context menus, and text selection.
-- **⚙️ Global Configuration:** "General" tab to manage site title, Favicon API, and footer links.
-- **🧩 Dynamic Footer System:** Supports custom GitHub links and multiple friendship links.
-- **🌐 Custom Favicon API:** Configure Favicon fetching services (e.g., Google, favicon.im) with `{domain}` placeholder.
-- **📐 Flexible Layout Settings:** Adjust card dimensions, canvas width, grid columns, and card opacity.
-- **🔌 Logical Hook Management:** Business logic managed via the `useDashboardLogic` hook.
-- **🌓 Intelligent Color Extraction:** Supports automatic theme switching and extracts dominant colors from backgrounds.
-- **📏 Viewport-Aware Scaling:** Dynamic root `font-size` based responsive scaling system, automatically adapting both frontend and modal components for high-resolution displays.
-- **🔄 Smart Icon Fallback:** Automatically falls back to alternative APIs (vemetric.com, Google, DuckDuckGo) when the default favicon API fails, ensuring icons always load.
-- **⚡ PWA Runtime Caching:** Intelligent caching for favicons, images, and API responses for faster repeat visits.
-- **🖱️ Drag & Drop:** Reorder categories and links via drag-and-drop.
-- **🖼️ High Personalization:** Customize card specifications, background styles, and theme details.
-- **🌍 I18n & Copy Support:** Built-in support for English and Chinese copy across all settings.
-- **⚡ Lightweight Status Indicators:** Text-only floating notifications to reduce visual noise.
-- **🔐 Enhanced Security:** Unified API client with HttpOnly Cookie silent refresh and CSRF protection.
-- **☁️ Smart Hybrid Storage:** Features a "Dirty-First" strategy and state persistence to prevent data loss.
-- **💾 Full Backup:** One-click data export and restore for total control.
+## Tech Stack
 
-## 🛠️ Tech Stack
+| Layer    | Technology                                                        |
+| -------- | ----------------------------------------------------------------- |
+| Frontend | React 18 · Vite 5 · Tailwind 3 · TypeScript 5 · Lucide React      |
+| Data     | TanStack Query v5 · LocalStorage persistence · Optimistic updates |
+| Backend  | Cloudflare Pages Functions                                        |
+| Database | Cloudflare D1 (SQLite)                                            |
+| Auth     | JWT HMAC-SHA256 · HttpOnly Cookie                                 |
+| Tooling  | ESLint · Prettier · Vitest · PWA (vite-plugin-pwa)                |
 
-- **Frontend:** React 19, Vite, Tailwind CSS, Lucide React
-- **Data Layer:** TanStack Query (with LocalStorage persistence + optimistic updates)
-- **Backend:** Cloudflare Pages Functions (Serverless)
-- **Database:** Cloudflare D1 (relational schema v2: categories / subcategories / links + config KV)
-- **Auth & Requests:** Unified API Client + Silent Refresh (JWT HMAC-SHA256)
-- **Language:** TypeScript
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- Node.js (v18 or later)
-- npm or yarn
+- Node.js >= 18
+- npm
 
-### 1. Installation
+### Install
 
 ```bash
 npm install
 ```
 
-### 2. Local Development (Frontend Only)
+### Local Development (Frontend Only)
 
-If you only want to work on the UI (uses LocalStorage):
+Data stored in LocalStorage, no backend needed:
 
 ```bash
 npm run dev
 ```
 
-### 3. Local Development (Full Stack with Cloudflare)
+### Full-Stack Development (with D1)
 
-To test the Backend API and D1 storage locally, you need `wrangler`.
+```bash
+# Initialize local database
+npx wrangler d1 execute modern-nav-db --local --file=./schema.sql
 
-1.  Install Wrangler:
-
-    ```bash
-    npm install -D wrangler
-    ```
-
-2.  Initialize local database schema:
-
-    ```bash
-    npx wrangler d1 execute modern-nav-db --local --file=./schema.sql
-    ```
-
-3.  Run the Cloudflare Pages simulation:
-    ```bash
-    npx wrangler pages dev . --d1 DB=modern-nav-db
-    ```
-    _This simulates the Cloudflare environment locally._
-
-## 📦 Deployment (Cloudflare Pages)
-
-This project is optimized for **Cloudflare Pages**.
-
-### Step 1: Push to Git
-
-Push this code to your GitHub or GitLab repository.
-
-### Step 2: Create Cloudflare Project
-
-1.  Log in to the [Cloudflare Dashboard](https://dash.cloudflare.com/).
-2.  Go to **Workers & Pages** > **Overview** > **Create Application** > **Pages** > **Connect to Git**.
-3.  Select your repository.
-
-### Step 3: Build Settings
-
-- **Framework preset:** `None`
-- **Build command:** `npm run build`
-- **Build output directory:** `dist`
-
-### Step 4: Configure Database (D1)
-
-1.  After the project is created, go to **Workers & Pages** > **D1**.
-2.  Click **Create** to create a database (e.g., `modern-nav-db`).
-3.  Go to the database **Console** tab.
-4.  Open `schema.sql` in your project, copy the content, paste it into the console, and click **Execute**.
-5.  Go back to your Pages project settings: **Settings** > **Functions** > **D1 Database Bindings**.
-6.  Add a binding:
-    - **Variable name:** `DB` (Must be exact)
-    - **D1 Database:** Select the namespace you created.
-7.  **Save** and **Redeploy** (Go to Deployments > Retry deployment).
-
-> **Upgrading from a previous version (schema v1 → v2):** No manual steps. On the first request after deployment, the backend detects `schema_version` and fans the legacy JSON blob out into the new relational tables atomically inside a D1 batch. Take a backup first with `npx wrangler d1 export modern-nav-db --output=backup.sql` if you have important data.
-
-## ⚙️ Configuration & Usage
-
-### Initial Setup
-
-1.  Open your deployed site.
-2.  Click the **Settings (Gear Icon)** in the top right.
-3.  Enter the default access code: `admin`.
-4.  **Important:** Go to the "Security" tab immediately and change your access code.
-
-### Customization
-
-- **Content:** Add categories, sub-menus, and links in the "Content" tab. Reorder them using drag and drop.
-- **Appearance:** Change the background URL and adjust card opacity in the "Appearance" tab.
-
-## 📂 Project Structure
-
-```text
-├── public/                     # Static Assets
-│   ├── favicon.svg             # Favicon
-│   └── fonts/                  # Local Fonts
-├── functions/api/              # Cloudflare Pages Functions (Backend API)
-│   ├── auth.ts                 # Auth Endpoint (Login/Refresh/Update)
-│   ├── bootstrap.ts            # Bootstrap Endpoint (Read D1 + auto schema migration)
-│   ├── health.ts               # Health Check Endpoint
-│   ├── update.ts               # Sync Endpoint (Write D1)
-│   └── utils/                  # Backend Utilities
-│       ├── authHelpers.ts      # JWT / Cookie / rate limiting
-│       ├── dbHelpers.ts        # D1 schema bootstrap + v1→v2 migration + relational R/W
-│       ├── logger.ts           # Logging
-│       └── validation.ts       # Input validation
-├── src/                        # Frontend Source Code
-│   ├── assets/                 # Assets
-│   ├── components/             # React UI Components
-│   │   ├── admin/              # Routed admin panel (replaces the old settings modal)
-│   │   │   ├── AdminLayout.tsx     # Admin shell (top nav + theme scope)
-│   │   │   ├── AdminGuard.tsx      # Auth route guard
-│   │   │   ├── AdminAuthPage.tsx   # Admin login page
-│   │   │   ├── ContentPage.tsx     # Content management (data wiring)
-│   │   │   ├── GeneralPage.tsx     # General settings (data wiring)
-│   │   │   ├── AppearancePage.tsx  # Appearance settings (data wiring)
-│   │   │   ├── DataPage.tsx        # Data backup (data wiring)
-│   │   │   └── SecurityPage.tsx    # Security settings (data wiring)
-│   │   ├── settings/           # Settings UI (assembled by admin pages)
-│   │   │   ├── SettingsPrimitives.tsx # Shared layout primitives (Container/Section/Row)
-│   │   │   ├── AppearanceTab.tsx   # Appearance UI
-│   │   │   ├── ContentTab.tsx      # Content management UI (split-pane card)
-│   │   │   ├── DataTab.tsx         # Data backup/restore UI
-│   │   │   ├── GeneralTab.tsx      # General settings UI
-│   │   │   └── SecurityTab.tsx     # Security settings UI
-│   │   ├── BackgroundLayer.tsx # Immersive Background Rendering
-│   │   ├── CategoryNav.tsx     # Navigation Bar
-│   │   ├── Footer.tsx          # Responsive Footer
-│   │   ├── GlassCard.tsx       # Glass Effect Card
-│   │   ├── IconPicker.tsx      # Icon Selector
-│   │   ├── SearchBar.tsx       # Search Bar
-│   │   ├── SkeletonLoader.tsx  # Semantic Skeleton Loader
-│   │   ├── SmartIcon.tsx       # Intelligent Icon (Auto-scale/Fallback)
-│   │   ├── SyncIndicator.tsx   # Sync Status Indicator
-│   │   └── Toast.tsx           # Toast Notification
-│   ├── contexts/               # Global State
-│   │   └── LanguageContext.tsx # i18n Context
-│   ├── hooks/                  # Custom Hooks
-│   │   ├── useDashboardLogic.ts # Core Business Logic (State/Sync/Updates)
-│   │   ├── useAuth.ts          # Auth-state query
-│   │   ├── useThemeColor.ts    # Global theme-color application (writes CSS vars, site-wide)
-│   │   ├── useCategoryDragDrop.ts # Drag & Drop Logic
-│   │   ├── useViewportScale.ts # Viewport adaptive scaling
-│   │   └── useResponsiveColumns.ts # Responsive grid columns calculation
-│   ├── services/               # Services layer
-│   │   ├── apiClient.ts        # Unified API Client (Auth/Intercept/Retry)
-│   │   ├── queries.ts          # TanStack Query hooks (bootstrap/categories/background/prefs)
-│   │   └── storage.ts          # Local cache + notifications + import/export
-│   ├── types/                  # TypeScript Types
-│   │   └── index.ts            # Type Definitions
-│   ├── utils/                  # Frontend Utilities
-│   │   ├── color.ts            # Color Extraction
-│   │   └── favicon.ts          # Favicon Generation & Fallback
-│   ├── constants/              # Constants
-│   │   └── defaults.ts         # Unified Default Values
-│   ├── App.tsx                 # Root Component
-│   ├── constants.tsx           # Constants Entry
-│   ├── index.tsx               # Entry Point
-│   └── index.css               # Global Styles (Tailwind + theme tokens + light/dark scopes)
-├── index.html                  # HTML Entry
-├── vite.config.ts              # Vite Configuration
-├── tsconfig.json               # TypeScript Configuration
-└── wrangler.toml               # Cloudflare Configuration
+# Start Cloudflare Pages simulation
+npx wrangler pages dev ./dist
 ```
 
-## 📄 License
+### Common Commands
 
-MIT License. Feel free to use and modify for personal use.
+```bash
+npm run build          # Production build
+npm run typecheck      # TypeScript check (frontend + Functions)
+npm run lint           # ESLint
+npm run test           # Vitest unit tests
+npm run test:watch     # Test watch mode
+```
+
+## Deployment (Cloudflare Pages)
+
+All you need is a free Cloudflare account. Takes just a few minutes.
+
+### 1. Fork the Repo
+
+Fork this repository to your own GitHub account.
+
+### 2. Create a Pages Project
+
+1. Log in to the [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. In the left sidebar, find **Workers & Pages** → click **Create** → choose **Pages** → **Connect to Git**
+3. Select your forked repo and fill in the build settings:
+   - **Framework preset:** `None`
+   - **Build command:** `npm run build`
+   - **Build output directory:** `dist`
+4. Click **Save and Deploy** and wait for the first build to finish
+
+### 3. Create and Bind the Database
+
+1. Back in the Cloudflare Dashboard, find **D1 SQL Database** in the left sidebar → click **Create**
+2. Name it `modern-nav-db` and create
+3. Go to the database page, switch to the **Console** tab
+4. Open `schema.sql` from the project, copy all contents, paste into the Console, and click **Execute**
+5. Go back to your Pages project → **Settings** → **Functions** → find **D1 Database Bindings**
+6. Add a binding:
+   - Variable name: `DB` (must be exact)
+   - D1 Database: select `modern-nav-db`
+7. Save, then go to **Deployments** → click **⋯** on the latest deployment → **Retry deployment**
+
+### 4. Start Using
+
+1. Once deployed, visit your site URL (`xxx.pages.dev`)
+2. Click the gear icon on the right side of the nav bar to enter admin
+3. Log in with the default password `admin`
+4. **First thing to do:** go to Security settings and change the default password
+
+> **Upgrading from an older version?** No manual steps needed. After deploying the new code, the first request auto-detects the schema version and migrates your data. Nothing is lost. We recommend exporting a backup from the D1 console before upgrading.
+
+## Project Structure
+
+```
+functions/api/                          # Cloudflare Pages Functions
+├── auth.ts                             # Login / refresh / change password
+├── bootstrap.ts                        # Init data + auto migration
+├── health.ts                           # Health check
+├── update.ts                           # Data writes (diff-based)
+└── utils/
+    ├── schema.ts                       # DDL + schema version management
+    ├── migration.ts                    # v1 → v2 migration
+    ├── diff.ts                         # Category diff computation + apply
+    ├── reads.ts                        # D1 reads + bootstrap assembly
+    ├── writes.ts                       # Full writes (migration only)
+    ├── authHelpers.ts                  # JWT / Cookie / rate limiting
+    ├── validation.ts                   # Data validation
+    └── logger.ts                       # Logging
+
+src/
+├── components/
+│   ├── admin/                          # Admin route pages
+│   │   ├── AdminLayout.tsx             # Admin shell (top nav + theme)
+│   │   ├── AdminGuard.tsx              # Auth route guard
+│   │   ├── AdminAuthPage.tsx           # Login page
+│   │   ├── ContentPage.tsx             # Content management
+│   │   ├── GeneralPage.tsx             # General settings
+│   │   ├── AppearancePage.tsx          # Appearance settings
+│   │   ├── DataPage.tsx                # Data backup
+│   │   └── SecurityPage.tsx            # Security settings
+│   ├── settings/                       # Settings panel UI
+│   │   ├── SettingsPrimitives.tsx      # Shared layout primitives
+│   │   ├── ContentTab.tsx              # Content management UI (wiring)
+│   │   ├── CategorySidebar.tsx         # Category sidebar
+│   │   ├── SubcategoryPanel.tsx        # Subcategory panel
+│   │   ├── LinkCard.tsx                # Link card
+│   │   ├── LinkForm.tsx                # Link form
+│   │   ├── useContentEditor.ts         # Content editing logic
+│   │   ├── AppearanceTab.tsx           # Appearance UI
+│   │   ├── GeneralTab.tsx              # General settings UI
+│   │   ├── DataTab.tsx                 # Data backup UI
+│   │   └── SecurityTab.tsx             # Security UI
+│   ├── BackgroundLayer.tsx             # Background rendering
+│   ├── CategoryNav.tsx                 # Nav bar (desktop island + mobile drawer)
+│   ├── GlassCard.tsx                   # Glass card component
+│   ├── SearchBar.tsx                   # Aggregated search
+│   ├── SmartIcon.tsx                   # Icon (scaling + fallback)
+│   ├── Footer.tsx                      # Footer
+│   ├── SkeletonLoader.tsx              # Skeleton loader
+│   ├── SyncIndicator.tsx               # Sync status
+│   ├── IconPicker.tsx                  # Icon picker
+│   └── Toast.tsx                       # Toast notifications
+├── hooks/
+│   ├── useDashboardLogic.ts            # Core business logic
+│   ├── useThemeColor.ts                # Theme color + dark class management
+│   ├── useViewportScale.ts             # Viewport scale factor
+│   ├── useResponsiveColumns.ts         # Responsive columns
+│   ├── useCategoryDragDrop.ts          # Drag & drop
+│   └── useAuth.ts                      # Auth state
+├── services/
+│   ├── apiClient.ts                    # API client (intercept / retry / silent refresh)
+│   ├── queries.ts                      # TanStack Query hooks
+│   └── storage.ts                      # LocalStorage read/write + import/export
+├── contexts/
+│   └── LanguageContext.tsx             # i18n Context
+├── locales/                            # Translation dictionaries
+│   ├── en.json
+│   └── zh.json
+├── constants/
+│   └── defaults.ts                     # Default value constants
+├── types/
+│   └── index.ts                        # TypeScript types
+├── utils/
+│   ├── color.ts                        # Color extraction
+│   └── favicon.ts                      # Favicon URL generation
+├── App.tsx                             # Root component
+├── constants.tsx                       # Search engines etc.
+├── index.tsx                           # Entry (routing + React.lazy code-splitting)
+└── index.css                           # Global styles + theme tokens
+```
+
+## License
+
+MIT

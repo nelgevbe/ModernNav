@@ -1,4 +1,5 @@
-import { Category, SearchEngine } from "./types";
+import { Category } from "./types";
+export { DEFAULT_SEARCH_ENGINES as SEARCH_ENGINES } from "./constants/defaults";
 
 export const INITIAL_CATEGORIES: Category[] = [
   {
@@ -114,34 +115,5 @@ export const INITIAL_CATEGORIES: Category[] = [
         ],
       },
     ],
-  },
-];
-
-// Using high-quality favicons for search engines
-// Using favicon.im with larger=true for best quality
-export const SEARCH_ENGINES: SearchEngine[] = [
-  {
-    id: "google",
-    name: "Google",
-    urlTemplate: "https://www.google.com/search?q=",
-    icon: "google.com",
-  },
-  {
-    id: "baidu",
-    name: "Baidu",
-    urlTemplate: "https://www.baidu.com/s?wd=",
-    icon: "baidu.com",
-  },
-  {
-    id: "bing",
-    name: "Bing",
-    urlTemplate: "https://www.bing.com/search?q=",
-    icon: "bing.com",
-  },
-  {
-    id: "github",
-    name: "GitHub",
-    urlTemplate: "https://github.com/search?q=",
-    icon: "github.com",
   },
 ];

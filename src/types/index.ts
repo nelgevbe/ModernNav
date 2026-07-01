@@ -48,6 +48,7 @@ export interface UserPreferences {
   faviconApi?: string;
   footerGithub?: string;
   footerLinks?: FooterLink[];
+  searchEngines?: SearchEngine[];
 }
 
 export interface ApiResponse<T = unknown> {

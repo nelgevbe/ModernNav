@@ -2,8 +2,7 @@ import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/re
 import { Category, UserPreferences, BootstrapResponse } from "../types";
 import { apiClient } from "./apiClient";
 import { INITIAL_CATEGORIES } from "../constants";
-import { DEFAULT_PREFS } from "../constants/defaults";
-import { DEFAULT_BACKGROUND } from "./storage";
+import { DEFAULT_PREFS, DEFAULT_BACKGROUND } from "../constants/defaults";
 
 // --- QueryClient Singleton ---
 export const queryClient = new QueryClient({
@@ -29,13 +28,13 @@ export const queryKeys = {
 };
 
 // --- LocalStorage Persistence (for offline-first) ---
-const LS_KEYS = {
+export const LS_KEYS = {
   CATEGORIES: "modernNav_categories",
   BACKGROUND: "modernNav_bg",
   PREFS: "modernNav_prefs",
 };
 
-function readLS<T>(key: string, fallback: T): T {
+export function readLS<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return fallback;
@@ -49,7 +48,7 @@ function readLS<T>(key: string, fallback: T): T {
   }
 }
 
-function writeLS(key: string, value: unknown) {
+export function writeLS(key: string, value: unknown) {
   try {
     localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
   } catch (e) {

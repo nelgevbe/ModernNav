@@ -1,5 +1,6 @@
 import { ApiResponse } from "../types";
 import { ApiError } from "../types/errors";
+import type { PageMetadata } from "../utils/parseMetadata";
 
 const AUTH_KEYS = {
   ACCESS_TOKEN: "modernNav_token",
@@ -197,6 +198,27 @@ class ApiClient {
         errorData.error || `HTTP error! status: ${response.status}`,
         response.status
       );
+    }
+
+    return await response.json();
+  }
+
+  async fetchMetadata(url: string, signal?: AbortSignal): Promise<PageMetadata> {
+    const token = await this.getAccessToken();
+    if (!token) throw new ApiError("Unauthorized", 401);
+
+    const endpoint = `/api/metadata?url=${encodeURIComponent(url)}`;
+    const response = await this._fetchWithTimeout(endpoint, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      signal,
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new ApiError(data.error || "Fetch failed", response.status);
     }
 
     return await response.json();

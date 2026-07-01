@@ -10,6 +10,7 @@ import {
   DEFAULT_FOOTER_GITHUB,
   DEFAULT_LAYOUT,
   DEFAULT_PREFS,
+  DEFAULT_SEARCH_ENGINES,
 } from "../constants/defaults";
 
 export const useDashboardLogic = () => {
@@ -39,6 +40,7 @@ export const useDashboardLogic = () => {
   const faviconApi = prefs.faviconApi ?? DEFAULT_FAVICON_API;
   const footerGithub = prefs.footerGithub ?? DEFAULT_FOOTER_GITHUB;
   const footerLinks = prefs.footerLinks ?? [];
+  const searchEngines = prefs.searchEngines ?? DEFAULT_SEARCH_ENGINES;
 
   // Theme color resolution + CSS-var application lives in the global
   // useThemeColor hook (mounted at the router root) so it applies across every
@@ -107,6 +109,7 @@ export const useDashboardLogic = () => {
       faviconApi,
       footerGithub,
       footerLinks,
+      searchEngines,
     },
     actions: {
       setCategories,

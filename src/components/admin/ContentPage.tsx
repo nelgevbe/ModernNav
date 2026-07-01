@@ -17,3 +17,5 @@ export const ContentPage: React.FC = () => {
     />
   );
 };
+
+export default ContentPage;

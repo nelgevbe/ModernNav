@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Search, ChevronDown } from "lucide-react";
 import { SearchEngine, ThemeMode } from "../types";
-import { SEARCH_ENGINES } from "../constants";
 import { useLanguage } from "../contexts/LanguageContext";
 import { getFaviconUrl } from "../utils/favicon";
 import { SmartIcon } from "./SmartIcon";
@@ -10,15 +9,17 @@ interface SearchBarProps {
   themeMode: ThemeMode;
   faviconApi?: string;
   viewportScale?: number;
+  searchEngines: SearchEngine[];
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({
   themeMode,
   faviconApi,
   viewportScale = 1,
+  searchEngines,
 }) => {
   const [query, setQuery] = useState("");
-  const [selectedEngine, setSelectedEngine] = useState<SearchEngine>(SEARCH_ENGINES[0]);
+  const [selectedEngine, setSelectedEngine] = useState<SearchEngine>(searchEngines[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [hoveredEngine, setHoveredEngine] = useState<string | null>(null);
@@ -27,12 +28,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   const isDark = themeMode === ThemeMode.Dark;
 
-  // --- SEARCH BAR AESTHETICS ---
-  // Stealth Mode: Extremely low opacity by default
-
-  const stateClasses = isDark
-    ? "bg-slate-900/0 hover:bg-slate-900/40 focus-within:bg-slate-900/60 border-white/10 hover:border-white/10 focus-within:border-[var(--theme-primary)]/20"
-    : "bg-white/0 hover:bg-white/40 focus-within:bg-white/70 border-white/10 hover:border-white/30 focus-within:border-[var(--theme-primary)]/50";
+  const stateClasses =
+    "bg-white/0 dark:bg-slate-900/0 hover:bg-white/40 dark:hover:bg-slate-900/40 focus-within:bg-white/70 dark:focus-within:bg-slate-900/60 border-white/10 hover:border-white/30 dark:hover:border-white/10 focus-within:border-[var(--theme-primary)]/50 dark:focus-within:border-[var(--theme-primary)]/20";
 
   const containerStyle = {
     backdropFilter:
@@ -48,30 +45,26 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     WebkitTransform: "translateZ(0)",
   };
 
-  const shadowClasses = isDark
-    ? "shadow-none hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] focus-within:shadow-[0_0_20px_-5px_var(--theme-primary)]/20"
-    : "shadow-none hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] focus-within:shadow-[0_0_20px_-5px_var(--theme-primary)]/10";
+  const shadowClasses =
+    "shadow-none hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] focus-within:shadow-[0_0_20px_-5px_var(--theme-primary)]/10 dark:focus-within:shadow-[0_0_20px_-5px_var(--theme-primary)]/20";
 
-  const textColor = isDark ? "text-white" : "text-slate-800";
-  const placeholderColor = isDark
-    ? "placeholder-white/20 focus-within:placeholder-white/50"
-    : "placeholder-slate-600/30 focus-within:placeholder-slate-600";
-  const iconColor = isDark
-    ? "text-white/30 group-hover:text-white/80"
-    : "text-slate-500/40 group-hover:text-slate-700";
-  const dividerColor = isDark
-    ? "border-r border-white/5 group-hover:border-white/10"
-    : "border-r border-slate-500/5 group-hover:border-slate-500/20";
+  const textColor = "text-slate-800 dark:text-white";
+  const placeholderColor =
+    "placeholder-slate-600/30 dark:placeholder-white/20 focus-within:placeholder-slate-600 dark:focus-within:placeholder-white/50";
+  const iconColor =
+    "text-slate-500/40 dark:text-white/30 group-hover:text-slate-700 dark:group-hover:text-white/80";
+  const dividerColor =
+    "border-r border-slate-500/5 dark:border-white/5 group-hover:border-slate-500/20 dark:group-hover:border-white/10";
 
   const dropdownClasses = isDark
     ? "apple-glass-dark-no-isolation"
     : "apple-glass-light-no-isolation";
 
-  const dropdownText = isDark ? "text-white" : "text-slate-800";
+  const dropdownText = "text-slate-800 dark:text-white";
 
   const itemBase =
     "flex-shrink-0 flex items-center gap-2 px-2.5 h-6 rounded-md text-[11px] whitespace-nowrap";
-  const itemHover = isDark ? "bg-white/10 text-white" : "bg-black/10 text-slate-900";
+  const itemHover = "bg-black/10 dark:bg-white/10 text-slate-900 dark:text-white";
   const itemActive = "bg-[var(--theme-primary)] text-white font-medium shadow-lg";
 
   useEffect(() => {
@@ -105,7 +98,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const scaledSearchIconSize = Math.round(18 * viewportScale);
   const scaledFontSize = Math.max(14, Math.round(14 * viewportScale));
 
-  // NOTE: Width reduced to max-w-[450px]
   return (
     <div className="w-full max-w-[30rem] mx-auto relative z-[70] transition-all duration-300">
       <form onSubmit={handleSearch} className="relative w-full group" ref={dropdownRef}>
@@ -120,11 +112,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`h-full flex items-center gap-2 pl-4 pr-3 rounded-l-2xl transition-colors min-w-[70px] ${dividerColor} ${
-                isDark
-                  ? "text-white/50 hover:text-white hover:bg-white/10"
-                  : "text-slate-500 hover:text-slate-900 hover:bg-black/10"
-              }`}
+              className={`h-full flex items-center gap-2 pl-4 pr-3 rounded-l-2xl transition-colors min-w-[70px] ${dividerColor} text-slate-500 dark:text-white/50 hover:text-slate-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10`}
             >
               <span
                 className="flex items-center justify-center rounded-md overflow-hidden shadow-sm transition-opacity"
@@ -165,22 +153,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             type="submit"
-            className={`p-2.5 mr-1 transition-all rounded-xl ${iconColor} ${
-              isDark
-                ? "hover:bg-white/15 hover:text-white"
-                : "hover:bg-black/15 hover:text-slate-900"
-            }`}
+            className={`p-2.5 mr-1 transition-all rounded-xl ${iconColor} hover:bg-black/15 dark:hover:bg-white/15 hover:text-slate-900 dark:hover:text-white`}
           >
             <Search size={scaledSearchIconSize} />
           </button>
         </div>
 
-        {/* Dropdown Menu */}
         {isDropdownOpen && (
           <div className="absolute top-full left-0 right-0 mt-2 z-[80]">
             <div className={`px-1 ${dropdownClasses} rounded-xl overflow-hidden shadow-2xl`}>
               <div className="h-10 flex flex-row overflow-x-auto no-scrollbar gap-1.5 px-1 items-center">
-                {SEARCH_ENGINES.map((engine) => (
+                {searchEngines.map((engine) => (
                   <button
                     key={engine.id}
                     type="button"

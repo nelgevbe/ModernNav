@@ -62,6 +62,10 @@ body {
   --theme-hover: color-mix(in srgb, #6280a3, black 10%);
   --theme-active: color-mix(in srgb, #6280a3, black 20%);
   --theme-light: color-mix(in srgb, #6280a3, white 30%);
+  --glass-blur: 30px;
+}
+.dark {
+  --glass-blur: 50px;
 }
 
 /* Theme-based shadow classes */

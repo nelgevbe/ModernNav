@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useBootstrap } from "../services/queries";
 import { getDominantColor } from "../utils/color";
 import { DEFAULT_THEME_COLOR, DEFAULT_PREFS } from "../constants/defaults";
+import { ThemeMode } from "../types";
 
 /**
  * Resolves the effective theme color and writes the related CSS variables onto
@@ -45,4 +46,8 @@ export function useThemeColor() {
       cancelled = true;
     };
   }, [background, themeColorAuto, savedColor]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", prefs.themeMode === ThemeMode.Dark);
+  }, [prefs.themeMode]);
 }

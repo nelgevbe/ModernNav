@@ -1,8 +1,9 @@
 import { Category, UserPreferences, BootstrapResponse } from "../types";
 import { INITIAL_CATEGORIES } from "../constants";
-import { DEFAULT_PREFS } from "../constants/defaults";
+import { DEFAULT_PREFS, DEFAULT_BACKGROUND } from "../constants/defaults";
 import { apiClient } from "./apiClient";
 import { handleApiError } from "../utils/errorHandler";
+import { LS_KEYS, readLS } from "./queries";
 
 // --- Notification Listeners (kept for Toast compatibility) ---
 type NotifyType = "success" | "error" | "info";
@@ -12,14 +13,7 @@ let _notifyListeners: NotifyListener[] = [];
 type SyncStatusListener = (isSyncing: boolean) => void;
 let _syncStatusListeners: SyncStatusListener[] = [];
 
-// --- Constants ---
-const LS_KEYS = {
-  CATEGORIES: "modernNav_categories",
-  BACKGROUND: "modernNav_bg",
-  PREFS: "modernNav_prefs",
-};
-
-export const DEFAULT_BACKGROUND = "radial-gradient(circle at 50% -20%, #334155, #0f172a, #020617)";
+export { DEFAULT_BACKGROUND } from "../constants/defaults";
 const CURRENT_BACKUP_VERSION = 1;
 
 interface BackupData {
@@ -29,22 +23,6 @@ interface BackupData {
   background?: string;
   prefs?: UserPreferences;
 }
-
-// --- Helpers ---
-const safeJsonParse = <T>(jsonString: string | null, fallback: T): T => {
-  if (!jsonString) return fallback;
-  try {
-    const parsed = JSON.parse(jsonString);
-    if (parsed && typeof parsed === "object" && "data" in parsed) {
-      if (Array.isArray(fallback) && Array.isArray(parsed.data)) return parsed.data as T;
-      if (!Array.isArray(fallback) && typeof parsed.data === "object") return parsed.data as T;
-    }
-    return parsed as T;
-  } catch (e) {
-    console.warn("JSON Parse Failed:", e);
-    return fallback;
-  }
-};
 
 // --- Storage Service (slimmed down) ---
 // The dirty-flag/debounce/sync state machine has moved into TanStack Query mutations
@@ -86,25 +64,14 @@ export const storageService = {
     }
   },
 
-  // --- Local cache reads (used by query placeholderData) ---
-  getLocalData: () => {
-    const categories = safeJsonParse(localStorage.getItem(LS_KEYS.CATEGORIES), INITIAL_CATEGORIES);
-    const background = localStorage.getItem(LS_KEYS.BACKGROUND) || DEFAULT_BACKGROUND;
-    const prefs = safeJsonParse(localStorage.getItem(LS_KEYS.PREFS), DEFAULT_PREFS);
-    return { categories, background, prefs, isDefaultCode: false };
-  },
-
   // --- Backup ---
   exportData: () => {
     const backup: BackupData = {
       version: CURRENT_BACKUP_VERSION,
       timestamp: Date.now(),
-      categories: safeJsonParse<Category[]>(
-        localStorage.getItem(LS_KEYS.CATEGORIES),
-        INITIAL_CATEGORIES
-      ),
+      categories: readLS<Category[]>(LS_KEYS.CATEGORIES, INITIAL_CATEGORIES),
       background: localStorage.getItem(LS_KEYS.BACKGROUND) || DEFAULT_BACKGROUND,
-      prefs: safeJsonParse<UserPreferences>(localStorage.getItem(LS_KEYS.PREFS), DEFAULT_PREFS),
+      prefs: readLS<UserPreferences>(LS_KEYS.PREFS, DEFAULT_PREFS),
     };
     const dataUri =
       "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));

@@ -2,9 +2,7 @@ interface Env {
   DB?: D1Database;
 }
 
-// 导入共享工具
 import {
-  sign,
   verify,
   generateToken,
   respondWithCookie,
@@ -12,18 +10,26 @@ import {
   getClientIP,
   ERROR_MESSAGES,
 } from "./utils/authHelpers";
+import { ensureSchema } from "./utils/schema";
 
 // 创建速率限制器实例 - 为不同操作设置独立的限制
-const loginRateLimiter = new RateLimiter(10, 15 * 60 * 1000); // 登录：15分钟内最多10次
-const refreshRateLimiter = new RateLimiter(100, 15 * 60 * 1000); // 刷新token：15分钟内最多100次
-const updateRateLimiter = new RateLimiter(10, 15 * 60 * 1000); // 修改密码：15分钟内最多10次
+const loginRateLimiter = new RateLimiter("auth_login", 10, 15 * 60 * 1000); // 登录：15分钟内最多10次
+const refreshRateLimiter = new RateLimiter("auth_refresh", 100, 15 * 60 * 1000); // 刷新token：15分钟内最多100次
+const updateRateLimiter = new RateLimiter("auth_update", 10, 15 * 60 * 1000); // 修改密码：15分钟内最多10次
 
 export const onRequestPost = async ({ request, env }: { request: Request; env: Env }) => {
   try {
     const clientIP = getClientIP(request);
 
-    const body = (await request.json()) as any;
-    const { action, code, currentCode, newCode } = body;
+    if (env.DB) await ensureSchema(env.DB);
+
+    const body = (await request.json()) as Record<string, unknown>;
+    const { action, code, currentCode, newCode } = body as {
+      action?: string;
+      code?: string;
+      currentCode?: string;
+      newCode?: string;
+    };
 
     // 输入验证
     if (!action || typeof action !== "string") {
@@ -33,68 +39,21 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
       });
     }
 
-    // 如果没有数据库，使用默认密码
-    if (!env.DB) {
-      console.log("No database available, using default code");
-      const storedCode = "admin";
-
-      // 登录
-      if (action === "login") {
-        // 检查登录速率限制
-        if (!loginRateLimiter.isAllowed(clientIP)) {
-          const resetTime = loginRateLimiter.getResetTime(clientIP);
-          return new Response(
-            JSON.stringify({
-              error: ERROR_MESSAGES.RATE_LIMITED,
-              resetTime,
-            }),
-            {
-              status: 429,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        }
-
-        if (!code || typeof code !== "string") {
-          return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-
-        if (code !== storedCode) {
-          return new Response(JSON.stringify({ error: ERROR_MESSAGES.INVALID_CREDENTIALS }), {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-
-        return respondWithCookie(
-          {
-            success: true,
-            accessToken: await generateToken("access", storedCode),
-          },
-          await generateToken("refresh", storedCode)
-        );
-      }
-
-      // 其他操作返回错误
-      return new Response(JSON.stringify({ error: "Database not available for this operation" }), {
-        status: 503,
-        headers: { "Content-Type": "application/json" },
-      });
+    // 统一解析 storedCode：有 DB 则查表，无 DB 则用默认值
+    let storedCode = "admin";
+    if (env.DB) {
+      const codeRow = await env.DB.prepare(
+        "SELECT value FROM config WHERE key = 'auth_code'"
+      ).first<{
+        value: string;
+      }>();
+      storedCode = codeRow?.value || "admin";
     }
-
-    const codeRow = await env.DB.prepare("SELECT value FROM config WHERE key = 'auth_code'").first<{
-      value: string;
-    }>();
-    const storedCode = codeRow?.value || "admin";
 
     // 1. 登录
     if (action === "login") {
-      // 检查登录速率限制
-      if (!loginRateLimiter.isAllowed(clientIP)) {
-        const resetTime = loginRateLimiter.getResetTime(clientIP);
+      if (!(await loginRateLimiter.isAllowed(env.DB, clientIP))) {
+        const resetTime = await loginRateLimiter.getResetTime(env.DB, clientIP);
         return new Response(
           JSON.stringify({
             error: ERROR_MESSAGES.RATE_LIMITED,
@@ -132,9 +91,8 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
 
     // 2. 刷新 Token
     if (action === "refresh") {
-      // 检查刷新速率限制
-      if (!refreshRateLimiter.isAllowed(clientIP)) {
-        const resetTime = refreshRateLimiter.getResetTime(clientIP);
+      if (!(await refreshRateLimiter.isAllowed(env.DB, clientIP))) {
+        const resetTime = await refreshRateLimiter.getResetTime(env.DB, clientIP);
         return new Response(
           JSON.stringify({
             error: ERROR_MESSAGES.RATE_LIMITED,
@@ -154,10 +112,8 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
       }
 
       try {
-        // 验证刷新令牌是否有效
         const isValid = await verify(rfToken, storedCode);
         if (!isValid) {
-          console.log("Refresh token invalid or expired");
           return respondWithCookie({ error: ERROR_MESSAGES.INVALID_TOKEN }, "", true, 401);
         }
       } catch (error) {
@@ -174,11 +130,20 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
       );
     }
 
-    // 3. 修改密码
+    // 3. 修改密码（需要 DB）
     if (action === "update") {
-      // 检查修改密码速率限制
-      if (!updateRateLimiter.isAllowed(clientIP)) {
-        const resetTime = updateRateLimiter.getResetTime(clientIP);
+      if (!env.DB) {
+        return new Response(
+          JSON.stringify({ error: "Database not available for password update" }),
+          {
+            status: 503,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      if (!(await updateRateLimiter.isAllowed(env.DB, clientIP))) {
+        const resetTime = await updateRateLimiter.getResetTime(env.DB, clientIP);
         return new Response(
           JSON.stringify({
             error: ERROR_MESSAGES.RATE_LIMITED,
@@ -226,7 +191,6 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
         });
       }
 
-      // 密码强度检查
       if (newCode.length < 4) {
         return new Response(
           JSON.stringify({
@@ -239,23 +203,12 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
         );
       }
 
-      if (!env.DB) {
-        return new Response(
-          JSON.stringify({ error: "Database not available for password update" }),
-          {
-            status: 503,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-      }
-
       await env.DB.prepare(
         "INSERT INTO config (key, value) VALUES ('auth_code', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
       )
         .bind(newCode)
         .run();
 
-      // 更新本地存储的密码值，以便在同一请求中后续使用
       const updatedStoredCode = newCode;
 
       return respondWithCookie(
@@ -269,11 +222,10 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
 
     // 4. 登出
     if (action === "logout") {
-      // 清除刷新令牌
       return respondWithCookie({ success: true }, "", true);
     }
 
-    // 默认响应（用于其他操作）
+    // 默认响应
     return new Response(JSON.stringify({ success: true }), {
       headers: { "Content-Type": "application/json" },
     });

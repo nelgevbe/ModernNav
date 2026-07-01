@@ -1,4 +1,4 @@
-import { ThemeMode, UserPreferences } from "../types";
+import { SearchEngine, ThemeMode, UserPreferences } from "../types";
 
 export const DEFAULT_THEME_COLOR = "#6280a3";
 export const DEFAULT_FAVICON_API = "https://favicon.im/{domain}?larger=true";
@@ -11,6 +11,33 @@ export const FALLBACK_FAVICON_APIS = [
 export const DEFAULT_SITE_TITLE = "ModernNav";
 export const DEFAULT_FOOTER_GITHUB = "https://github.com/lyan0220";
 export const DEFAULT_FOOTER_LINKS = [{ title: "Friendly Links", url: "https://coyoo.ggff.net/" }];
+
+export const DEFAULT_SEARCH_ENGINES: SearchEngine[] = [
+  {
+    id: "google",
+    name: "Google",
+    urlTemplate: "https://www.google.com/search?q=",
+    icon: "google.com",
+  },
+  {
+    id: "baidu",
+    name: "Baidu",
+    urlTemplate: "https://www.baidu.com/s?wd=",
+    icon: "baidu.com",
+  },
+  {
+    id: "bing",
+    name: "Bing",
+    urlTemplate: "https://www.bing.com/search?q=",
+    icon: "bing.com",
+  },
+  {
+    id: "github",
+    name: "GitHub",
+    urlTemplate: "https://github.com/search?q=",
+    icon: "github.com",
+  },
+];
 
 export const DEFAULT_LAYOUT = {
   maxContainerWidth: 900,
@@ -25,6 +52,8 @@ export const DEFAULT_LAYOUT_UI = {
   cardHeight: DEFAULT_LAYOUT.cardHeight,
   cols: DEFAULT_LAYOUT.gridColumns,
 };
+
+export const DEFAULT_BACKGROUND = "radial-gradient(circle at 50% -20%, #334155, #0f172a, #020617)";
 
 export const DEFAULT_PREFS: UserPreferences = {
   cardOpacity: 0.1,

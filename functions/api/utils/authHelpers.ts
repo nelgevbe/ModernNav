@@ -3,10 +3,6 @@
 const ACCESS_TTL = 60 * 60 * 1000; // 60分钟
 const REFRESH_TTL = 7 * 24 * 60 * 60 * 1000; // 7天
 
-// 请求限制配置
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15分钟窗口
-const RATE_LIMIT_MAX_REQUESTS = 100; // 最大请求数
-
 // 错误消息
 const ERROR_MESSAGES = {
   INVALID_TOKEN: "Invalid or expired token",
@@ -55,7 +51,7 @@ export async function generateToken(type: "access" | "refresh", secret: string):
 }
 
 // Cookie 助手
-export function respondWithCookie(body: any, token: string, clear = false, status = 200) {
+export function respondWithCookie(body: unknown, token: string, clear = false, status = 200) {
   const cookie =
     "refresh_token=" +
     (clear ? "" : token) +
@@ -74,59 +70,57 @@ export function respondWithCookie(body: any, token: string, clear = false, statu
   });
 }
 
-// 速率限制助手
+// D1-backed per-IP rate limiter. The previous in-process Map was reset on every
+// cold start and not shared between isolates, so an attacker hitting different
+// POPs effectively had no limit. The UPSERT + RETURNING runs in a single round
+// trip and resets the window in-place when it has expired.
+//
+// Fail-open behavior on missing env.DB matches the pre-D1 effective state
+// (in-process Map was already useless across isolates); a one-time console
+// warning surfaces the misconfiguration without spamming logs.
 export class RateLimiter {
-  private store: Map<string, { count: number; resetTime: number }> = new Map();
-  private lastCleanup: number = Date.now();
-  private requestCount: number = 0;
+  private static warned = false;
 
   constructor(
-    private maxRequests: number = RATE_LIMIT_MAX_REQUESTS,
-    private windowMs: number = RATE_LIMIT_WINDOW
+    private scope: string,
+    private maxRequests: number,
+    private windowMs: number
   ) {}
 
-  /**
-   * 清理过期记录，防止内存泄漏
-   */
-  private cleanup() {
-    const now = Date.now();
-    for (const [key, record] of this.store.entries()) {
-      if (now > record.resetTime) {
-        this.store.delete(key);
-      }
-    }
-    this.lastCleanup = now;
-  }
-
-  isAllowed(identifier: string): boolean {
-    const now = Date.now();
-    this.requestCount++;
-
-    if (
-      (this.requestCount % 1000 === 0 || now - this.lastCleanup > 60 * 60 * 1000) &&
-      this.store.size > 100
-    ) {
-      this.cleanup();
-    }
-
-    const record = this.store.get(identifier);
-
-    if (!record || now > record.resetTime) {
-      this.store.set(identifier, { count: 1, resetTime: now + this.windowMs });
+  async isAllowed(db: D1Database | undefined, identifier: string): Promise<boolean> {
+    if (!db) {
+      this.warnOnce();
       return true;
     }
-
-    if (record.count >= this.maxRequests) {
-      return false;
-    }
-
-    record.count++;
-    return true;
+    const now = Date.now();
+    const newEnd = now + this.windowMs;
+    const row = await db
+      .prepare(
+        `INSERT INTO rate_limits (identifier, scope, window_end, count)
+         VALUES (?1, ?2, ?3, 1)
+         ON CONFLICT(identifier, scope) DO UPDATE SET
+           count = CASE WHEN window_end < ?4 THEN 1 ELSE count + 1 END,
+           window_end = CASE WHEN window_end < ?4 THEN ?3 ELSE window_end END
+         RETURNING count, window_end`
+      )
+      .bind(identifier, this.scope, newEnd, now)
+      .first<{ count: number; window_end: number }>();
+    return (row?.count ?? 0) <= this.maxRequests;
   }
 
-  getResetTime(identifier: string): number | null {
-    const record = this.store.get(identifier);
-    return record ? record.resetTime : null;
+  async getResetTime(db: D1Database | undefined, identifier: string): Promise<number> {
+    if (!db) return Date.now() + this.windowMs;
+    const row = await db
+      .prepare("SELECT window_end FROM rate_limits WHERE identifier = ?1 AND scope = ?2")
+      .bind(identifier, this.scope)
+      .first<{ window_end: number }>();
+    return row?.window_end ?? Date.now() + this.windowMs;
+  }
+
+  private warnOnce() {
+    if (RateLimiter.warned) return;
+    RateLimiter.warned = true;
+    console.warn("[RateLimiter] env.DB unavailable — failing open. Rate limiting disabled.");
   }
 }
 
@@ -137,4 +131,4 @@ export function getClientIP(request: Request): string {
   );
 }
 
-export { ACCESS_TTL, REFRESH_TTL, RATE_LIMIT_WINDOW, RATE_LIMIT_MAX_REQUESTS, ERROR_MESSAGES };
+export { ACCESS_TTL, REFRESH_TTL, ERROR_MESSAGES };
