@@ -1,7 +1,6 @@
 // 数据验证工具
 
 import { ERROR_MESSAGES } from "./authHelpers";
-import { Category } from "../../../src/types";
 
 // 验证分类数据
 export function validateCategory(data: any): { valid: boolean; message?: string } {
@@ -88,7 +87,8 @@ export function validateLinkItem(data: any): { valid: boolean; message?: string 
   }
 
   try {
-    new URL(data.url.startsWith("http") ? data.url : "https://" + data.url);
+    const urlStr = /^https?:\/\//.test(data.url) ? data.url : "https://" + data.url;
+    new URL(urlStr);
   } catch {
     return { valid: false, message: "Link URL must be a valid URL" };
   }
@@ -105,8 +105,8 @@ export function validateLinkItem(data: any): { valid: boolean; message?: string 
     return { valid: false, message: "Link icon must be a string" };
   }
 
-  if (data.icon && data.icon.length > 100) {
-    return { valid: false, message: "Link icon must be 100 characters or less" };
+  if (data.icon && data.icon.length > 500) {
+    return { valid: false, message: "Link icon must be 500 characters or less" };
   }
 
   return { valid: true };
@@ -137,12 +137,85 @@ export function validatePreferences(data: any): { valid: boolean; message?: stri
   }
 
   if (data.themeMode !== undefined) {
-    if (typeof data.themeMode !== "string") {
-      return { valid: false, message: "Theme mode must be a string" };
-    }
-
     if (data.themeMode !== "dark" && data.themeMode !== "light") {
       return { valid: false, message: "Theme mode must be either 'dark' or 'light'" };
+    }
+  }
+
+  const intFields = ["maxContainerWidth", "cardWidth", "cardHeight", "gridColumns"] as const;
+  for (const field of intFields) {
+    if (data[field] !== undefined) {
+      if (typeof data[field] !== "number" || !Number.isFinite(data[field]) || data[field] < 1) {
+        return { valid: false, message: `${field} must be a positive number` };
+      }
+    }
+  }
+
+  const shortStrFields = ["siteTitle", "faviconApi", "footerGithub"] as const;
+  for (const field of shortStrFields) {
+    if (data[field] !== undefined) {
+      if (typeof data[field] !== "string" || data[field].length > 200) {
+        return { valid: false, message: `${field} must be a string of 200 characters or less` };
+      }
+    }
+  }
+
+  if (data.footerLinks !== undefined) {
+    if (!Array.isArray(data.footerLinks) || data.footerLinks.length > 20) {
+      return { valid: false, message: "footerLinks must be an array of at most 20 items" };
+    }
+    for (const link of data.footerLinks) {
+      if (!link || typeof link !== "object") {
+        return { valid: false, message: "Each footer link must be an object" };
+      }
+      if (typeof link.title !== "string" || link.title.length > 100) {
+        return {
+          valid: false,
+          message: "Footer link title must be a string of 100 characters or less",
+        };
+      }
+      if (typeof link.url !== "string" || link.url.length > 500) {
+        return {
+          valid: false,
+          message: "Footer link URL must be a string of 500 characters or less",
+        };
+      }
+    }
+  }
+
+  if (data.searchEngines !== undefined) {
+    if (!Array.isArray(data.searchEngines) || data.searchEngines.length > 20) {
+      return { valid: false, message: "searchEngines must be an array of at most 20 items" };
+    }
+    for (const engine of data.searchEngines) {
+      if (!engine || typeof engine !== "object") {
+        return { valid: false, message: "Each search engine must be an object" };
+      }
+      if (typeof engine.id !== "string" || !engine.id) {
+        return { valid: false, message: "Search engine id is required and must be a string" };
+      }
+      if (typeof engine.name !== "string" || !engine.name || engine.name.length > 50) {
+        return {
+          valid: false,
+          message: "Search engine name must be a non-empty string of 50 characters or less",
+        };
+      }
+      if (
+        typeof engine.urlTemplate !== "string" ||
+        !engine.urlTemplate ||
+        engine.urlTemplate.length > 500
+      ) {
+        return {
+          valid: false,
+          message: "Search engine urlTemplate must be a non-empty string of 500 characters or less",
+        };
+      }
+      if (typeof engine.icon !== "string" || engine.icon.length > 500) {
+        return {
+          valid: false,
+          message: "Search engine icon must be a string of 500 characters or less",
+        };
+      }
     }
   }
 
@@ -151,7 +224,7 @@ export function validatePreferences(data: any): { valid: boolean; message?: stri
 
 // 验证背景设置
 export function validateBackground(data: any): { valid: boolean; message?: string } {
-  if (!data) {
+  if (data === undefined || data === null) {
     return { valid: false, message: ERROR_MESSAGES.INVALID_DATA };
   }
 
@@ -163,15 +236,12 @@ export function validateBackground(data: any): { valid: boolean; message?: strin
     return { valid: false, message: "Background must be 1000 characters or less" };
   }
 
-  // 验证是否为有效的CSS背景或URL
   if (data.startsWith("http")) {
     try {
       new URL(data);
     } catch {
       return { valid: false, message: "Background must be a valid URL" };
     }
-  } else if (!data.includes("gradient") && !data.includes("rgb") && !data.includes("#")) {
-    return { valid: false, message: "Background must be a valid CSS background or URL" };
   }
 
   return { valid: true };

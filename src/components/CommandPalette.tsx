@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Command } from "cmdk";
 import { Search, FolderOpen, Sun, Moon, Globe, Settings, Home } from "lucide-react";
@@ -44,8 +44,17 @@ interface CommandPaletteProps {
 const groupHeadingClass =
   "[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.15em] [&_[cmdk-group-heading]]:text-slate-400 [&_[cmdk-group-heading]]:dark:text-white/30";
 
-const itemClass =
-  "flex items-center gap-3 px-2 py-2 rounded-lg text-sm cursor-pointer transition-colors duration-150 text-slate-700 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10 data-[selected=true]:bg-[var(--theme-primary)]/20 data-[selected=true]:text-slate-900 dark:data-[selected=true]:text-white data-[selected=true]:border-l-2 data-[selected=true]:border-[var(--theme-primary)]";
+const itemClass = [
+  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer",
+  "transition-all duration-200 ease-out",
+  "text-slate-700 dark:text-white/80",
+  "hover:bg-[var(--theme-primary)] dark:hover:bg-[var(--theme-primary)]",
+  "data-[selected=true]:bg-[var(--theme-primary)]/40",
+  "data-[selected=true]:ring-1 data-[selected=true]:ring-[var(--theme-primary)]",
+  "data-[selected=true]:shadow-[0_0_12px_-3px_var(--theme-primary)]",
+  "data-[selected=true]:text-slate-900 dark:data-[selected=true]:text-white",
+  "data-[selected=true]:[&_.cmd-icon]:text-[var(--theme-primary)]",
+].join(" ");
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
   categories,
@@ -62,6 +71,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 }) => {
   const { t } = useLanguage();
   const [search, setSearch] = useState("");
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // avoid synchronous setState inside effect to prevent cascading renders
@@ -108,6 +118,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       ]),
     [categories]
   );
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    requestAnimationFrame(() => {
+      if (listRef.current) listRef.current.scrollTop = 0;
+    });
+  }, []);
 
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
@@ -214,7 +231,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               <Command.Input
                 autoFocus
                 value={search}
-                onValueChange={setSearch}
+                onValueChange={handleSearchChange}
                 placeholder={t("cmd_placeholder")}
                 className="flex-1 h-12 bg-transparent border-none outline-none text-sm text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-white/30"
               />
@@ -223,7 +240,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               </kbd>
             </div>
 
-            <Command.List className="max-h-[60vh] overflow-y-auto overscroll-contain p-2">
+            <Command.List
+              ref={listRef}
+              className="max-h-[60vh] overflow-y-auto overscroll-contain p-2"
+            >
               <Command.Empty className="py-8 text-center text-sm text-slate-400 dark:text-white/30">
                 {t("cmd_no_results")}
               </Command.Empty>
@@ -245,7 +265,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     }}
                     className={itemClass}
                   >
-                    <span className="w-6 h-6 shrink-0 flex items-center justify-center rounded overflow-hidden">
+                    <span className="cmd-icon w-6 h-6 shrink-0 flex items-center justify-center rounded overflow-hidden text-slate-400 dark:text-white/40 transition-colors duration-200">
                       <SmartIcon
                         icon={link.icon || getFaviconUrl(link.url, faviconApi)}
                         size={18}
@@ -283,7 +303,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     }}
                     className={itemClass}
                   >
-                    <FolderOpen size={16} className="shrink-0 text-slate-400 dark:text-white/40" />
+                    <FolderOpen
+                      size={16}
+                      className="cmd-icon shrink-0 text-slate-400 dark:text-white/40 transition-colors duration-200"
+                    />
                     <span className="truncate">{item.title}</span>
                   </Command.Item>
                 ))}
@@ -298,7 +321,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     onSelect={cmd.action}
                     className={itemClass}
                   >
-                    <span className="shrink-0 text-slate-400 dark:text-white/40">{cmd.icon}</span>
+                    <span className="cmd-icon shrink-0 text-slate-400 dark:text-white/40 transition-colors duration-200">
+                      {cmd.icon}
+                    </span>
                     <span className="truncate">{cmd.label}</span>
                   </Command.Item>
                 ))}
