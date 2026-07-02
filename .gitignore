@@ -34,7 +34,7 @@ docs/
 functions/_worker.ts
 .wrangler/
 wrangler.toml
-DEVELOPMENT_PLAN.md
+CLAUDE.md
 
 # Build and Test
 dist/
