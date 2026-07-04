@@ -102,7 +102,7 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen relative overflow-x-hidden selection:bg-[var(--theme-primary)] selection:text-white font-sans flex flex-col text-slate-800 dark:text-slate-100">
+    <div className="min-h-screen relative selection:bg-[var(--theme-primary)] selection:text-white font-sans flex flex-col text-slate-800 dark:text-slate-100">
       <ToastContainer />
 
       <style>{`
@@ -192,6 +192,9 @@ const App: React.FC = () => {
                       href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onBeforeNavigate={() => {
+                        navigator.sendBeacon("/api/visit", JSON.stringify({ linkId: link.id }));
+                      }}
                       className="flex flex-col items-center justify-center text-center p-2 relative group animate-card-enter"
                       style={{
                         height: `${scaledCardHeight}px`,

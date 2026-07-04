@@ -3,7 +3,8 @@ export interface LinkItem {
   title: string;
   url: string;
   description?: string;
-  icon?: string; // We'll use lucide icon names or emoji
+  icon?: string;
+  visitCount?: number;
 }
 
 export interface SubCategory {
@@ -49,6 +50,11 @@ export interface UserPreferences {
   footerGithub?: string;
   footerLinks?: FooterLink[];
   searchEngines?: SearchEngine[];
+  frequentLinks?: {
+    enabled: boolean;
+    count: number;
+    pinToTop: boolean;
+  };
 }
 
 export interface ApiResponse<T = unknown> {
