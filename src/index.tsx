@@ -6,7 +6,7 @@ import App from "./App";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { queryClient } from "./services/queries";
 import { AdminGuard } from "./components/admin/AdminGuard";
-import { useThemeColor } from "./hooks/useThemeColor";
+import { useDesignTokens } from "./hooks/useDesignTokens";
 
 const AdminLayout = React.lazy(() => import("./components/admin/AdminLayout"));
 const AdminAuthPage = React.lazy(() => import("./components/admin/AdminAuthPage"));
@@ -26,7 +26,7 @@ if (!rootElement) {
  * so theme-color changes take effect immediately everywhere.
  */
 const ThemeColorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  useThemeColor();
+  useDesignTokens();
   return <>{children}</>;
 };
 

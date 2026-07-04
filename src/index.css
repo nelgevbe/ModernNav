@@ -8,8 +8,72 @@
   Uses clamp() on html font-size with raw units to avoid rem circular dependency.
 */
 html {
-  font-size: clamp(14px, 0.833vw, 26px);
+  font-size: clamp(
+    14px,
+    calc(0.833vw * var(--font-size-scale, 1)),
+    calc(26px * var(--font-size-scale, 1))
+  );
+  font-weight: var(--font-weight-body, 300);
   overflow-x: hidden;
+}
+
+/* Range Slider Styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-active, rgba(255, 255, 255, 0.1));
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--theme-primary, #6b82b0);
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: grab;
+  margin-top: -6px;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+input[type="range"]::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+}
+input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-active, rgba(255, 255, 255, 0.1));
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--theme-primary, #6b82b0);
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: grab;
+}
+input[type="range"]::-moz-range-thumb:active {
+  cursor: grabbing;
 }
 
 /* Custom Scrollbar for Webkit */
@@ -59,11 +123,20 @@ body {
    and on direct admin access before the bootstrap query resolves.
 */
 :root {
-  --theme-primary: #6280a3;
-  --theme-hover: color-mix(in srgb, #6280a3, black 10%);
-  --theme-active: color-mix(in srgb, #6280a3, black 20%);
-  --theme-light: color-mix(in srgb, #6280a3, white 30%);
-  --glass-blur: 30px;
+  --theme-primary: #8b9dc3;
+  --theme-hover: color-mix(in srgb, #8b9dc3, black 10%);
+  --theme-active: color-mix(in srgb, #8b9dc3, black 20%);
+  --theme-light: color-mix(in srgb, #8b9dc3, white 30%);
+  --theme-glow: color-mix(in srgb, #8b9dc3, transparent 70%);
+  --glass-blur: 40px;
+  --glass-saturation: 180%;
+  --glass-noise-opacity: 0.04;
+  --glass-tint: 0.1;
+  --radius-scale: 1;
+  --density-scale: 1;
+  --font-weight-body: 300;
+  --font-size-scale: 1;
+  --animation-speed: 1;
 }
 .dark {
   --glass-blur: 50px;
@@ -396,4 +469,73 @@ body {
   --overlay: rgba(15, 23, 42, 0.4);
   --overlay-light: rgba(15, 23, 42, 0.15);
   --input-bg: #ffffff;
+}
+
+/* ===== ANIMATION LEVEL SYSTEM ===== */
+
+.anim-none,
+.anim-none * {
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+}
+
+.anim-subtle {
+  --anim-card-duration: calc(200ms * var(--animation-speed));
+  --anim-card-stagger: 30ms;
+  --anim-card-translate: 0px;
+  --anim-hover-scale: 1;
+  --anim-hover-duration: calc(150ms * var(--animation-speed));
+  --anim-nav-duration: calc(200ms * var(--animation-speed));
+  --anim-card-curve: ease-out;
+}
+
+.anim-fluid {
+  --anim-card-duration: calc(350ms * var(--animation-speed));
+  --anim-card-stagger: 40ms;
+  --anim-card-translate: 8px;
+  --anim-hover-scale: 1.02;
+  --anim-hover-duration: calc(250ms * var(--animation-speed));
+  --anim-nav-duration: calc(300ms * var(--animation-speed));
+  --anim-card-curve: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.anim-expressive {
+  --anim-card-duration: calc(400ms * var(--animation-speed));
+  --anim-card-stagger: 50ms;
+  --anim-card-translate: 12px;
+  --anim-hover-scale: 1.03;
+  --anim-hover-duration: calc(300ms * var(--animation-speed));
+  --anim-nav-duration: calc(350ms * var(--animation-speed));
+  --anim-card-curve: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --animation-speed: 0;
+  }
+}
+
+@keyframes card-enter-dynamic {
+  0% {
+    opacity: 0;
+    transform: translateY(var(--anim-card-translate, 0px));
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Glass card background controlled by token */
+.glass-card-bg {
+  background-color: rgba(15, 23, 42, calc(var(--glass-tint, 0.1) * 0.8 + 0.2));
+}
+.theme-light .glass-card-bg,
+:root:not(.dark) .glass-card-bg {
+  background-color: rgba(255, 255, 255, calc(var(--glass-tint, 0.1) * 0.5 + 0.3));
+}
+
+/* Glass card hover scale driven by animation level */
+.group[style*="--hover-scale"]:hover {
+  transform: scale(var(--hover-scale, 1.02)) translateY(-4px);
 }

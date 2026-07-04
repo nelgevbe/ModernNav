@@ -1,6 +1,17 @@
-import { SearchEngine, ThemeMode, UserPreferences } from "../types";
+import {
+  AnimationCurve,
+  AnimationLevel,
+  CardDisplayMode,
+  FontWeightOption,
+  NavStyle,
+  SearchEngine,
+  SearchStyle,
+  ThemeMode,
+  ThemePresetName,
+  UserPreferences,
+} from "../types";
 
-export const DEFAULT_THEME_COLOR = "#6280a3";
+export const DEFAULT_THEME_COLOR = "#8b9dc3";
 export const DEFAULT_FAVICON_API = "https://favicon.im/{domain}?larger=true";
 
 export const FALLBACK_FAVICON_APIS = [
@@ -65,3 +76,31 @@ export const DEFAULT_PREFS: UserPreferences = {
   footerGithub: DEFAULT_FOOTER_GITHUB,
   footerLinks: DEFAULT_FOOTER_LINKS,
 };
+
+// Theme
+export const DEFAULT_THEME_PRESET: ThemePresetName = "moonstone";
+
+// Card display
+export const DEFAULT_CARD_DISPLAY_MODE: CardDisplayMode = "standard";
+
+// Animation
+export const DEFAULT_ANIMATION_LEVEL: AnimationLevel = "subtle";
+export const DEFAULT_ANIMATION_SPEED = 1.0;
+export const DEFAULT_ANIMATION_STAGGER = 30;
+export const DEFAULT_ANIMATION_CURVE: AnimationCurve = "ease";
+export const DEFAULT_ANIMATION_HOVER_SCALE = 1.0;
+
+// Glass
+export const DEFAULT_GLASS_BLUR = 40;
+export const DEFAULT_GLASS_SATURATION = 180;
+export const DEFAULT_GLASS_NOISE = 0.04;
+export const DEFAULT_GLASS_TINT = 0.1;
+
+// Global tuning
+export const DEFAULT_RADIUS_SCALE = 1.0;
+export const DEFAULT_DENSITY_SCALE = 1.0;
+export const DEFAULT_FONT_WEIGHT: FontWeightOption = "light";
+export const DEFAULT_FONT_SIZE = 1.0;
+export const DEFAULT_NAV_STYLE: NavStyle = "floating";
+export const DEFAULT_NAV_POSITION: "top" | "bottom" = "top";
+export const DEFAULT_SEARCH_STYLE: SearchStyle = "pill";

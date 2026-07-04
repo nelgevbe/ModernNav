@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Search, ChevronDown } from "lucide-react";
-import { SearchEngine, ThemeMode } from "../types";
+import { SearchEngine, SearchStyle, ThemeMode } from "../types";
 import { useLanguage } from "../contexts/LanguageContext";
 import { getFaviconUrl } from "../utils/favicon";
 import { SmartIcon } from "./SmartIcon";
@@ -10,6 +10,7 @@ interface SearchBarProps {
   faviconApi?: string;
   viewportScale?: number;
   searchEngines: SearchEngine[];
+  searchStyle?: SearchStyle;
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({
@@ -17,6 +18,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   faviconApi,
   viewportScale = 1,
   searchEngines,
+  searchStyle = "pill",
 }) => {
   const [query, setQuery] = useState("");
   const [selectedEngine, setSelectedEngine] = useState<SearchEngine>(searchEngines[0]);
@@ -29,7 +31,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const isDark = themeMode === ThemeMode.Dark;
 
   const stateClasses =
-    "bg-white/0 dark:bg-slate-900/0 hover:bg-white/40 dark:hover:bg-slate-900/40 focus-within:bg-white/70 dark:focus-within:bg-slate-900/60 border-white/10 hover:border-white/30 dark:hover:border-white/10 focus-within:border-[var(--theme-primary)]/50 dark:focus-within:border-[var(--theme-primary)]/20";
+    searchStyle === "underline"
+      ? "bg-transparent border-transparent border-b-white/20 dark:border-b-white/10 focus-within:border-b-[var(--theme-primary)] hover:border-b-white/40 dark:hover:border-b-white/20"
+      : searchStyle === "ghost"
+        ? "bg-transparent border-transparent focus-within:bg-white/70 dark:focus-within:bg-slate-900/60 focus-within:border-[var(--theme-primary)]/50 dark:focus-within:border-[var(--theme-primary)]/20"
+        : "bg-white/0 dark:bg-slate-900/0 hover:bg-white/40 dark:hover:bg-slate-900/40 focus-within:bg-white/70 dark:focus-within:bg-slate-900/60 border-white/10 hover:border-white/30 dark:hover:border-white/10 focus-within:border-[var(--theme-primary)]/50 dark:focus-within:border-[var(--theme-primary)]/20";
+
+  const borderRadiusClass =
+    searchStyle === "underline" ? "rounded-none" : "rounded-2xl";
 
   const containerStyle = {
     backdropFilter:
@@ -102,7 +111,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     <div className="w-full max-w-[30rem] mx-auto relative z-[70] transition-all duration-300">
       <form onSubmit={handleSearch} className="relative w-full group" ref={dropdownRef}>
         <div
-          className={`relative flex items-center rounded-2xl transition-all duration-300 border ${stateClasses} ${shadowClasses}`}
+          className={`relative flex items-center ${borderRadiusClass} transition-all duration-300 border ${stateClasses} ${shadowClasses}`}
           style={{
             ...containerStyle,
             height: `${scaledHeight}px`,
@@ -112,7 +121,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`h-full flex items-center gap-2 pl-4 pr-3 rounded-l-2xl transition-colors min-w-[70px] ${dividerColor} text-slate-500 dark:text-white/50 hover:text-slate-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10`}
+              className={`h-full flex items-center gap-2 pl-4 pr-3 ${searchStyle === "underline" ? "rounded-none" : "rounded-l-2xl"} transition-colors min-w-[70px] ${dividerColor} text-slate-500 dark:text-white/50 hover:text-slate-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10`}
             >
               <span
                 className="flex items-center justify-center rounded-md overflow-hidden shadow-sm transition-opacity"

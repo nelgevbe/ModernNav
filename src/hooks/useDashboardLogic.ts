@@ -11,6 +11,9 @@ import {
   DEFAULT_LAYOUT,
   DEFAULT_PREFS,
   DEFAULT_SEARCH_ENGINES,
+  DEFAULT_CARD_DISPLAY_MODE,
+  DEFAULT_NAV_STYLE,
+  DEFAULT_SEARCH_STYLE,
 } from "../constants/defaults";
 
 export const useDashboardLogic = () => {
@@ -41,6 +44,9 @@ export const useDashboardLogic = () => {
   const footerGithub = prefs.footerGithub ?? DEFAULT_FOOTER_GITHUB;
   const footerLinks = prefs.footerLinks ?? [];
   const searchEngines = prefs.searchEngines ?? DEFAULT_SEARCH_ENGINES;
+  const cardDisplayMode = prefs.cardDisplayMode ?? DEFAULT_CARD_DISPLAY_MODE;
+  const navStyle = prefs.navStyle ?? DEFAULT_NAV_STYLE;
+  const searchStyle = prefs.searchStyle ?? DEFAULT_SEARCH_STYLE;
 
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [activeSubCategoryId, setActiveSubCategoryId] = useState<string>("");
@@ -151,6 +157,9 @@ export const useDashboardLogic = () => {
       footerGithub,
       footerLinks,
       searchEngines,
+      cardDisplayMode,
+      navStyle,
+      searchStyle,
     },
     actions: {
       setCategories,

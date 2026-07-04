@@ -171,16 +171,6 @@ export const SmartIcon: React.FC<SmartIconProps> = ({
     }
   }
 
-  if (!IconComponent && (LucideIcons as Record<string, unknown>).default) {
-    const defaultExport = (LucideIcons as unknown as { default: Record<string, LucideIcon> })
-      .default;
-    const defaultKeys = Object.keys(defaultExport);
-    const matchedKey = defaultKeys.find((k) => k.toLowerCase() === iconKey);
-    if (matchedKey) {
-      IconComponent = defaultExport[matchedKey];
-    }
-  }
-
   if (IconComponent && (typeof IconComponent === "function" || typeof IconComponent === "object")) {
     const Component = IconComponent;
     return <Component size={scaledSize} className={className} style={style} strokeWidth={1.5} />;

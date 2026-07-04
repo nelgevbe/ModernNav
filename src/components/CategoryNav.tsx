@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { ChevronDown, Globe, Moon, Sun, Settings, Menu, X, Search } from "lucide-react";
-import { Category, ThemeMode } from "../types";
+import { Category, ThemeMode, NavStyle } from "../types";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useViewportScale } from "../hooks/useViewportScale";
 import { getIconSize } from "../utils/favicon";
@@ -16,6 +16,7 @@ interface CategoryNavProps {
   toggleLanguage: () => void;
   openSettings: () => void;
   onSearchClick: () => void;
+  navStyle?: NavStyle;
 }
 
 export const CategoryNav: React.FC<CategoryNavProps> = ({
@@ -29,6 +30,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   toggleLanguage,
   openSettings,
   onSearchClick,
+  navStyle = "floating",
 }) => {
   const { t } = useLanguage();
   const viewportScale = useViewportScale();
@@ -78,12 +80,20 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
     return `${navDropdownItemBase} text-slate-700 dark:text-white/90 hover:bg-black/5 dark:hover:bg-white/10 active:scale-[0.98]`;
   };
 
-  const islandContainerClass = `relative flex items-center justify-center p-1.5 rounded-full border transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] bg-white/60 dark:bg-slate-900/60 border-white/40 dark:border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.6)]`;
+  const islandContainerClass =
+    navStyle === "flush"
+      ? `relative flex items-center justify-center px-6 h-16 w-full border-b transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] bg-white/60 dark:bg-slate-900/60 border-white/40 dark:border-white/10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.12)] dark:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]`
+      : navStyle === "minimal"
+        ? `relative flex items-center justify-center p-1`
+        : `relative flex items-center justify-center p-1.5 rounded-full border transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] bg-white/60 dark:bg-slate-900/60 border-white/40 dark:border-white/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.6)]`;
 
-  const islandStyle = {
-    backdropFilter: `blur(var(--glass-blur)) saturate(180%)`,
-    WebkitBackdropFilter: `blur(var(--glass-blur)) saturate(180%)`,
-  };
+  const islandStyle =
+    navStyle === "minimal"
+      ? {}
+      : {
+          backdropFilter: `blur(var(--glass-blur)) saturate(180%)`,
+          WebkitBackdropFilter: `blur(var(--glass-blur)) saturate(180%)`,
+        };
 
   const slidingPillClass = `absolute top-0 bottom-0 rounded-full transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] pointer-events-none bg-[color-mix(in_srgb,var(--theme-primary),transparent_80%)] dark:bg-white/10 shadow-[inset_0_2px_8px_-2px_rgba(0,0,0,0.12)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] border border-black/5 dark:border-white/5`;
 
@@ -237,11 +247,19 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
         </div>
       </div>
 
-      <nav className="hidden md:flex justify-center items-center py-6 3xl:py-8 px-4 sticky top-0 z-[100] isolation-isolate text-sm font-medium tracking-wide">
+      <nav
+        className={`hidden md:flex justify-center items-center sticky top-0 z-[100] isolation-isolate text-sm font-medium tracking-wide ${
+          navStyle === "flush"
+            ? "py-0 px-0"
+            : navStyle === "minimal"
+              ? "py-3 px-4"
+              : "py-6 3xl:py-8 px-4"
+        }`}
+      >
         <div className={islandContainerClass} style={islandStyle}>
-          {glassLayerNoise}
-          {glassLayerRim}
-          {glassLayerSheen}
+          {navStyle !== "minimal" && glassLayerNoise}
+          {navStyle !== "minimal" && glassLayerRim}
+          {navStyle !== "minimal" && glassLayerSheen}
 
           <div className="relative z-10 flex items-center gap-1 3xl:gap-2 flex-wrap justify-center max-w-full px-1 3xl:px-2">
             <div className="relative flex items-center" ref={navTrackRef}>

@@ -36,11 +36,12 @@ const App: React.FC = () => {
     footerGithub,
     footerLinks,
     searchEngines,
+    navStyle,
+    searchStyle,
   } = state;
 
   const navigate = useNavigate();
   const { t } = useLanguage();
-
   const viewportScale = useViewportScale();
 
   const [cmdOpen, setCmdOpen] = useState(false);
@@ -124,6 +125,7 @@ const App: React.FC = () => {
         toggleLanguage={actions.toggleLanguage}
         openSettings={() => navigate("/admin")}
         onSearchClick={handleSearchClick}
+        navStyle={navStyle}
       />
 
       <CommandPalette
@@ -150,6 +152,7 @@ const App: React.FC = () => {
             faviconApi={faviconApi}
             viewportScale={viewportScale}
             searchEngines={searchEngines}
+            searchStyle={searchStyle}
           />
         </section>
 
@@ -174,10 +177,8 @@ const App: React.FC = () => {
                 </h3>
                 <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-slate-400/30 dark:to-white/20" />
               </div>
-              <div
-                key={visibleSubCategory.id}
-                className="grid gap-3 sm:gap-4 3xl:gap-5 4xl:gap-6 w-full responsive-grid"
-              >
+
+              <div className="grid gap-3 sm:gap-4 3xl:gap-5 4xl:gap-6 w-full responsive-grid">
                 {visibleSubCategory.items.map((link) => {
                   const iconSource = link.icon || getFaviconUrl(link.url, faviconApi);
                   const scaledIconSize = Math.round(24 * viewportScale);
@@ -208,13 +209,19 @@ const App: React.FC = () => {
                     >
                       <div
                         className="mb-2 transition-transform duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] flex items-center justify-center"
-                        style={{ height: `${scaledIconSize}px`, width: `${scaledIconSize}px` }}
+                        style={{
+                          height: `${scaledIconSize}px`,
+                          width: `${scaledIconSize}px`,
+                        }}
                       >
                         <SmartIcon
                           icon={iconSource}
                           imgClassName="object-contain drop-shadow-md rounded-md"
                           size={scaledIconSize}
-                          style={{ width: `${scaledIconSize}px`, height: `${scaledIconSize}px` }}
+                          style={{
+                            width: `${scaledIconSize}px`,
+                            height: `${scaledIconSize}px`,
+                          }}
                           faviconApi={faviconApi}
                           sourceUrl={link.icon ? undefined : link.url}
                         />
