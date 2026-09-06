@@ -8,27 +8,28 @@
 
 **前台**
 
-- 玻璃拟态卡片 — 模糊/饱和度/边缘光物理引擎，自适应明暗主题
-- 灵动岛导航栏 — 桌面端玻璃态浮动导航，移动端侧滑抽屉
+- 玻璃拟态卡片 — 模糊/饱和度/噪点/着色均可调，明暗主题自适应
+- 灵动岛导航栏 — 桌面端玻璃态浮动导航，移动端侧滑抽屉；支持多种导航栏样式
 - 命令面板 — `Ctrl+K` 或 `/` 唤起，模糊搜索支持拼音首字母匹配
-- 多引擎搜索栏 — 可在后台自定义搜索引擎，下拉切换
+- 多引擎搜索栏 — 可在后台自定义搜索引擎，下拉切换；支持多种搜索栏样式
 - 最常访问 — 自动统计点击次数，生成虚拟分类展示高频链接
 - 1080p / 2K / 4K 视口自适应，所有尺寸按比例缩放
-- 明暗主题一键切换，全局主题色一键换色
-- 中英双语，一键切换
-- PWA 离线缓存，无网可用
+- 明暗主题切换，全局主题色换色
+- 中英双语切换
+- PWA 离线缓存
 
 **后台 (`/admin`)**
 
 - 内容管理 — 分类/子分类/链接的增删改查，拖拽排序
 - 全局设置 — 站点标题、Favicon API、搜索引擎配置、最常访问开关
-- 外观设置 — 背景图片、模糊度、透明度、主题色（支持从图片自动提取）
-- 数据管理 — JSON 一键导入导出，浏览器书签 HTML 导入
+- 外观设置 — 背景图片、主题色（支持从图片自动提取）、玻璃参数（模糊/饱和度/噪点/着色）、圆角缩放、导航栏样式
+- 数据管理 — JSON 导入导出，浏览器书签 HTML 导入
 - 安全设置 — 修改管理密码
 - 链接表单自动抓取网页标题和描述
 
 **工程**
 
+- 设计 token 系统 — 所有视觉参数通过 CSS 自定义属性驱动，后台修改即时生效
 - 关系化存储 — D1 分表 (categories / subcategories / links) + config KV，v1→v2 自动迁移
 - Diff 写入 — 只发变更部分，一次 D1 batch 事务完成
 - JWT HMAC-SHA256 认证 + HttpOnly Cookie 静默刷新 + IP 级限流
@@ -126,7 +127,7 @@ npm run test:watch     # 测试监听模式
 3. 输入默认密码 `admin` 登录
 4. **第一件事**：进入「安全设置」修改默认密码
 
-> **从旧版升级？** 无需手动操作。部署新代码后首次访问会自动检测 schema 版本并完成迁移，数据不会丢失。建议升级前在 D1 控制台导出一份备份。
+> **从旧版升级？** 无需手动操作。部署后首次访问会自动完成 schema 迁移，数据不会丢失；访问码会在下一次成功登录时自动改为哈希存储。注意：安全更新（v1.1+）会使所有已登录设备失效，部署后需重新登录一次。建议升级前在 D1 控制台导出一份备份。
 
 ## 项目结构
 
@@ -144,9 +145,8 @@ functions/api/                          # Cloudflare Pages Functions
     ├── diff.ts                         # 分类差异计算 + 应用
     ├── reads.ts                        # D1 读取 + bootstrap 组装
     ├── writes.ts                       # 全量写入（仅迁移用）
-    ├── authHelpers.ts                  # JWT / Cookie / 限流
-    ├── validation.ts                   # 数据校验
-    └── logger.ts                       # 日志
+    ├── authHelpers.ts                  # JWT / Cookie / 限流 / 访问码哈希
+    └── validation.ts                   # 数据校验
 
 src/
 ├── components/
@@ -184,6 +184,7 @@ src/
 │   └── Toast.tsx                       # 全局提示
 ├── hooks/
 │   ├── useDashboardLogic.ts            # 核心业务逻辑（含最常访问计算）
+│   ├── useDesignTokens.ts              # 设计 token 引擎（CSS 变量写入）
 │   ├── useThemeColor.ts                # 主题色 + dark class 管理
 │   ├── useViewportScale.ts             # 视口缩放因子
 │   ├── useResponsiveColumns.ts         # 响应式列数
@@ -199,7 +200,8 @@ src/
 │   ├── en.json                         # 英文翻译
 │   └── zh.json                         # 中文翻译
 ├── constants/
-│   └── defaults.ts                     # 默认值常量
+│   ├── defaults.ts                     # 默认值常量
+│   └── themes.ts                       # 主题预设色板
 ├── types/
 │   ├── index.ts                        # 共享类型定义
 │   └── errors.ts                       # ApiError 类
@@ -219,4 +221,4 @@ src/
 
 ## License
 
-MIT
+[MIT](LICENSE)
