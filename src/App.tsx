@@ -204,7 +204,7 @@ const App: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-12 text-slate-400 dark:text-white/30">
-              No sub-categories found. Click Settings to configure.
+              {t("empty_subcategories")}
             </div>
           )}
         </main>

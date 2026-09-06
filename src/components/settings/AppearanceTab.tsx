@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useReducer } from "react";
+import React, { useState, useRef, useEffect, useReducer } from "react";
 import {
   Sliders,
   RotateCcw,
@@ -51,43 +51,16 @@ const RangeSlider: React.FC<{
   unit?: string;
   onChange: (v: number) => void;
 }> = ({ label, value, min, max, step, unit = "", onChange }) => {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [dragging, setDragging] = useState(false);
-
-  const computeValue = useCallback(
-    (clientX: number) => {
-      const track = trackRef.current;
-      if (!track) return value;
-      const rect = track.getBoundingClientRect();
-      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      const raw = min + ratio * (max - min);
-      return Math.round(raw / step) * step;
-    },
-    [min, max, step, value]
-  );
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    e.preventDefault();
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    setDragging(true);
-    onChange(computeValue(e.clientX));
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragging) return;
-    onChange(computeValue(e.clientX));
-  };
-
-  const handlePointerUp = () => {
-    setDragging(false);
-  };
-
+  const id = React.useId();
   const percent = ((value - min) / (max - min)) * 100;
 
   return (
     <div className="group">
       <div className="flex justify-between mb-1.5 px-1">
-        <label className="text-[10px] font-bold text-muted uppercase tracking-widest group-hover:text-secondary transition-colors">
+        <label
+          htmlFor={id}
+          className="text-[10px] font-bold text-muted uppercase tracking-widest group-hover:text-secondary transition-colors"
+        >
           {label}
         </label>
         <span className="text-[10px] text-[var(--theme-primary)] font-mono font-bold bg-[var(--theme-primary)]/10 px-1.5 py-0.5 rounded leading-none">
@@ -95,24 +68,21 @@ const RangeSlider: React.FC<{
           {unit}
         </span>
       </div>
-      <div
-        ref={trackRef}
-        className="relative h-5 flex items-center cursor-pointer touch-none select-none"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-      >
-        <div className="absolute left-0 right-0 h-1 rounded-full surface-active" />
-        <div
-          className="absolute left-0 h-1 rounded-full bg-[var(--theme-primary)]/40"
-          style={{ width: `${percent}%` }}
-        />
-        <div
-          className={`absolute w-4 h-4 rounded-full bg-[var(--theme-primary)] border-2 border-white shadow-md -translate-x-1/2 transition-transform ${dragging ? "scale-110" : "group-hover:scale-110"}`}
-          style={{ left: `${percent}%` }}
-        />
-      </div>
+      {/* Native range input: keyboard arrows / Home / End come for free; the
+          gradient paints the filled portion to match the glass theme. */}
+      <input
+        id={id}
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full"
+        style={{
+          background: `linear-gradient(to right, var(--theme-primary) 0%, var(--theme-primary) ${percent}%, var(--surface-hover) ${percent}%, var(--surface-hover) 100%) center / 100% var(--range-track-height) no-repeat`,
+        }}
+      />
     </div>
   );
 };
@@ -128,11 +98,12 @@ const SegmentedControl = <T extends string>({
   value: T;
   onChange: (v: T) => void;
 }) => (
-  <div className="flex gap-1 p-1 surface-active rounded-xl border border-muted">
+  <div role="group" className="flex gap-1 p-1 surface-active rounded-xl border border-muted">
     {options.map((opt) => (
       <button
         key={opt.value}
         onClick={() => onChange(opt.value)}
+        aria-pressed={value === opt.value}
         className={`flex-1 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${
           value === opt.value
             ? "bg-[var(--theme-primary)] text-white shadow-md"
@@ -353,7 +324,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
       setLocalAutoMode(true);
       setBgStatus(t("theme_updated"));
     } catch {
-      setBgStatus("Extraction failed");
+      setBgStatus(t("extraction_failed"));
     } finally {
       setIsExtracting(false);
       setTimeout(() => setBgStatus(""), 3000);

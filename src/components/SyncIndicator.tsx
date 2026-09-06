@@ -36,7 +36,7 @@ export const SyncIndicator: React.FC = () => {
 
   if (isSyncing) {
     return (
-      <div className="w-full flex justify-center pb-2 animate-fade-in z-20 relative">
+      <div role="status" className="w-full flex justify-center pb-2 animate-fade-in z-20 relative">
         <div className="flex items-center gap-2 text-[11px] font-medium opacity-60 tracking-wider">
           <Loader2 size={12} className="animate-spin" />
           <span>{t("syncing_msg")}</span>
@@ -48,7 +48,7 @@ export const SyncIndicator: React.FC = () => {
   if (!isLocalMode) return null;
 
   return (
-    <div className="w-full flex justify-center pb-2 animate-fade-in z-20 relative">
+    <div role="status" className="w-full flex justify-center pb-2 animate-fade-in z-20 relative">
       <div
         className="flex items-center gap-1.5 text-[11px] font-medium opacity-50 tracking-wider"
         title={t("local_mode_msg")}

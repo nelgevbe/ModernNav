@@ -86,9 +86,9 @@
   "label_icon": "图标",
   "icon_placeholder": "图标名(Github)、表情(🚀)或图片URL",
   "label_title": "标题",
-  "title_placeholder": "我的链接",
+  "title_placeholder": "标题",
   "label_url": "链接地址",
-  "url_placeholder": "https://example.com",
+  "url_placeholder": "https://...",
   "label_desc": "描述",
   "desc_placeholder": "可选描述",
   "add_link_card": "保存链接",
@@ -175,5 +175,9 @@
   "search_style_label": "搜索栏样式",
   "search_pill": "胶囊",
   "search_underline": "下划线",
-  "search_ghost": "幽灵"
+  "search_ghost": "幽灵",
+  "empty_subcategories": "未找到子分类，点击右上角设置进行配置。",
+  "icon_picker_search": "搜索图标...",
+  "favicon_api_placeholder": "https://favicon.im/{domain}",
+  "extraction_failed": "提取失败"
 }
