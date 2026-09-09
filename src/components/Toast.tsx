@@ -38,6 +38,7 @@ export const ToastContainer: React.FC = () => {
       {toasts.map((toast) => (
         <div
           key={toast.id}
+          role={toast.type === "error" ? "alert" : "status"}
           className={`
             pointer-events-auto flex items-start gap-3 p-4 rounded-xl shadow-lg border backdrop-blur-md animate-fade-in-down transition-all
             ${
@@ -57,6 +58,7 @@ export const ToastContainer: React.FC = () => {
           <p className="flex-1 text-xs font-medium leading-relaxed opacity-90">{toast.message}</p>
           <button
             onClick={() => removeToast(toast.id)}
+            aria-label="Dismiss"
             className="opacity-50 hover:opacity-100 transition-opacity"
           >
             <X size={14} />

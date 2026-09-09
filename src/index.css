@@ -21,8 +21,9 @@ html {
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
+  --range-track-height: 2px;
   width: 100%;
-  height: 20px;
+  height: calc(2 * var(--range-track-height));
   background: transparent;
   cursor: pointer;
   margin: 0;
@@ -30,7 +31,7 @@ input[type="range"] {
 }
 input[type="range"]::-webkit-slider-runnable-track {
   width: 100%;
-  height: 4px;
+  height: var(--range-track-height);
   border-radius: 2px;
   background: var(--surface-active, rgba(255, 255, 255, 0.1));
 }
@@ -44,7 +45,7 @@ input[type="range"]::-webkit-slider-thumb {
   border: 2px solid white;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   cursor: grab;
-  margin-top: -6px;
+  margin-top: -7px;
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
@@ -59,7 +60,7 @@ input[type="range"]::-webkit-slider-thumb:active {
 }
 input[type="range"]::-moz-range-track {
   width: 100%;
-  height: 4px;
+  height: var(--range-track-height);
   border-radius: 2px;
   background: var(--surface-active, rgba(255, 255, 255, 0.1));
 }
@@ -477,4 +478,42 @@ body {
 /* Glass card hover scale driven by animation level */
 .group[style*="--hover-scale"]:hover {
   transform: scale(var(--hover-scale, 1.02)) translateY(-4px);
+}
+
+/* Native range input styled to the glass theme — keyboard accessible by
+   default (arrows / Home / End), visually matching the custom slider. */
+.range-primary {
+  -webkit-appearance: none;
+  appearance: none;
+  height: var(--range-track-height);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+  margin: 8px 0;
+}
+.range-primary::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--theme-primary);
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: transform 150ms ease;
+}
+.range-primary:hover::-webkit-slider-thumb,
+.range-primary:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+.range-primary::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--theme-primary);
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.range-primary:focus-visible {
+  box-shadow: 0 0 0 3px var(--theme-glow);
 }

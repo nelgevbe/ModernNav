@@ -128,7 +128,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
           value={formData.faviconApi}
           onChange={(e) => setFormData({ ...formData, faviconApi: e.target.value })}
           className="input-primary text-xs font-mono"
-          placeholder="https://favicon.im/{domain}"
+          placeholder={t("favicon_api_placeholder")}
         />
       </SettingsSection>
 
@@ -215,14 +215,14 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ prefs, onUpdate }) => {
                 type="text"
                 value={link.title}
                 onChange={(e) => updateFooterLink(index, "title", e.target.value)}
-                placeholder="Title"
+                placeholder={t("title_placeholder")}
                 className="input-primary w-32 text-xs"
               />
               <input
                 type="text"
                 value={link.url}
                 onChange={(e) => updateFooterLink(index, "url", e.target.value)}
-                placeholder="https://..."
+                placeholder={t("url_placeholder")}
                 className="input-primary flex-1 text-xs font-mono"
               />
               <button

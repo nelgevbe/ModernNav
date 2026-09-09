@@ -86,9 +86,9 @@
   "label_icon": "Icon",
   "icon_placeholder": "Name (Github), Emoji (🚀) or URL",
   "label_title": "Title",
-  "title_placeholder": "My Link",
+  "title_placeholder": "Title",
   "label_url": "URL",
-  "url_placeholder": "https://example.com",
+  "url_placeholder": "https://...",
   "label_desc": "Description",
   "desc_placeholder": "Optional description",
   "add_link_card": "Save Link",
@@ -175,5 +175,9 @@
   "search_style_label": "Search Bar Style",
   "search_pill": "Pill",
   "search_underline": "Underline",
-  "search_ghost": "Ghost"
+  "search_ghost": "Ghost",
+  "empty_subcategories": "No sub-categories found. Click Settings to configure.",
+  "icon_picker_search": "Search icons...",
+  "favicon_api_placeholder": "https://favicon.im/{domain}",
+  "extraction_failed": "Extraction failed"
 }

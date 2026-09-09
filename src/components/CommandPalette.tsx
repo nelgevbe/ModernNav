@@ -73,6 +73,26 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const [search, setSearch] = useState("");
   const [, setPinyinTableReady] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Keep Tab focus inside the dialog while it is open (cmdk handles arrows;
+  // Tab would otherwise escape into the page behind the overlay).
+  const trapTab = (e: React.KeyboardEvent) => {
+    if (e.key !== "Tab" || !dialogRef.current) return;
+    const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+      'button, input, [href], [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
 
   // The pinyin table (~10KB) loads on first open; before it arrives, CJK
   // initials fall through to exact matching and the list re-renders once
@@ -220,6 +240,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
       <div className="relative flex justify-center px-4 pt-[20vh] pointer-events-none">
         <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("cmd_placeholder")}
+          onKeyDown={trapTab}
           onClick={(e) => e.stopPropagation()}
           className="pointer-events-auto w-full max-w-[560px] rounded-2xl border overflow-hidden
             bg-white/70 dark:bg-slate-900/70

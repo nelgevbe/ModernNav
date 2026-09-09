@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useViewportScale } from "../hooks/useViewportScale";
 import { getIconSize } from "../utils/favicon";
+import { useLanguage } from "../contexts/LanguageContext";
 import { loadLucideBarrel } from "../utils/lucideBarrel";
 
 // Cache for dynamically loaded icon modules
@@ -101,7 +102,7 @@ interface IconPickerProps {
   pickerRef: React.RefObject<HTMLDivElement>;
 }
 
-export const IconPicker: React.FC<IconPickerProps> = ({
+const IconPickerComponent: React.FC<IconPickerProps> = ({
   show,
   onClose,
   value,
@@ -112,6 +113,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
 }) => {
   const viewportScale = useViewportScale();
   const s = (n: number) => getIconSize(n, viewportScale);
+  const { t } = useLanguage();
   const [iconsModule, setIconsModule] = useState<LucideModule | null>(null);
 
   useEffect(() => {
@@ -171,7 +173,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
           type="text"
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search icons..."
+          placeholder={t("icon_picker_search")}
           className="w-full bg-slate-950/50 border border-white/5 rounded-md pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[var(--theme-primary)]/50"
         />
       </div>
@@ -237,3 +239,5 @@ export const IconPicker: React.FC<IconPickerProps> = ({
     </div>
   );
 };
+
+export const IconPicker = React.memo(IconPickerComponent);
