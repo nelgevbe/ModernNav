@@ -13,8 +13,10 @@ A personal navigation dashboard with a glassmorphism aesthetic. Built with React
 - Command palette — `Ctrl+K` or `/` to open, fuzzy search with pinyin initial matching
 - Multi-engine search bar — configurable search engines in admin, dropdown switcher; multiple search bar styles
 - Most Visited — automatic click tracking, generates a virtual category of frequently used links
+- Daily wallpaper — one-click Bing daily image, theme color auto-extracted from the wallpaper
 - 1080p / 2K / 4K viewport auto-scaling, all dimensions proportional
-- Light/dark theme toggle, global accent color
+- Light/dark theme (follow-system option), global accent color
+- Private categories — marked categories are visible only when authenticated, completely hidden from visitors
 - English and Chinese
 - PWA offline cache
 
@@ -22,20 +24,21 @@ A personal navigation dashboard with a glassmorphism aesthetic. Built with React
 
 - Content — CRUD for categories/subcategories/links, drag & drop reorder
 - General — site title, favicon API, search engine config, most-visited toggle
-- Appearance — background image, theme color (auto-extract from image), glass parameters (blur/saturation/noise/tint), border-radius scale, nav style
+- Appearance — background image, daily wallpaper, theme color (auto-extract from image), glass parameters (blur/saturation/noise/tint), border-radius scale, nav style
 - Data — JSON import/export, browser bookmark HTML import
+- Usage stats — category/link overview, never-clicked count, most-visited Top 10
 - Security — change admin password
 - Link form auto-fetches page title and description
 
 **Engineering**
 
 - Design token system — all visual parameters driven by CSS custom properties, admin changes take effect instantly
-- Relational storage — D1 tables (categories / subcategories / links) + config KV, auto v1→v2 migration
+- Relational storage — D1 tables (categories / subcategories / links) + config KV, automatic schema version migration
 - Diff-based writes — only sends changes, single D1 batch transaction
 - JWT HMAC-SHA256 auth + HttpOnly cookie silent refresh + per-IP rate limiting
 - TanStack Query optimistic updates + LocalStorage offline fallback
 - Multi-level icon fallback (favicon.im → Google → DuckDuckGo)
-- React.lazy route-level code splitting
+- React.lazy route-level code splitting; icons and pinyin table load on demand
 
 ## Tech Stack
 

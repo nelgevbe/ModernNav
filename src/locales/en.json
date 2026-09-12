@@ -179,5 +179,21 @@
   "empty_subcategories": "No sub-categories found. Click Settings to configure.",
   "icon_picker_search": "Search icons...",
   "favicon_api_placeholder": "https://favicon.im/{domain}",
-  "extraction_failed": "Extraction failed"
+  "extraction_failed": "Extraction failed",
+  "label_theme_mode": "Theme Mode",
+  "theme_auto": "Follow System",
+  "theme_dark": "Dark",
+  "theme_light": "Light",
+  "delete_link_confirm": "Delete this link?",
+  "daily_wallpaper": "Daily Wallpaper (Bing)",
+  "stats_title": "Usage Statistics",
+  "stats_desc": "Overview of your links and click activity.",
+  "stats_categories": "Categories",
+  "stats_subcategories": "Sub-categories",
+  "stats_links": "Links",
+  "stats_zero_click": "Never Clicked",
+  "stats_top_visited": "Most Visited (Top 10)",
+  "tab_stats": "Stats",
+  "category_private": "Private category",
+  "category_make_private": "Make private"
 }

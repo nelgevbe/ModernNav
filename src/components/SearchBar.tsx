@@ -1,12 +1,13 @@
 import React, { memo, useState, useRef, useEffect } from "react";
 import { Search, ChevronDown } from "../utils/icons";
-import { SearchEngine, SearchStyle, ThemeMode } from "../types";
+import { SearchEngine, SearchStyle } from "../types";
 import { useLanguage } from "../contexts/LanguageContext";
 import { getFaviconUrl } from "../utils/favicon";
 import { SmartIcon } from "./SmartIcon";
+import type { ResolvedTheme } from "../utils/theme";
 
 interface SearchBarProps {
-  themeMode: ThemeMode;
+  themeMode: ResolvedTheme;
   faviconApi?: string;
   viewportScale?: number;
   searchEngines: SearchEngine[];
@@ -28,7 +29,7 @@ const SearchBarComponent: React.FC<SearchBarProps> = ({
   const dropdownRef = useRef<HTMLFormElement>(null);
   const { t } = useLanguage();
 
-  const isDark = themeMode === ThemeMode.Dark;
+  const isDark = themeMode === "dark";
 
   const stateClasses =
     searchStyle === "underline"

@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus, GripVertical, Pencil, Trash2, X } from "../../utils/icons";
+import { Plus, GripVertical, Pencil, Trash2, X, Lock, Unlock } from "../../utils/icons";
 import { Category } from "../../types";
 import { useLanguage } from "../../contexts/LanguageContext";
 import type { ContentEditorState, ContentEditorActions } from "./useContentEditor";
@@ -28,6 +28,7 @@ export const CategorySidebar: React.FC<CategorySidebarProps> = ({ categories, st
     setEditCategoryTitle,
     handleAddCategory,
     handleUpdateCategoryTitle,
+    setCategoryPrivacy,
     handleDeleteCategory,
     closeLinkForm,
     dragHandlers,
@@ -139,7 +140,12 @@ export const CategorySidebar: React.FC<CategorySidebarProps> = ({ categories, st
                   onBlur={() => handleUpdateCategoryTitle(cat.id)}
                 />
               ) : (
-                <span className="truncate text-sm font-semibold">{cat.title}</span>
+                <>
+                  <span className="truncate text-sm font-semibold">{cat.title}</span>
+                  {cat.isPrivate && (
+                    <Lock size={10} className="text-[var(--theme-primary)] shrink-0" />
+                  )}
+                </>
               )}
             </div>
             <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-1">
@@ -152,6 +158,18 @@ export const CategorySidebar: React.FC<CategorySidebarProps> = ({ categories, st
                 className="p-1 text-muted hover:text-primary rounded"
               >
                 <Pencil size={12} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCategoryPrivacy(cat.id, !cat.isPrivate);
+                }}
+                title={cat.isPrivate ? t("category_private") : t("category_make_private")}
+                className={`p-1 rounded ${
+                  cat.isPrivate ? "text-[var(--theme-primary)]" : "text-muted hover:text-primary"
+                }`}
+              >
+                {cat.isPrivate ? <Lock size={12} /> : <Unlock size={12} />}
               </button>
               <button
                 onClick={(e) => {

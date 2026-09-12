@@ -3,18 +3,25 @@ import { Lock, AlertCircle, Loader2, LogIn } from "../../utils/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { storageService } from "../../services/storage";
-import { useBootstrap } from "../../services/queries";
-import { ThemeMode } from "../../types";
+import { useBootstrap, queryKeys } from "../../services/queries";
+import { useQueryClient } from "@tanstack/react-query";
 import { DEFAULT_PREFS } from "../../constants/defaults";
+import { usePrefersDark } from "../../hooks/usePrefersDark";
+import { resolveThemeMode } from "../../utils/theme";
 
 export const AdminAuthPage: React.FC = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const { data } = useBootstrap();
   const isDefaultCode = data?.isDefaultCode ?? false;
-  const themeMode = data?.prefs.themeMode ?? DEFAULT_PREFS.themeMode;
-  const themeClass = themeMode === ThemeMode.Light ? "theme-light" : "theme-dark";
+  // "auto" resolves against the OS preference — same rule as AdminLayout.
+  const prefersDark = usePrefersDark();
+  const themeClass =
+    resolveThemeMode(data?.prefs.themeMode ?? DEFAULT_PREFS.themeMode, prefersDark) === "light"
+      ? "theme-light"
+      : "theme-dark";
 
   const [authInput, setAuthInput] = useState("");
   const [authError, setAuthError] = useState("");
@@ -30,6 +37,8 @@ export const AdminAuthPage: React.FC = () => {
     try {
       const success = await storageService.login(authInput);
       if (success) {
+        // Re-fetch bootstrap with the new token so private categories appear.
+        queryClient.invalidateQueries({ queryKey: queryKeys.bootstrap });
         navigate(redirectTo, { replace: true });
       } else {
         setAuthError(t("incorrect_code"));

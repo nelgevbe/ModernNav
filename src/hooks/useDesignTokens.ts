@@ -1,7 +1,10 @@
 import { useEffect } from "react";
 import { useBootstrap } from "../services/queries";
 import { getDominantColor, themeAccentVars } from "../utils/color";
-import { ThemeMode } from "../types";
+import { fetchDailyWallpaper, isDailyBackground } from "../utils/background";
+import { DEFAULT_BACKGROUND } from "../constants/defaults";
+import { resolveThemeMode } from "../utils/theme";
+import { usePrefersDark } from "./usePrefersDark";
 import {
   DEFAULT_PREFS,
   DEFAULT_THEME_COLOR,
@@ -49,10 +52,29 @@ export function useDesignTokens() {
       });
     };
 
+    // Sentinels resolve to their concrete image URL before extraction.
+    const resolveBackground = async (bg: string): Promise<string> => {
+      if (isDailyBackground(bg)) {
+        try {
+          return await fetchDailyWallpaper();
+        } catch {
+          return DEFAULT_BACKGROUND;
+        }
+      }
+      return bg;
+    };
+
     const resolve = async () => {
-      if (themeColorAuto && (background.startsWith("http") || background.startsWith("data:"))) {
-        const extracted = await getDominantColor(background);
+      const resolvedBackground = await resolveBackground(background);
+      if (
+        themeColorAuto &&
+        (resolvedBackground.startsWith("http") || resolvedBackground.startsWith("data:"))
+      ) {
+        const extracted = await getDominantColor(resolvedBackground);
         applyAccent(extracted);
+        window.dispatchEvent(
+          new CustomEvent("modernnav:accent-extracted", { detail: { color: extracted } })
+        );
       } else {
         applyAccent(savedColor);
       }
@@ -64,9 +86,11 @@ export function useDesignTokens() {
     };
   }, [background, themeColorAuto, savedColor]);
 
+  const prefersDark = usePrefersDark();
+  const resolvedTheme = resolveThemeMode(prefs.themeMode, prefersDark);
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", prefs.themeMode === ThemeMode.Dark);
-  }, [prefs.themeMode]);
+    document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
+  }, [resolvedTheme]);
 
   useEffect(() => {
     const root = document.documentElement;

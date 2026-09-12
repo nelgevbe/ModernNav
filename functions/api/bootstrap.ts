@@ -1,4 +1,5 @@
 import { BootstrapResponse } from "../../src/types";
+import { getJwtSecret, verify } from "./utils/authHelpers";
 import { migrateIfNeeded } from "./utils/migration";
 import {
   readAllCategories,
@@ -12,7 +13,7 @@ interface Env {
   DB?: D1Database;
 }
 
-export const onRequestGet = async ({ env }: { env: Env }) => {
+export const onRequestGet = async ({ request, env }: { request: Request; env: Env }) => {
   try {
     if (!env.DB) {
       const fallback: BootstrapResponse = {
@@ -27,13 +28,30 @@ export const onRequestGet = async ({ env }: { env: Env }) => {
 
     await migrateIfNeeded(env.DB);
 
+    // Private categories are visible only to authenticated sessions; an
+    // invalid or missing token silently degrades to the visitor view.
+    let authenticated = false;
+    const token = request.headers.get("Authorization")?.split(" ")[1];
+    if (token) {
+      try {
+        authenticated = await verify(token, await getJwtSecret(env.DB), "access");
+      } catch {
+        authenticated = false;
+      }
+    }
+
     const [categories, cfg] = await Promise.all([
       readAllCategories(env.DB),
       getBootstrapConfig(env.DB),
     ]);
 
+    const allCategories = categories.length > 0 ? categories : getDefaultCategories();
+    const visibleCategories = authenticated
+      ? allCategories
+      : allCategories.filter((c) => !c.isPrivate);
+
     const response: BootstrapResponse = {
-      categories: categories.length > 0 ? categories : getDefaultCategories(),
+      categories: visibleCategories,
       background: cfg.background,
       prefs: cfg.prefs,
       isDefaultCode: cfg.isDefaultCode,

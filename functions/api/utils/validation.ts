@@ -33,6 +33,10 @@ export function validateCategory(data: unknown): ValidationResult {
     };
   }
 
+  if (d.isPrivate !== undefined && typeof d.isPrivate !== "boolean") {
+    return { valid: false, message: "isPrivate must be a boolean" };
+  }
+
   if (!Array.isArray(d.subCategories)) {
     return { valid: false, message: "SubCategories must be an array" };
   }
@@ -142,8 +146,8 @@ export function validatePreferences(data: unknown): ValidationResult {
   }
 
   if (d.themeMode !== undefined) {
-    if (d.themeMode !== "dark" && d.themeMode !== "light") {
-      return { valid: false, message: "Theme mode must be either 'dark' or 'light'" };
+    if (d.themeMode !== "dark" && d.themeMode !== "light" && d.themeMode !== "auto") {
+      return { valid: false, message: "Theme mode must be 'dark', 'light' or 'auto'" };
     }
   }
 

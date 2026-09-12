@@ -6,6 +6,7 @@ import {
   Wand2,
   Loader2,
   Image as ImageIcon,
+  Wallpaper,
   Sparkles,
   Layers,
   Type,
@@ -31,6 +32,8 @@ import {
   DEFAULT_SEARCH_STYLE,
 } from "../../constants/defaults";
 import { getDominantColor, themeAccentVars } from "../../utils/color";
+import { DAILY_BACKGROUND, isDailyBackground } from "../../utils/background";
+import { useResolvedBackground } from "../../hooks/useResolvedBackground";
 import { useViewportScale } from "../../hooks/useViewportScale";
 import { getIconSize } from "../../utils/favicon";
 import { SettingsContainer, SettingsSection, SettingsRow } from "./SettingsPrimitives";
@@ -78,7 +81,7 @@ const RangeSlider: React.FC<{
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="range-primary w-full"
+        className="w-full"
         style={{
           background: `linear-gradient(to right, var(--theme-primary) 0%, var(--theme-primary) ${percent}%, var(--surface-hover) ${percent}%, var(--surface-hover) 100%) center / 100% var(--range-track-height) no-repeat`,
         }}
@@ -103,6 +106,7 @@ const SegmentedControl = <T extends string>({
       <button
         key={opt.value}
         onClick={() => onChange(opt.value)}
+        aria-pressed={value === opt.value}
         className={`flex-1 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${
           value === opt.value
             ? "bg-[var(--theme-primary)] text-white shadow-md"
@@ -267,6 +271,24 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
   // replace while the draft still matches the last synced snapshot. The
   // content check also keeps this effect from re-dispatching itself.
   const syncedRef = useRef(draft);
+  // Mirror the extracted accent into the picker (extraction may complete
+  // before this page mounts).
+  useEffect(() => {
+    if (!localAutoMode) return;
+    const current = getComputedStyle(document.documentElement)
+      .getPropertyValue("--theme-primary")
+      .trim();
+    if (current) setThemeColorInput(current);
+  }, [localAutoMode]);
+  useEffect(() => {
+    const onExtracted = (e: Event) => {
+      const color = (e as CustomEvent<{ color: string }>).detail?.color;
+      if (color) setThemeColorInput(color);
+    };
+    window.addEventListener("modernnav:accent-extracted", onExtracted);
+    return () => window.removeEventListener("modernnav:accent-extracted", onExtracted);
+  }, []);
+  const previewBackground = useResolvedBackground(bgInput);
   useEffect(() => {
     const next = draftFromPrefs(prefs, currentBackground);
     const untouched = JSON.stringify(draft) === JSON.stringify(syncedRef.current);
@@ -357,15 +379,15 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
         {/* Background + Theme Color Preview */}
         <section className="surface-elevated border border-default rounded-2xl overflow-hidden sticky top-0 z-10">
           <div className="h-40 relative overflow-hidden group">
-            {bgInput.startsWith("http") || bgInput.startsWith("data:") ? (
+            {previewBackground.startsWith("http") || previewBackground.startsWith("data:") ? (
               <img
-                src={bgInput}
+                src={previewBackground}
                 alt="Background"
                 className="w-full h-full object-cover transition-opacity duration-700"
                 onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
               />
             ) : (
-              <div className="w-full h-full" style={{ background: bgInput }} />
+              <div className="w-full h-full" style={{ background: previewBackground }} />
             )}
             <div className="absolute inset-0 flex items-center justify-center">
               <div
@@ -406,8 +428,20 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                   value={bgInput}
                   onChange={(e) => setBgInput(e.target.value)}
                   placeholder={t("bg_url_placeholder")}
-                  className="input-primary pl-10 pr-4 font-mono text-[11px]"
+                  className="input-primary pl-10 pr-10 font-mono text-[11px]"
                 />
+                <button
+                  onClick={() => setBgInput(DAILY_BACKGROUND)}
+                  aria-pressed={isDailyBackground(bgInput)}
+                  title={t("daily_wallpaper")}
+                  className={`absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${
+                    isDailyBackground(bgInput)
+                      ? "text-[var(--theme-primary)]"
+                      : "text-muted hover:text-secondary"
+                  }`}
+                >
+                  <Wallpaper size={s(16)} />
+                </button>
               </div>
             </SettingsRow>
 

@@ -28,6 +28,7 @@ input[type="range"] {
   cursor: pointer;
   margin: 0;
   padding: 0;
+  border-radius: 9999px;
 }
 input[type="range"]::-webkit-slider-runnable-track {
   width: 100%;
@@ -481,39 +482,12 @@ body {
 }
 
 /* Native range input styled to the glass theme — keyboard accessible by
-   default (arrows / Home / End), visually matching the custom slider. */
-.range-primary {
-  -webkit-appearance: none;
-  appearance: none;
-  height: var(--range-track-height);
-  border-radius: 9999px;
+   default (arrows / Home / End). Element-level rules live at the top of this
+   file (input[type="range"]); only the focus ring is added here. */
+input[type="range"]:focus-visible {
+  /* Keyboard focus indicator: soft semi-transparent theme-color ring.
+     outline is suppressed because the ring below replaces it. */
   outline: none;
-  cursor: pointer;
-  margin: 8px 0;
-}
-.range-primary::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 9999px;
-  background: var(--theme-primary);
-  border: 2px solid white;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
-  transition: transform 150ms ease;
-}
-.range-primary:hover::-webkit-slider-thumb,
-.range-primary:active::-webkit-slider-thumb {
-  transform: scale(1.1);
-}
-.range-primary::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 9999px;
-  background: var(--theme-primary);
-  border: 2px solid white;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
-}
-.range-primary:focus-visible {
-  box-shadow: 0 0 0 3px var(--theme-glow);
+  box-shadow: 0 0 0 3px
+    var(--theme-glow, color-mix(in srgb, var(--theme-primary, #6b82b0), transparent 70%));
 }

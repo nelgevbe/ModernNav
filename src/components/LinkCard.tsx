@@ -1,13 +1,14 @@
 import React, { memo } from "react";
 import { GlassCard } from "./GlassCard";
 import { SmartIcon } from "./SmartIcon";
-import { LinkItem, ThemeMode } from "../types";
+import { LinkItem } from "../types";
 import { getFaviconUrl } from "../utils/favicon";
+import type { ResolvedTheme } from "../utils/theme";
 
 interface LinkCardProps {
   link: LinkItem;
   cardOpacity: number;
-  themeMode: ThemeMode;
+  themeMode: ResolvedTheme;
   viewportScale: number;
   scaledCardHeight: number;
   faviconApi?: string;

@@ -46,6 +46,7 @@ export interface ContentEditorActions {
   setIsFetching: (v: boolean) => void;
   handleAddCategory: () => void;
   handleUpdateCategoryTitle: (id: string) => void;
+  setCategoryPrivacy: (catId: string, isPrivate: boolean) => void;
   handleDeleteCategory: (id: string, name: string) => void;
   handleAddSubMenu: () => void;
   handleAddLinkDirectly: () => void;
@@ -187,6 +188,10 @@ export function useContentEditor(
       categories.map((c) => (c.id === id ? { ...c, title: editCategoryTitle } : c))
     );
     setEditingCategoryId(null);
+  };
+
+  const setCategoryPrivacy = (catId: string, isPrivate: boolean) => {
+    onUpdateCategories(categories.map((c) => (c.id === catId ? { ...c, isPrivate } : c)));
   };
 
   const handleDeleteCategory = (id: string, name: string) => {
@@ -347,7 +352,7 @@ export function useContentEditor(
   };
 
   const handleDeleteLink = (subId: string, linkId: string) => {
-    if (window.confirm("Delete this link?")) {
+    if (window.confirm(t("delete_link_confirm"))) {
       onUpdateCategories(
         categories.map((cat) =>
           cat.id === selectedCategoryId
@@ -408,6 +413,7 @@ export function useContentEditor(
       setIsFetching,
       handleAddCategory,
       handleUpdateCategoryTitle,
+      setCategoryPrivacy,
       handleDeleteCategory,
       handleAddSubMenu,
       handleAddLinkDirectly,

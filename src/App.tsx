@@ -123,7 +123,8 @@ const App: React.FC = () => {
         onCategoryClick={actions.handleMainCategoryClick}
         onSubCategoryClick={actions.handleSubCategoryClick}
         themeMode={themeMode}
-        toggleTheme={actions.toggleTheme}
+        themeModePreference={actions.themeModePreference}
+        cycleThemeMode={actions.cycleThemeMode}
         toggleLanguage={actions.toggleLanguage}
         openSettings={handleOpenSettings}
         onSearchClick={handleSearchClick}
@@ -137,7 +138,7 @@ const App: React.FC = () => {
         searchEngines={searchEngines}
         onCategoryClick={actions.handleMainCategoryClick}
         onSubCategoryClick={actions.handleSubCategoryClick}
-        toggleTheme={actions.toggleTheme}
+        cycleThemeMode={actions.cycleThemeMode}
         toggleLanguage={actions.toggleLanguage}
         navigate={navigate}
         open={cmdOpen}

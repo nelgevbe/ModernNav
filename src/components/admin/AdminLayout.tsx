@@ -8,34 +8,43 @@ import {
   ShieldCheck,
   LogOut,
   Home,
+  BarChart3,
 } from "../../utils/icons";
+import { useQueryClient } from "@tanstack/react-query";
 import { storageService } from "../../services/storage";
 import { useLanguage } from "../../contexts/LanguageContext";
-import { useBootstrap } from "../../services/queries";
-import { ThemeMode } from "../../types";
+import { useBootstrap, queryKeys } from "../../services/queries";
 import { DEFAULT_PREFS } from "../../constants/defaults";
 import { DEFAULT_BACKGROUND } from "../../services/storage";
 import { BackgroundLayer } from "../BackgroundLayer";
+import { usePrefersDark } from "../../hooks/usePrefersDark";
+import { resolveThemeMode } from "../../utils/theme";
 
 const NAV = [
   { to: "/admin/content", labelKey: "tab_content", Icon: LayoutGrid },
   { to: "/admin/general", labelKey: "tab_general", Icon: Settings },
   { to: "/admin/appearance", labelKey: "tab_appearance", Icon: ImageIcon },
   { to: "/admin/data", labelKey: "tab_data", Icon: Database },
+  { to: "/admin/stats", labelKey: "tab_stats", Icon: BarChart3 },
   { to: "/admin/security", labelKey: "tab_security", Icon: ShieldCheck },
 ] as const;
 
 export const AdminLayout: React.FC = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data } = useBootstrap();
-  const themeMode = data?.prefs.themeMode ?? DEFAULT_PREFS.themeMode;
+  const prefersDark = usePrefersDark();
   const background = data?.background ?? DEFAULT_BACKGROUND;
-  const isDark = themeMode === ThemeMode.Dark;
+  const isDark =
+    resolveThemeMode(data?.prefs.themeMode ?? DEFAULT_PREFS.themeMode, prefersDark) === "dark";
   const themeClass = isDark ? "theme-dark" : "theme-light";
 
   const handleLogout = async () => {
     await storageService.logout();
+    // Drop the authenticated view: the refetch returns the visitor-filtered
+    // tree without private categories.
+    queryClient.invalidateQueries({ queryKey: queryKeys.bootstrap });
     navigate("/admin/auth", { replace: true });
   };
 

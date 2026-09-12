@@ -12,11 +12,13 @@ interface CatRowInput {
   id: string;
   title: string;
   position: number;
+  isPrivate: boolean;
 }
 interface CatUpdate {
   id: string;
   title?: string;
   position?: number;
+  isPrivate?: boolean;
 }
 interface SubRowInput {
   id: string;
@@ -50,7 +52,7 @@ interface LinkUpdate {
 }
 
 interface FlatState {
-  cats: Map<string, { title: string; position: number }>;
+  cats: Map<string, { title: string; position: number; isPrivate: boolean }>;
   subs: Map<string, { categoryId: string; title: string; position: number }>;
   links: Map<
     string,
@@ -66,7 +68,7 @@ interface FlatState {
 }
 
 function flattenCategories(categories: Category[]): FlatState {
-  const cats = new Map<string, { title: string; position: number }>();
+  const cats = new Map<string, { title: string; position: number; isPrivate: boolean }>();
   const subs = new Map<string, { categoryId: string; title: string; position: number }>();
   const links = new Map<
     string,
@@ -85,7 +87,11 @@ function flattenCategories(categories: Category[]): FlatState {
       console.warn(`flattenCategories: duplicate category id "${cat.id}", skipping`);
       return;
     }
-    cats.set(cat.id, { title: cat.title, position: ci });
+    cats.set(cat.id, {
+      title: cat.title,
+      position: ci,
+      isPrivate: !!cat.isPrivate,
+    });
     cat.subCategories?.forEach((sub, si) => {
       if (subs.has(sub.id)) {
         console.warn(`flattenCategories: duplicate subcategory id "${sub.id}", skipping`);
@@ -113,8 +119,14 @@ function flattenCategories(categories: Category[]): FlatState {
 }
 
 export function diffCategories(current: Category[], next: Category[]): CategoryDiff {
+  // An incoming tree without isPrivate (e.g. a pre-v3 backup import)
+  // inherits the current privacy instead of silently un-privatizing it.
+  const normalizedNext = next.map((cat) => ({
+    ...cat,
+    isPrivate: cat.isPrivate ?? current.find((c) => c.id === cat.id)?.isPrivate ?? false,
+  }));
   const cur = flattenCategories(current);
-  const nxt = flattenCategories(next);
+  const nxt = flattenCategories(normalizedNext);
 
   const catInserts: CatRowInput[] = [];
   const catUpdates: CatUpdate[] = [];
@@ -127,14 +139,27 @@ export function diffCategories(current: Category[], next: Category[]): CategoryD
   const linkDeletes: string[] = [];
 
   // --- categories ---
+  // An incoming tree without isPrivate (e.g. a pre-v3 backup import) must
+  // NOT silently un-private an existing category — absent inherits current.
   for (const [id, nextRow] of nxt.cats) {
     const curRow = cur.cats.get(id);
+    // Absent isPrivate (e.g. pre-v3 backup import) inherits the current
+    // value instead of silently un-privatizing the category.
+    const nextIsPrivate = !curRow
+      ? !!nextRow.isPrivate
+      : (nextRow.isPrivate ?? curRow.isPrivate ?? false);
     if (!curRow) {
-      catInserts.push({ id, title: nextRow.title, position: nextRow.position });
+      catInserts.push({
+        id,
+        title: nextRow.title,
+        position: nextRow.position,
+        isPrivate: nextIsPrivate,
+      });
     } else {
       const update: CatUpdate = { id };
       if (curRow.title !== nextRow.title) update.title = nextRow.title;
       if (curRow.position !== nextRow.position) update.position = nextRow.position;
+      if (curRow.isPrivate !== nextIsPrivate) update.isPrivate = nextIsPrivate;
       if (Object.keys(update).length > 1) catUpdates.push(update);
     }
   }
@@ -227,8 +252,8 @@ export async function applyCategoryDiff(db: D1, diff: CategoryDiff): Promise<voi
   for (const i of diff.categories.inserts) {
     stmts.push(
       db
-        .prepare("INSERT INTO categories (id, title, position) VALUES (?, ?, ?)")
-        .bind(i.id, i.title, i.position)
+        .prepare("INSERT INTO categories (id, title, position, is_private) VALUES (?, ?, ?, ?)")
+        .bind(i.id, i.title, i.position, i.isPrivate ? 1 : 0)
     );
   }
   for (const i of diff.subcategories.inserts) {
@@ -250,6 +275,10 @@ export async function applyCategoryDiff(db: D1, diff: CategoryDiff): Promise<voi
     if (u.position !== undefined) {
       sets.push("position = ?");
       binds.push(u.position);
+    }
+    if (u.isPrivate !== undefined) {
+      sets.push("is_private = ?");
+      binds.push(u.isPrivate ? 1 : 0);
     }
     binds.push(u.id);
     stmts.push(db.prepare(`UPDATE categories SET ${sets.join(", ")} WHERE id = ?`).bind(...binds));

@@ -1,6 +1,6 @@
 export type D1 = D1Database;
 
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 let schemaReady = false;
 
@@ -22,7 +22,22 @@ export async function ensureSchema(db: D1): Promise<void> {
     "CREATE TABLE IF NOT EXISTS rate_limits (identifier TEXT NOT NULL, scope TEXT NOT NULL, window_end INTEGER NOT NULL, count INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (identifier, scope))"
   );
   await db.exec("CREATE INDEX IF NOT EXISTS idx_rl_window ON rate_limits(window_end)");
+  // v3: private categories (visible only to authenticated sessions)
+  await addColumnIfMissing(db, "categories", "is_private", "INTEGER NOT NULL DEFAULT 0");
   schemaReady = true;
+}
+
+async function addColumnIfMissing(
+  db: D1,
+  table: string,
+  column: string,
+  definition: string
+): Promise<void> {
+  const { results } = await db.prepare(`PRAGMA table_info(${table})`).all<{ name: string }>();
+  const exists = (results ?? []).some((col) => col.name === column);
+  if (!exists) {
+    await db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
 }
 
 export function _resetSchemaCacheForTests(): void {

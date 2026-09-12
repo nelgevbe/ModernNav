@@ -7,6 +7,7 @@ interface CategoryRow {
   id: string;
   title: string;
   position: number;
+  is_private: number;
 }
 interface SubRow {
   id: string;
@@ -67,7 +68,9 @@ export function getDefaultPrefs(): UserPreferences {
 export async function readAllCategories(db: D1): Promise<Category[]> {
   const [{ results: cats }, { results: subs }, { results: links }] = await Promise.all([
     db
-      .prepare("SELECT id, title, position FROM categories ORDER BY position ASC, id ASC")
+      .prepare(
+        "SELECT id, title, position, is_private FROM categories ORDER BY position ASC, id ASC"
+      )
       .all<CategoryRow>(),
     db
       .prepare(
@@ -121,6 +124,7 @@ export function rebuildCategories(
   return cats.map((c) => ({
     id: c.id,
     title: c.title,
+    ...(c.is_private ? { isPrivate: true } : {}),
     subCategories: subsByCat.get(c.id) ?? [],
   }));
 }

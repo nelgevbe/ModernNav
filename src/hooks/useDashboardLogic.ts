@@ -4,6 +4,8 @@ import { useBootstrap, useUpdateCategories, useUpdatePrefs } from "../services/q
 import { storageService } from "../services/storage";
 import { Category, LinkItem, ThemeMode } from "../types";
 import { useLanguage } from "../contexts/LanguageContext";
+import { usePrefersDark } from "./usePrefersDark";
+import { resolveThemeMode } from "../utils/theme";
 import {
   DEFAULT_FAVICON_API,
   DEFAULT_SITE_TITLE,
@@ -32,7 +34,10 @@ export const useDashboardLogic = () => {
   const isDefaultCode = data?.isDefaultCode ?? false;
 
   const cardOpacity = prefs.cardOpacity;
-  const themeMode = prefs.themeMode;
+  // "auto" is decoded here; consumers compare concrete themes.
+  const prefersDark = usePrefersDark();
+  const themeMode = resolveThemeMode(prefs.themeMode, prefersDark);
+  const themeModePreference = prefs.themeMode ?? ThemeMode.Auto;
   const themeColorAuto = prefs.themeColorAuto ?? true;
   const maxContainerWidth = prefs.maxContainerWidth ?? DEFAULT_LAYOUT.maxContainerWidth;
   const cardWidth = prefs.cardWidth ?? DEFAULT_LAYOUT.cardWidth;
@@ -118,9 +123,12 @@ export const useDashboardLogic = () => {
     updateCategories.mutate(value);
   };
 
-  const toggleTheme = () => {
-    const newTheme = themeMode === ThemeMode.Dark ? ThemeMode.Light : ThemeMode.Dark;
-    updatePrefs.mutate({ ...prefs, themeMode: newTheme });
+  // Persisted theme preference cycler (auto → dark → light).
+  const cycleThemeMode = () => {
+    const order: ThemeMode[] = [ThemeMode.Auto, ThemeMode.Dark, ThemeMode.Light];
+    const current = prefs.themeMode ?? ThemeMode.Auto;
+    const next = order[(order.indexOf(current) + 1) % order.length];
+    updatePrefs.mutate({ ...prefs, themeMode: next });
   };
 
   const toggleLanguage = () => setLanguage(language === "en" ? "zh" : "en");
@@ -160,7 +168,8 @@ export const useDashboardLogic = () => {
     },
     actions: {
       setCategories,
-      toggleTheme,
+      themeModePreference,
+      cycleThemeMode,
       toggleLanguage,
       handleMainCategoryClick,
       handleSubCategoryClick,

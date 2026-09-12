@@ -2,12 +2,13 @@ import React, { useMemo, useState, useEffect, useCallback, useRef } from "react"
 import { createPortal } from "react-dom";
 import { Command } from "cmdk";
 import { Search, FolderOpen, Sun, Moon, Globe, Settings, Home } from "../utils/icons";
-import { Category, SearchEngine, ThemeMode } from "../types";
+import { Category, SearchEngine } from "../types";
 import { useLanguage } from "../contexts/LanguageContext";
 import { SmartIcon } from "./SmartIcon";
 import { getFaviconUrl } from "../utils/favicon";
 import { fuzzyMatch } from "../utils/fuzzyMatch";
 import { getInitials, loadPinyinTable } from "../utils/pinyinInitials";
+import type { ResolvedTheme } from "../utils/theme";
 
 interface FlatLink {
   id: string;
@@ -29,12 +30,12 @@ interface CommandAction {
 
 interface CommandPaletteProps {
   categories: Category[];
-  themeMode: ThemeMode;
+  themeMode: ResolvedTheme;
   faviconApi?: string;
   searchEngines: SearchEngine[];
   onCategoryClick: (cat: Category) => void;
   onSubCategoryClick: (catId: string, subId: string) => void;
-  toggleTheme: () => void;
+  cycleThemeMode: () => void;
   toggleLanguage: () => void;
   navigate: (path: string) => void;
   open: boolean;
@@ -63,7 +64,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   searchEngines,
   onCategoryClick,
   onSubCategoryClick,
-  toggleTheme,
+  cycleThemeMode,
   toggleLanguage,
   navigate,
   open,
@@ -164,7 +165,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   const commands = useMemo<CommandAction[]>(() => {
-    const isDark = themeMode === ThemeMode.Dark;
+    const isDark = themeMode === "dark";
     return [
       {
         id: "toggle-theme",
@@ -172,7 +173,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         keywords: "切换主题 Toggle Theme dark light",
         icon: isDark ? <Moon size={16} /> : <Sun size={16} />,
         action: () => {
-          toggleTheme();
+          cycleThemeMode();
           close();
         },
       },
@@ -207,7 +208,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         },
       },
     ];
-  }, [t, themeMode, toggleTheme, toggleLanguage, navigate, close]);
+  }, [t, themeMode, cycleThemeMode, toggleLanguage, navigate, close]);
 
   const customFilter = useCallback((value: string, search: string, keywords?: string[]): number => {
     if (value.startsWith("search-engine:")) return 1;

@@ -28,6 +28,7 @@ export { default as LayoutGrid } from "lucide-react/dist/esm/icons/layout-grid";
 export { default as Link } from "lucide-react/dist/esm/icons/link";
 export { default as Loader2 } from "lucide-react/dist/esm/icons/loader-2";
 export { default as Lock } from "lucide-react/dist/esm/icons/lock";
+export { default as Unlock } from "lucide-react/dist/esm/icons/unlock";
 export { default as LogIn } from "lucide-react/dist/esm/icons/log-in";
 export { default as LogOut } from "lucide-react/dist/esm/icons/log-out";
 export { default as Menu } from "lucide-react/dist/esm/icons/menu";
@@ -50,6 +51,14 @@ export { default as Type } from "lucide-react/dist/esm/icons/type";
 export { default as Upload } from "lucide-react/dist/esm/icons/upload";
 export { default as Wand2 } from "lucide-react/dist/esm/icons/wand-2";
 export { default as X } from "lucide-react/dist/esm/icons/x";
+
+export { default as Wallpaper } from "lucide-react/dist/esm/icons/wallpaper";
+
+export { default as BarChart3 } from "lucide-react/dist/esm/icons/bar-chart-3";
+
+export { default as Shuffle } from "lucide-react/dist/esm/icons/shuffle";
+
+export { default as Monitor } from "lucide-react/dist/esm/icons/monitor";
 
 // Icon component type (type-only import — elided at build time).
 export type { LucideIcon } from "lucide-react";

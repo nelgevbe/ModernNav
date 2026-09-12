@@ -179,5 +179,21 @@
   "empty_subcategories": "未找到子分类，点击右上角设置进行配置。",
   "icon_picker_search": "搜索图标...",
   "favicon_api_placeholder": "https://favicon.im/{domain}",
-  "extraction_failed": "提取失败"
+  "extraction_failed": "提取失败",
+  "label_theme_mode": "主题模式",
+  "theme_auto": "跟随系统",
+  "theme_dark": "深色",
+  "theme_light": "浅色",
+  "delete_link_confirm": "确定删除这个链接吗？",
+  "daily_wallpaper": "每日壁纸（Bing）",
+  "stats_title": "使用统计",
+  "stats_desc": "链接与点击活动概览。",
+  "stats_categories": "分类",
+  "stats_subcategories": "子分类",
+  "stats_links": "链接",
+  "stats_zero_click": "零点击",
+  "stats_top_visited": "最常访问（Top 10）",
+  "tab_stats": "统计",
+  "category_private": "私密分类",
+  "category_make_private": "设为私密"
 }

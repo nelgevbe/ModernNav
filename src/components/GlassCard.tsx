@@ -1,12 +1,12 @@
 import React from "react";
-import { ThemeMode } from "../types";
+import type { ResolvedTheme } from "../utils/theme";
 
 interface GlassCardProps extends React.HTMLAttributes<HTMLElement> {
   children: React.ReactNode;
   className?: string;
   hoverEffect?: boolean;
   opacity?: number;
-  themeMode?: ThemeMode;
+  themeMode?: ResolvedTheme;
   href?: string;
   target?: string;
   rel?: string;
@@ -20,14 +20,14 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   onClick,
   onBeforeNavigate,
   opacity = 0.1,
-  themeMode = ThemeMode.Dark,
+  themeMode = "dark",
   style,
   href,
   target,
   rel,
   ...props
 }) => {
-  const isDark = themeMode === ThemeMode.Dark;
+  const isDark = themeMode === "dark";
   const Component = href ? "a" : "div";
 
   const MIN_TINT = isDark ? 0.2 : 0.3;

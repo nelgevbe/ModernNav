@@ -1,6 +1,7 @@
 import React, { memo, useRef, useEffect, useState } from "react";
-import { ChevronDown, Globe, Moon, Sun, Settings, Menu, X, Search } from "../utils/icons";
+import { ChevronDown, Globe, Moon, Sun, Settings, Menu, X, Search, Monitor } from "../utils/icons";
 import { Category, ThemeMode, NavStyle } from "../types";
+import type { ResolvedTheme } from "../utils/theme";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useViewportScale } from "../hooks/useViewportScale";
 import { getIconSize } from "../utils/favicon";
@@ -11,8 +12,9 @@ interface CategoryNavProps {
   activeSubCategoryId: string;
   onCategoryClick: (cat: Category) => void;
   onSubCategoryClick: (catId: string, subId: string) => void;
-  themeMode: ThemeMode;
-  toggleTheme: () => void;
+  themeMode: ResolvedTheme;
+  themeModePreference: ThemeMode;
+  cycleThemeMode: () => void;
   toggleLanguage: () => void;
   openSettings: () => void;
   onSearchClick: () => void;
@@ -26,7 +28,8 @@ const CategoryNavComponent: React.FC<CategoryNavProps> = ({
   onCategoryClick,
   onSubCategoryClick,
   themeMode,
-  toggleTheme,
+  themeModePreference,
+  cycleThemeMode,
   toggleLanguage,
   openSettings,
   onSearchClick,
@@ -35,7 +38,15 @@ const CategoryNavComponent: React.FC<CategoryNavProps> = ({
   const { t } = useLanguage();
   const viewportScale = useViewportScale();
   const s = (n: number) => getIconSize(n, viewportScale);
-  const isDark = themeMode === ThemeMode.Dark;
+  const isDark = themeMode === "dark";
+  const ThemeIcon =
+    themeModePreference === "auto" ? Monitor : themeModePreference === "dark" ? Moon : Sun;
+  const themeTitle =
+    themeModePreference === "auto"
+      ? t("theme_auto")
+      : themeModePreference === "dark"
+        ? t("theme_dark")
+        : t("theme_light");
   const [isExpanded, setIsExpanded] = useState(false);
 
   const [navPillStyle, setNavPillStyle] = useState({
@@ -155,8 +166,8 @@ const CategoryNavComponent: React.FC<CategoryNavProps> = ({
             <button onClick={toggleLanguage} className={mobileButtonClass}>
               <Globe size={s(18)} />
             </button>
-            <button onClick={toggleTheme} className={mobileButtonClass}>
-              {isDark ? <Moon size={s(18)} /> : <Sun size={s(18)} />}
+            <button onClick={cycleThemeMode} title={themeTitle} className={mobileButtonClass}>
+              <ThemeIcon size={s(18)} />
             </button>
             <button onClick={openSettings} className={mobileButtonClass}>
               <Settings size={s(18)} />
@@ -339,8 +350,8 @@ const CategoryNavComponent: React.FC<CategoryNavProps> = ({
             <button onClick={toggleLanguage} className={actionButtonClass} title="Switch Language">
               <Globe size={s(18)} />
             </button>
-            <button onClick={toggleTheme} className={actionButtonClass} title="Toggle Theme">
-              {isDark ? <Moon size={s(18)} /> : <Sun size={s(18)} />}
+            <button onClick={cycleThemeMode} title={themeTitle} className={actionButtonClass}>
+              <ThemeIcon size={s(18)} />
             </button>
             <button onClick={openSettings} className={actionButtonClass} title={t("settings")}>
               <Settings size={s(18)} />

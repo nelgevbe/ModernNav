@@ -14,6 +14,7 @@ const ContentPage = React.lazy(() => import("./components/admin/ContentPage"));
 const GeneralPage = React.lazy(() => import("./components/admin/GeneralPage"));
 const AppearancePage = React.lazy(() => import("./components/admin/AppearancePage"));
 const DataPage = React.lazy(() => import("./components/admin/DataPage"));
+const StatsPage = React.lazy(() => import("./components/admin/StatsPage"));
 const SecurityPage = React.lazy(() => import("./components/admin/SecurityPage"));
 
 const rootElement = document.getElementById("root");
@@ -87,6 +88,14 @@ root.render(
                   element={
                     <Suspense>
                       <DataPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="stats"
+                  element={
+                    <Suspense>
+                      <StatsPage />
                     </Suspense>
                   }
                 />
